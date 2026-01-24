@@ -1,0 +1,29 @@
+services:
+  car-reselling:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: car
+      SPRING_DATASOURCE_PASSWORD: car
+    volumes:
+      - ./storage:/storage
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: car_reselling
+      MYSQL_USER: car
+      MYSQL_PASSWORD: car
+      MYSQL_ROOT_PASSWORD: car
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:

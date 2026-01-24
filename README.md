@@ -1,0 +1,203 @@
+# Car Reselling MVP
+
+End-to-end MVP for a used car reseller in Brazil. The application includes a Java 21 + Spring Boot 3.x backend and a React 18 + TailwindCSS frontend, with MySQL as the database and Liquibase for schema migrations.
+
+## Features
+
+- Vehicle registration, listing, and detail view
+- Service management per vehicle with totals
+- Document upload, download, and deletion (local storage)
+- Distribution to partner dealerships
+- Distributed vehicles report with totals
+
+## Tech Stack
+
+**Backend**
+- Java 21, Spring Boot 3.x
+- Gradle 8.7
+- MySQL 8.x
+- Liquibase
+- Springdoc OpenAPI
+
+**Frontend**
+- React 18 + TypeScript
+- TailwindCSS
+- Vite
+- Axios
+
+## Project Structure
+
+```
+.
+├── backend
+├── frontend
+├── context
+├── docker-compose.yml
+└── Dockerfile
+```
+
+## Prerequisites
+
+- Java 21
+- Gradle 8.7 (or use Gradle wrapper if added later)
+- Node.js 20+
+- npm 9+
+- Docker 27.5.1 / Docker Compose 2.29.2 (for containerized setup)
+- MySQL 8.x (if running locally without Docker)
+
+## Configuration
+
+### Backend
+
+Default settings are in `backend/src/main/resources/application.yml`:
+
+- Server: `http://localhost:8080`
+- MySQL:
+  - DB: `car_reselling`
+  - User: `car`
+  - Password: `car`
+- File storage: `/storage/vehicles`
+- Multipart file limit: 20MB
+
+You can override datasource settings with environment variables:
+
+```
+SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/car_reselling
+SPRING_DATASOURCE_USERNAME=car
+SPRING_DATASOURCE_PASSWORD=car
+```
+
+### Frontend
+
+Vite dev server runs on `http://localhost:5173` and proxies `/api` to `http://localhost:8080`.
+
+## Database
+
+### Schema & Migrations
+
+Liquibase migrations are stored at:
+
+```
+backend/src/main/resources/db/changelog/db.changelog-master.yaml
+```
+
+Tables:
+
+- `vehicles`
+- `services`
+- `documents`
+- `partners`
+
+### Seed Data
+
+The changelog seeds:
+
+- Partner A (Sao Paulo)
+- Partner B (Rio de Janeiro)
+- One example vehicle
+
+### Storage
+
+Documents are stored locally under `/storage/vehicles/{vehicleId}/{documentId}/{filename}`.
+When using Docker, the `./storage` folder is mounted to `/storage` in the container.
+
+## Build & Run
+
+### Option A — Docker (recommended)
+
+Build and run everything:
+
+```
+docker compose up --build
+```
+
+Then open:
+
+- App: `http://localhost:8080`
+- API: `http://localhost:8080/api/v1`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+
+Stop:
+
+```
+docker compose down
+```
+
+### Option B — Local development
+
+#### 1) Start MySQL
+
+Use your local MySQL or Docker:
+
+```
+docker run --name car-mysql -e MYSQL_DATABASE=car_reselling -e MYSQL_USER=car -e MYSQL_PASSWORD=car -e MYSQL_ROOT_PASSWORD=car -p 3306:3306 -d mysql:8.0
+```
+
+#### 2) Backend
+
+```
+cd backend
+./gradlew bootRun
+```
+
+Backend runs at `http://localhost:8080`.
+
+#### 3) Frontend
+
+```
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend runs at `http://localhost:5173` (proxying `/api` to the backend).
+
+## API Documentation
+
+Springdoc OpenAPI UI:
+
+```
+http://localhost:8080/swagger-ui.html
+```
+
+## Debugging
+
+### Backend (IntelliJ / VS Code)
+
+Run the Spring Boot application in debug mode:
+
+```
+./gradlew bootRun --debug-jvm
+```
+
+Then attach your debugger to `localhost:5005`.
+
+### Frontend
+
+Use your browser devtools with `npm run dev`.
+
+## Common Troubleshooting
+
+- **Port 8080 or 3306 already in use**: stop conflicting services or change ports in `application.yml` / `docker-compose.yml`.
+- **Liquibase errors on startup**: check database connection and ensure schema is clean; review `db.changelog-master.yaml`.
+- **Document storage issues**: verify `storage.base-path` and ensure the folder is writable.
+
+## Commands Summary
+
+```
+# Docker (full stack)
+docker compose up --build
+
+# Backend
+cd backend
+./gradlew bootRun
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+## License
+
+Private project for internal MVP usage.
