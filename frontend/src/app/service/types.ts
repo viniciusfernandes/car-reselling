@@ -106,6 +106,7 @@ export type ReportVehicleItem = {
   brand: string;
   model: string;
   year: number;
+  distributedAt?: string | null;
   purchasePrice: number;
   totalCost: number;
 };

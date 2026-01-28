@@ -39,6 +39,7 @@ public class ReportService implements IReportService {
                        v.brand,
                        v.model,
                        v.year,
+                       DATE(v.updated_at) AS distributed_at,
                        v.purchase_price,
                        v.freight_cost,
                        COALESCE(s.services_total, 0) AS services_total
@@ -102,6 +103,7 @@ public class ReportService implements IReportService {
                 row.brand(),
                 row.model(),
                 row.year(),
+                row.distributedAt(),
                 row.purchasePrice(),
                 totalCost
             ));
@@ -144,6 +146,7 @@ public class ReportService implements IReportService {
                              String brand,
                              String model,
                              int year,
+                             LocalDate distributedAt,
                              BigDecimal purchasePrice,
                              BigDecimal freightCost,
                              BigDecimal servicesTotal) {
@@ -161,6 +164,7 @@ public class ReportService implements IReportService {
                 rs.getString("brand"),
                 rs.getString("model"),
                 rs.getInt("year"),
+                rs.getDate("distributed_at") == null ? null : rs.getDate("distributed_at").toLocalDate(),
                 rs.getBigDecimal("purchase_price"),
                 rs.getBigDecimal("freight_cost"),
                 rs.getBigDecimal("services_total")
