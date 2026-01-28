@@ -18,7 +18,7 @@ spring:
       max-request-size: 20MB
 
 storage:
-  base-path: /home/vinicius/Documents/projects/car-reselling/storage/vehicles
+  base-path: ${STORAGE_BASE_PATH:/tmp/car-reselling/vehicles}
 
 logging:
   level:
