@@ -16,22 +16,37 @@ const STATUSES: Array<{ value: VehicleStatus | ""; label: string }> = [
   { value: "DISTRIBUTED", label: "Distributed" },
 ];
 
+const STATUS_LABELS: Record<VehicleStatus, string> = {
+  IN_LOT: "In lot",
+  IN_SERVICE: "In service",
+  READY_FOR_DISTRIBUTION: "Ready",
+  DISTRIBUTED: "Distributed",
+};
+
+const formatMoney = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
 export default function VehicleListPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<VehicleStatus | "">("");
+  const [page, setPage] = useState(0);
   const [data, setData] = useState<VehicleListResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const pageSize = 20;
 
   const params = useMemo(
     () => ({
       q: query || undefined,
       status: status || undefined,
-      page: 0,
-      size: 50,
+      page,
+      size: pageSize,
     }),
-    [query, status]
+    [query, status, page]
   );
 
   const fetchVehicles = async () => {
@@ -53,7 +68,11 @@ export default function VehicleListPage() {
 
   useEffect(() => {
     fetchVehicles();
-  }, [params.q, params.status]);
+  }, [params.q, params.status, params.page]);
+
+  const totalPages = data ? Math.ceil(data.total / data.size) : 1;
+  const canGoPrev = page > 0;
+  const canGoNext = data ? page + 1 < totalPages : false;
 
   return (
     <div className="space-y-6">
@@ -75,7 +94,10 @@ export default function VehicleListPage() {
       <div className="flex flex-wrap gap-3">
         <input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(0);
+          }}
           placeholder="Search by plate, model, brand"
           className="w-full max-w-sm rounded-md border border-slate-200 px-3 py-2 text-sm shadow-sm"
         />
@@ -84,7 +106,10 @@ export default function VehicleListPage() {
             <button
               key={option.value || "all"}
               type="button"
-              onClick={() => setStatus(option.value)}
+              onClick={() => {
+                setStatus(option.value);
+                setPage(0);
+              }}
               className={`rounded-full px-3 py-1 text-xs font-medium ${
                 status === option.value
                   ? "bg-slate-900 text-white"
@@ -106,9 +131,9 @@ export default function VehicleListPage() {
                 <th className="px-4 py-3">Model</th>
                 <th className="px-4 py-3">Year</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Purchase Price</th>
-                <th className="px-4 py-3">Services Total</th>
-                <th className="px-4 py-3">Total Cost</th>
+                <th className="px-4 py-3 text-right">Purchase Price</th>
+                <th className="px-4 py-3 text-right">Services Total</th>
+                <th className="px-4 py-3 text-right">Total Cost</th>
                 <th className="px-4 py-3">Assigned Partner</th>
               </tr>
             </thead>
@@ -132,14 +157,18 @@ export default function VehicleListPage() {
                     <td className="px-4 py-3">{vehicle.brand}</td>
                     <td className="px-4 py-3">{vehicle.model}</td>
                     <td className="px-4 py-3">{vehicle.year}</td>
-                    <td className="px-4 py-3">{vehicle.status}</td>
                     <td className="px-4 py-3">
-                      {vehicle.purchasePrice.toFixed(2)}
+                      {STATUS_LABELS[vehicle.status]}
                     </td>
-                    <td className="px-4 py-3">
-                      {vehicle.servicesTotal.toFixed(2)}
+                    <td className="px-4 py-3 text-right">
+                      {formatMoney(vehicle.purchasePrice)}
                     </td>
-                    <td className="px-4 py-3">{vehicle.totalCost.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {formatMoney(vehicle.servicesTotal)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {formatMoney(vehicle.totalCost)}
+                    </td>
                     <td className="px-4 py-3">
                       {vehicle.assignedPartnerName ?? "-"}
                     </td>
@@ -154,6 +183,29 @@ export default function VehicleListPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-sm text-slate-500">
+        <span>
+          Page {page + 1} of {totalPages || 1}
+        </span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={!canGoPrev}
+            onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+            className="rounded-md border border-slate-200 px-3 py-1 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            disabled={!canGoNext}
+            onClick={() => setPage((prev) => prev + 1)}
+            className="rounded-md border border-slate-200 px-3 py-1 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

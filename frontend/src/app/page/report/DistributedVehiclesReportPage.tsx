@@ -13,15 +13,19 @@ export default function DistributedVehiclesReportPage() {
   const { showToast } = useToast();
   const [report, setReport] = useState<DistributedVehiclesReport | null>(null);
   const [mode, setMode] = useState<TotalMode>("purchasePrice");
+  const [loading, setLoading] = useState(true);
 
   const fetchReport = async () => {
     try {
+      setLoading(true);
       const response = await api.get<ApiResponse<DistributedVehiclesReport>>(
         "/reports/distributed-vehicles"
       );
       setReport(response.data.data);
     } catch (error) {
       showToast(extractErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,6 +46,12 @@ export default function DistributedVehiclesReportPage() {
         0
       )
     : 0;
+
+  const formatMoney = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
 
   return (
     <div className="space-y-6">
@@ -80,13 +90,21 @@ export default function DistributedVehiclesReportPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm text-slate-500">Overall total</div>
-            <div className="text-xl font-semibold">{overallTotal.toFixed(2)}</div>
+            <div className="text-xl font-semibold">
+              {formatMoney(overallTotal)}
+            </div>
           </div>
           <div className="text-sm text-slate-500">
             {report?.overallVehiclesCount ?? 0} vehicles
           </div>
         </div>
       </div>
+
+      {loading ? (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
+          Loading report...
+        </div>
+      ) : null}
 
       {report?.partners.map((partner) => (
         <div
@@ -103,7 +121,7 @@ export default function DistributedVehiclesReportPage() {
             <div className="text-right">
               <div className="text-xs text-slate-500">Partner total</div>
               <div className="text-base font-semibold">
-                {calculatePartnerTotal(partner).toFixed(2)}
+                {formatMoney(calculatePartnerTotal(partner))}
               </div>
             </div>
           </div>
@@ -114,8 +132,8 @@ export default function DistributedVehiclesReportPage() {
                 <th className="px-6 py-3">Brand</th>
                 <th className="px-6 py-3">Model</th>
                 <th className="px-6 py-3">Year</th>
-                <th className="px-6 py-3">Purchase Price</th>
-                <th className="px-6 py-3">Total Cost</th>
+                <th className="px-6 py-3 text-right">Purchase Price</th>
+                <th className="px-6 py-3 text-right">Total Cost</th>
               </tr>
             </thead>
             <tbody>
@@ -125,10 +143,12 @@ export default function DistributedVehiclesReportPage() {
                   <td className="px-6 py-3">{vehicle.brand}</td>
                   <td className="px-6 py-3">{vehicle.model}</td>
                   <td className="px-6 py-3">{vehicle.year}</td>
-                  <td className="px-6 py-3">
-                    {vehicle.purchasePrice.toFixed(2)}
+                  <td className="px-6 py-3 text-right">
+                    {formatMoney(vehicle.purchasePrice)}
                   </td>
-                  <td className="px-6 py-3">{vehicle.totalCost.toFixed(2)}</td>
+                  <td className="px-6 py-3 text-right">
+                    {formatMoney(vehicle.totalCost)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -136,7 +156,7 @@ export default function DistributedVehiclesReportPage() {
         </div>
       ))}
 
-      {report?.partners.length === 0 ? (
+      {!loading && report?.partners.length === 0 ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
           No distributed vehicles yet.
         </div>

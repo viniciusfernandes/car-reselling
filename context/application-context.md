@@ -142,6 +142,17 @@ added and versioned in the change log file according to the rules:
             /user
             /order
 
+## Observality
+
+- **Expose only required endpoints**: enable a minimal set such as `health`, `info`, `metrics`, `prometheus`, `loggers`, `env` (if needed) and disable everything else.
+- **Separate health for liveness/readiness**: configure `health` groups and expose `liveness` and `readiness` for orchestration probes.
+- **Protect sensitive endpoints**: require authentication/authorization for any endpoint beyond `health`/`info`.
+- **Hide sensitive details**: set `management.endpoint.health.show-details=when_authorized` and redact or disable `env`/`configprops` in production.
+- **Run on a dedicated port**: use `management.server.port` and bind to a private interface to avoid public exposure.
+- **Limit exposure scope**: use `management.endpoints.web.base-path=/actuator` and `management.endpoints.web.exposure.include` with an explicit allowlist.
+- **Secure metrics scraping**: if using Prometheus, enforce authentication and restrict IPs/firewall access.
+- **Add request tracing**: enable correlation IDs in logs and expose a `traceId`/`spanId` when distributed tracing is used.
+
 ------------------------------------------------------------------------
 
 # Summary

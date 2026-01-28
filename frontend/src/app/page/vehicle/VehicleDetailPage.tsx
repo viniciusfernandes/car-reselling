@@ -21,7 +21,10 @@ import {
 import TextInput from "../../component/input/TextInput";
 import NumberInput from "../../component/input/NumberInput";
 import SelectInput from "../../component/input/SelectInput";
+import MoneyInput from "../../component/input/MoneyInput";
+import ComboboxInput from "../../component/input/ComboboxInput";
 import { useToast } from "../../component/notification/ToastProvider";
+import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
 
 const SERVICE_OPTIONS: { value: ServiceType; label: string }[] = [
   { value: "MECHANICAL", label: "Mechanical" },
@@ -48,6 +51,32 @@ const STATUS_LABELS: Record<VehicleStatus, string> = {
 
 type TabKey = "overview" | "services" | "documents" | "distribution";
 
+const formatMoney = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+const normalizeMoneyInput = (value: string) => {
+  const sanitized = value.replace(",", ".").replace(/[^0-9.]/g, "");
+  const [integerPart, decimalPart = ""] = sanitized.split(".");
+  const normalizedDecimal = decimalPart.slice(0, 2);
+  return normalizedDecimal.length > 0
+    ? `${integerPart}.${normalizedDecimal}`
+    : integerPart;
+};
+
+const formatMoneyValue = (value: string) => {
+  if (!value) {
+    return "";
+  }
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    return value;
+  }
+  return numeric.toFixed(2);
+};
+
 export default function VehicleDetailPage() {
   const { vehicleId } = useParams();
   const { showToast } = useToast();
@@ -57,13 +86,25 @@ export default function VehicleDetailPage() {
   const [servicesTotal, setServicesTotal] = useState(0);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
+  const [suggestions, setSuggestions] = useState({
+    colors: [] as string[],
+    brands: [] as string[],
+    models: [] as string[],
+  });
   const [loading, setLoading] = useState(true);
+  const [isUpdatingVehicle, setIsUpdatingVehicle] = useState(false);
+  const [isAddingService, setIsAddingService] = useState(false);
+  const [isUpdatingService, setIsUpdatingService] = useState(false);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [isAssigningPartner, setIsAssigningPartner] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [serviceForm, setServiceForm] = useState({
     serviceType: "MECHANICAL" as ServiceType,
     serviceValue: "",
     description: "",
     performedAt: "",
   });
+  const [serviceErrors, setServiceErrors] = useState<Record<string, string>>({});
   const [editServiceId, setEditServiceId] = useState<string | null>(null);
   const [editServiceForm, setEditServiceForm] = useState({
     serviceType: "MECHANICAL" as ServiceType,
@@ -71,6 +112,9 @@ export default function VehicleDetailPage() {
     description: "",
     performedAt: "",
   });
+  const [editServiceErrors, setEditServiceErrors] = useState<Record<string, string>>(
+    {}
+  );
   const [documentType, setDocumentType] = useState<DocumentType>("INVOICE");
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [updateErrors, setUpdateErrors] = useState<Record<string, string>>({});
@@ -86,6 +130,7 @@ export default function VehicleDetailPage() {
     purchasePaymentReceiptDocumentId: "",
   });
   const [partnerId, setPartnerId] = useState("");
+  const [statusTarget, setStatusTarget] = useState<VehicleStatus>("IN_LOT");
 
   const isDistributed = vehicle?.status === "DISTRIBUTED";
 
@@ -93,34 +138,63 @@ export default function VehicleDetailPage() {
     if (!vehicleId) {
       return;
     }
-    try {
-      setLoading(true);
-      const [vehicleResponse, serviceResponse, documentResponse, partnerResponse] =
-        await Promise.all([
-          api.get<ApiResponse<VehicleDetail>>(`/vehicles/${vehicleId}`),
-          api.get<ApiResponse<ServiceListResponse>>(
-            `/vehicles/${vehicleId}/services`
-          ),
-          api.get<ApiResponse<DocumentListResponse>>(
-            `/vehicles/${vehicleId}/documents`
-          ),
-          api.get<ApiResponse<PartnerListResponse>>(`/partners`),
-        ]);
-      setVehicle(vehicleResponse.data.data);
-      setServices(serviceResponse.data.data.services);
-      setServicesTotal(serviceResponse.data.data.total);
-      setDocuments(documentResponse.data.data.documents);
-      setPartners(partnerResponse.data.data.partners);
-    } catch (error) {
-      showToast(extractErrorMessage(error));
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const [
+      vehicleResponse,
+      serviceResponse,
+      documentResponse,
+      partnerResponse,
+    ] = await Promise.allSettled([
+      api.get<ApiResponse<VehicleDetail>>(`/vehicles/${vehicleId}`),
+      api.get<ApiResponse<ServiceListResponse>>(`/vehicles/${vehicleId}/services`),
+      api.get<ApiResponse<DocumentListResponse>>(`/vehicles/${vehicleId}/documents`),
+      api.get<ApiResponse<PartnerListResponse>>(`/partners`),
+    ]);
+
+    if (vehicleResponse.status === "fulfilled") {
+      setVehicle(vehicleResponse.value.data.data);
+    } else {
+      setVehicle(null);
+      showToast(extractErrorMessage(vehicleResponse.reason));
     }
+
+    if (serviceResponse.status === "fulfilled") {
+      setServices(serviceResponse.value.data.data.services);
+      setServicesTotal(serviceResponse.value.data.data.total);
+    } else {
+      showToast(extractErrorMessage(serviceResponse.reason));
+    }
+
+    if (documentResponse.status === "fulfilled") {
+      setDocuments(documentResponse.value.data.data.documents);
+    } else {
+      showToast(extractErrorMessage(documentResponse.reason));
+    }
+
+    if (partnerResponse.status === "fulfilled") {
+      setPartners(partnerResponse.value.data.data.partners);
+    } else {
+      showToast(extractErrorMessage(partnerResponse.reason));
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchAll();
   }, [vehicleId]);
+
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      try {
+        const response = await fetchVehicleSuggestions();
+        setSuggestions(response);
+      } catch (error) {
+        showToast(extractErrorMessage(error));
+      }
+    };
+    loadSuggestions();
+  }, [showToast]);
 
   useEffect(() => {
     if (!vehicle) {
@@ -139,6 +213,7 @@ export default function VehicleDetailPage() {
         vehicle.purchasePaymentReceiptDocumentId ?? "",
     });
     setPartnerId(vehicle.assignedPartnerId ?? "");
+    setStatusTarget(vehicle.status);
   }, [vehicle]);
 
   const documentOptions = useMemo(
@@ -150,11 +225,111 @@ export default function VehicleDetailPage() {
     [documents]
   );
 
+  const getMoneyError = (value: string, required = false) => {
+    if (!value && required) {
+      return "Required";
+    }
+    if (!value) {
+      return "";
+    }
+    const numeric = Number(value);
+    if (Number.isNaN(numeric) || numeric < 0) {
+      return "Invalid value";
+    }
+    return "";
+  };
+
+  const validateUpdateForm = () => {
+    const nextErrors: Record<string, string> = {};
+    if (!updateForm.year) {
+      nextErrors.year = "Required";
+    }
+    if (!updateForm.color) {
+      nextErrors.color = "Required";
+    }
+    if (!updateForm.model) {
+      nextErrors.model = "Required";
+    }
+    if (!updateForm.brand) {
+      nextErrors.brand = "Required";
+    }
+    const purchaseError = getMoneyError(updateForm.purchasePrice, true);
+    if (purchaseError) {
+      nextErrors.purchasePrice = purchaseError;
+    }
+    const freightError = getMoneyError(updateForm.freightCost, true);
+    if (freightError) {
+      nextErrors.freightCost = freightError;
+    }
+    setUpdateErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const validateUpdateField = (field: keyof typeof updateForm, value?: string) => {
+    const nextErrors = { ...updateErrors };
+    if (field === "year") {
+      if (!(value ?? updateForm.year)) {
+        nextErrors.year = "Required";
+      } else {
+        delete nextErrors.year;
+      }
+    }
+    if (field === "color") {
+      if (!(value ?? updateForm.color)) {
+        nextErrors.color = "Required";
+      } else {
+        delete nextErrors.color;
+      }
+    }
+    if (field === "model") {
+      if (!(value ?? updateForm.model)) {
+        nextErrors.model = "Required";
+      } else {
+        delete nextErrors.model;
+      }
+    }
+    if (field === "brand") {
+      if (!(value ?? updateForm.brand)) {
+        nextErrors.brand = "Required";
+      } else {
+        delete nextErrors.brand;
+      }
+    }
+    if (field === "purchasePrice") {
+      const error = getMoneyError(value ?? updateForm.purchasePrice, true);
+      if (error) {
+        nextErrors.purchasePrice = error;
+      } else {
+        delete nextErrors.purchasePrice;
+      }
+    }
+    if (field === "freightCost") {
+      const error = getMoneyError(value ?? updateForm.freightCost, true);
+      if (error) {
+        nextErrors.freightCost = error;
+      } else {
+        delete nextErrors.freightCost;
+      }
+    }
+    setUpdateErrors(nextErrors);
+  };
+
+  const validateServiceValue = (value: string) => {
+    const error = getMoneyError(value, true);
+    return error ? { serviceValue: error } : {};
+  };
+
   const handleAddService = async () => {
     if (!vehicleId) {
       return;
     }
+    const nextErrors = validateServiceValue(serviceForm.serviceValue);
+    if (Object.keys(nextErrors).length > 0) {
+      setServiceErrors(nextErrors);
+      return;
+    }
     try {
+      setIsAddingService(true);
       await api.post(`/vehicles/${vehicleId}/services`, {
         serviceType: serviceForm.serviceType,
         serviceValue: Number(serviceForm.serviceValue),
@@ -168,14 +343,18 @@ export default function VehicleDetailPage() {
         description: "",
         performedAt: "",
       });
+      setServiceErrors({});
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
+    } finally {
+      setIsAddingService(false);
     }
   };
 
   const startEditService = (service: ServiceItem) => {
     setEditServiceId(service.id);
+    setEditServiceErrors({});
     setEditServiceForm({
       serviceType: service.serviceType,
       serviceValue: service.serviceValue.toString(),
@@ -188,7 +367,13 @@ export default function VehicleDetailPage() {
     if (!vehicleId || !editServiceId) {
       return;
     }
+    const nextErrors = validateServiceValue(editServiceForm.serviceValue);
+    if (Object.keys(nextErrors).length > 0) {
+      setEditServiceErrors(nextErrors);
+      return;
+    }
     try {
+      setIsUpdatingService(true);
       await api.put(`/vehicles/${vehicleId}/services/${editServiceId}`, {
         serviceType: editServiceForm.serviceType,
         serviceValue: Number(editServiceForm.serviceValue),
@@ -197,9 +382,12 @@ export default function VehicleDetailPage() {
       });
       showToast("Service updated");
       setEditServiceId(null);
+      setEditServiceErrors({});
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
+    } finally {
+      setIsUpdatingService(false);
     }
   };
 
@@ -224,6 +412,7 @@ export default function VehicleDetailPage() {
       return;
     }
     try {
+      setIsUploadingDocument(true);
       const formData = new FormData();
       formData.append("documentType", documentType);
       formData.append("file", documentFile);
@@ -235,6 +424,8 @@ export default function VehicleDetailPage() {
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
+    } finally {
+      setIsUploadingDocument(false);
     }
   };
 
@@ -258,7 +449,11 @@ export default function VehicleDetailPage() {
     if (!vehicleId) {
       return;
     }
+    if (!validateUpdateForm()) {
+      return;
+    }
     try {
+      setIsUpdatingVehicle(true);
       await api.put(`/vehicles/${vehicleId}`, {
         year: Number(updateForm.year),
         color: updateForm.color,
@@ -280,6 +475,8 @@ export default function VehicleDetailPage() {
         setUpdateErrors(extractFieldErrors(error.response.data.errors));
       }
       showToast(extractErrorMessage(error));
+    } finally {
+      setIsUpdatingVehicle(false);
     }
   };
 
@@ -288,6 +485,7 @@ export default function VehicleDetailPage() {
       return;
     }
     try {
+      setIsAssigningPartner(true);
       await api.post(`/vehicles/${vehicleId}/distribution`, {
         partnerId,
       });
@@ -295,11 +493,48 @@ export default function VehicleDetailPage() {
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
+    } finally {
+      setIsAssigningPartner(false);
     }
   };
 
-  if (loading || !vehicle) {
-    return <div>Loading vehicle...</div>;
+  const handleUpdateStatus = async () => {
+    if (!vehicleId) {
+      return;
+    }
+    if (statusTarget === "DISTRIBUTED" && !partnerId) {
+      showToast("Select a partner before distributing.");
+      return;
+    }
+    try {
+      setIsUpdatingStatus(true);
+      await api.post(`/vehicles/${vehicleId}/status`, {
+        status: statusTarget,
+        assignedPartnerId: statusTarget === "DISTRIBUTED" ? partnerId : null,
+      });
+      showToast("Status updated");
+      await fetchAll();
+    } catch (error) {
+      showToast(extractErrorMessage(error));
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+        Loading vehicle details...
+      </div>
+    );
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+        Vehicle details unavailable. Please refresh.
+      </div>
+    );
   }
 
   return (
@@ -314,8 +549,8 @@ export default function VehicleDetailPage() {
           </p>
         </div>
         <div className="text-right text-sm text-slate-500">
-          <div>Services total: {servicesTotal.toFixed(2)}</div>
-          <div>Total cost: {vehicle.totalCost.toFixed(2)}</div>
+          <div>Services total: {formatMoney(servicesTotal)}</div>
+          <div>Total cost: {formatMoney(vehicle.totalCost)}</div>
         </div>
       </div>
 
@@ -346,6 +581,43 @@ export default function VehicleDetailPage() {
               value={vehicle.licensePlate}
               disabled
             />
+            <div className="space-y-3">
+              <SelectInput
+                label="Status"
+                value={statusTarget}
+                options={[
+                  { value: "IN_LOT", label: "In lot" },
+                  { value: "IN_SERVICE", label: "In service" },
+                  { value: "READY_FOR_DISTRIBUTION", label: "Ready for distribution" },
+                  { value: "DISTRIBUTED", label: "Distributed" },
+                ]}
+                onChange={(event) =>
+                  setStatusTarget(event.target.value as VehicleStatus)
+                }
+              />
+              {statusTarget === "DISTRIBUTED" ? (
+                <SelectInput
+                  label="Partner (required for distribution)"
+                  value={partnerId}
+                  options={[
+                    { value: "", label: "Select partner" },
+                    ...partners.map((partner) => ({
+                      value: partner.id,
+                      label: partner.name,
+                    })),
+                  ]}
+                  onChange={(event) => setPartnerId(event.target.value)}
+                />
+              ) : null}
+              <button
+                type="button"
+                onClick={handleUpdateStatus}
+                disabled={isUpdatingStatus || statusTarget === vehicle.status}
+                className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
+              >
+                {isUpdatingStatus ? "Updating..." : "Update Status"}
+              </button>
+            </div>
             <SelectInput
               label="Supplier Source"
               value={updateForm.supplierSource}
@@ -353,6 +625,7 @@ export default function VehicleDetailPage() {
                 { value: "INTERNET", label: "Internet" },
                 { value: "PERSONAL_CONTACT", label: "Personal contact" },
               ]}
+              required
               onChange={(event) =>
                 setUpdateForm((prev) => ({
                   ...prev,
@@ -363,55 +636,72 @@ export default function VehicleDetailPage() {
             <NumberInput
               label="Year"
               value={updateForm.year}
+              required
+              min={1900}
+              max={new Date().getFullYear() + 1}
               onChange={(event) =>
                 setUpdateForm((prev) => ({ ...prev, year: event.target.value }))
               }
+              onBlur={() => validateUpdateField("year")}
               error={updateErrors.year}
             />
-            <TextInput
+            <ComboboxInput
               label="Color"
               value={updateForm.color}
+              required
+              suggestions={suggestions.colors}
               onChange={(event) =>
                 setUpdateForm((prev) => ({ ...prev, color: event.target.value }))
               }
+              onBlur={() => validateUpdateField("color")}
               error={updateErrors.color}
             />
-            <TextInput
+            <ComboboxInput
               label="Model"
               value={updateForm.model}
+              required
+              suggestions={suggestions.models}
               onChange={(event) =>
                 setUpdateForm((prev) => ({ ...prev, model: event.target.value }))
               }
+              onBlur={() => validateUpdateField("model")}
               error={updateErrors.model}
             />
-            <TextInput
+            <ComboboxInput
               label="Brand"
               value={updateForm.brand}
+              required
+              suggestions={suggestions.brands}
               onChange={(event) =>
                 setUpdateForm((prev) => ({ ...prev, brand: event.target.value }))
               }
+              onBlur={() => validateUpdateField("brand")}
               error={updateErrors.brand}
             />
-            <NumberInput
+            <MoneyInput
               label="Purchase Price"
               value={updateForm.purchasePrice}
-              onChange={(event) =>
+              required
+              onValueChange={(value) =>
                 setUpdateForm((prev) => ({
                   ...prev,
-                  purchasePrice: event.target.value,
+                  purchasePrice: value,
                 }))
               }
+              onBlur={() => validateUpdateField("purchasePrice")}
               error={updateErrors.purchasePrice}
             />
-            <NumberInput
+            <MoneyInput
               label="Freight Cost"
               value={updateForm.freightCost}
-              onChange={(event) =>
+              required
+              onValueChange={(value) =>
                 setUpdateForm((prev) => ({
                   ...prev,
-                  freightCost: event.target.value,
+                  freightCost: value,
                 }))
               }
+              onBlur={() => validateUpdateField("freightCost")}
               error={updateErrors.freightCost}
             />
             <SelectInput
@@ -441,9 +731,10 @@ export default function VehicleDetailPage() {
             <button
               type="button"
               onClick={handleUpdateVehicle}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white"
+              disabled={isUpdatingVehicle}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              Save changes
+              {isUpdatingVehicle ? "Saving..." : "Save changes"}
             </button>
           </div>
         </div>
@@ -458,6 +749,7 @@ export default function VehicleDetailPage() {
                 label="Service Type"
                 value={serviceForm.serviceType}
                 options={SERVICE_OPTIONS}
+                required
                 onChange={(event) =>
                   setServiceForm((prev) => ({
                     ...prev,
@@ -465,15 +757,20 @@ export default function VehicleDetailPage() {
                   }))
                 }
               />
-              <NumberInput
+              <MoneyInput
                 label="Service Value"
                 value={serviceForm.serviceValue}
-                onChange={(event) =>
+                required
+                onValueChange={(value) =>
                   setServiceForm((prev) => ({
                     ...prev,
-                    serviceValue: event.target.value,
+                    serviceValue: value,
                   }))
                 }
+                onBlur={() =>
+                  setServiceErrors(validateServiceValue(serviceForm.serviceValue))
+                }
+                error={serviceErrors.serviceValue}
               />
               <TextInput
                 label="Description"
@@ -500,11 +797,11 @@ export default function VehicleDetailPage() {
             <div className="mt-4 flex justify-end">
               <button
                 type="button"
-                disabled={isDistributed}
+                disabled={isDistributed || isAddingService}
                 onClick={handleAddService}
                 className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Add Service
+                {isAddingService ? "Adding..." : "Add Service"}
               </button>
             </div>
             {isDistributed ? (
@@ -570,16 +867,30 @@ export default function VehicleDetailPage() {
                           </td>
                           <td className="px-4 py-3">
                             <input
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               value={editServiceForm.serviceValue}
                               onChange={(event) =>
                                 setEditServiceForm((prev) => ({
                                   ...prev,
-                                  serviceValue: event.target.value,
+                                  serviceValue: normalizeMoneyInput(
+                                    event.target.value
+                                  ),
+                                }))
+                              }
+                              onBlur={() =>
+                                setEditServiceForm((prev) => ({
+                                  ...prev,
+                                  serviceValue: formatMoneyValue(prev.serviceValue),
                                 }))
                               }
                               className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
                             />
+                            {editServiceErrors.serviceValue ? (
+                              <span className="text-xs text-red-600">
+                                {editServiceErrors.serviceValue}
+                              </span>
+                            ) : null}
                           </td>
                           <td className="px-4 py-3">
                             <input
@@ -598,13 +909,17 @@ export default function VehicleDetailPage() {
                               <button
                                 type="button"
                                 onClick={handleUpdateService}
-                                className="text-xs font-medium text-slate-900"
+                                disabled={isUpdatingService}
+                                className="text-xs font-medium text-slate-900 disabled:text-slate-400"
                               >
-                                Save
+                                {isUpdatingService ? "Saving..." : "Save"}
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setEditServiceId(null)}
+                                onClick={() => {
+                                  setEditServiceId(null);
+                                  setEditServiceErrors({});
+                                }}
                                 className="text-xs text-slate-500"
                               >
                                 Cancel
@@ -618,8 +933,8 @@ export default function VehicleDetailPage() {
                           <td className="px-4 py-3">
                             {service.performedAt ?? "-"}
                           </td>
-                          <td className="px-4 py-3">
-                            {service.serviceValue.toFixed(2)}
+                          <td className="px-4 py-3 text-right">
+                            {formatMoney(service.serviceValue)}
                           </td>
                           <td className="px-4 py-3">
                             {service.description ?? "-"}
@@ -685,9 +1000,10 @@ export default function VehicleDetailPage() {
               <button
                 type="button"
                 onClick={handleUploadDocument}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white"
+                disabled={!documentFile || isUploadingDocument}
+                className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Upload
+                {isUploadingDocument ? "Uploading..." : "Upload"}
               </button>
             </div>
           </div>
@@ -775,11 +1091,13 @@ export default function VehicleDetailPage() {
               type="button"
               onClick={handleAssignPartner}
               disabled={
-                vehicle.status !== "READY_FOR_DISTRIBUTION" || !partnerId
+                vehicle.status !== "READY_FOR_DISTRIBUTION" ||
+                !partnerId ||
+                isAssigningPartner
               }
               className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              Assign to Partner
+              {isAssigningPartner ? "Assigning..." : "Assign to Partner"}
             </button>
           </div>
           {vehicle.status !== "READY_FOR_DISTRIBUTION" ? (

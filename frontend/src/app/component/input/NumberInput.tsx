@@ -5,13 +5,17 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
 };
 
-export default function NumberInput({ label, error, ...props }: Props) {
+export default function NumberInput({ label, error, required, ...props }: Props) {
   return (
     <label className="block text-sm">
-      <span className="font-medium text-slate-700">{label}</span>
+      <span className="font-medium text-slate-700">
+        {label}
+        {required ? <span className="text-red-500"> *</span> : null}
+      </span>
       <input
         {...props}
         type="number"
+        aria-invalid={Boolean(error)}
         className={`mt-1 w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 ${
           error
             ? "border-red-400 focus:ring-red-200"

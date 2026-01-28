@@ -51,7 +51,7 @@ Centralize control of vehicles acquired by a used car reseller in Brazil, tracki
 > If your `application-context.md` has stricter/different rules, those must override this section.
 
 ### Backend Conventions
-- Package base: `br.com.<your_company>.ovigia` (replace with your org)
+- Package base: `br.com.carreselling`
 - Clean Architecture layering:
   - `domain` (entities, value objects, domain services)
   - `application` (use cases, commands/queries, DTOs, ports)
