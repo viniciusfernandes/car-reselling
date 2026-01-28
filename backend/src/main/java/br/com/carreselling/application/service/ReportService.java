@@ -1,18 +1,23 @@
 package br.com.carreselling.application.service;
 
+import br.com.carreselling.application.service.model.DistributedVehiclesFilter;
 import br.com.carreselling.application.service.model.DistributedVehiclesReport;
 import br.com.carreselling.application.service.model.ReportPartnerGroup;
 import br.com.carreselling.application.service.model.ReportVehicleItem;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,8 +30,8 @@ public class ReportService implements IReportService {
     }
 
     @Override
-    public DistributedVehiclesReport distributedVehiclesReport() {
-        List<ReportRow> rows = jdbcTemplate.query("""
+    public DistributedVehiclesReport distributedVehiclesReport(DistributedVehiclesFilter filter) {
+        StringBuilder sql = new StringBuilder("""
                 SELECT p.id AS partner_id,
                        p.name AS partner_name,
                        v.id AS vehicle_id,
@@ -45,9 +50,44 @@ public class ReportService implements IReportService {
                     GROUP BY vehicle_id
                 ) s ON s.vehicle_id = v.id
                 WHERE v.status = 'DISTRIBUTED'
-                ORDER BY p.name, v.license_plate
-                """,
-            new ReportRowMapper());
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (filter != null) {
+            LocalDate startDate = filter.startDate();
+            LocalDate endDate = filter.endDate();
+            String brand = normalizeText(filter.brand());
+            String model = normalizeText(filter.model());
+            if (startDate != null) {
+                sql.append(" AND DATE(v.updated_at) >= ?");
+                params.add(Date.valueOf(startDate));
+            }
+            if (endDate != null) {
+                sql.append(" AND DATE(v.updated_at) <= ?");
+                params.add(Date.valueOf(endDate));
+            }
+            if (brand != null) {
+                sql.append(" AND UPPER(v.brand) LIKE ?");
+                params.add("%" + brand + "%");
+            }
+            if (model != null) {
+                sql.append(" AND UPPER(v.model) LIKE ?");
+                params.add("%" + model + "%");
+            }
+            if (filter.partnerId() != null) {
+                sql.append(" AND v.assigned_partner_id = ?");
+                params.add(filter.partnerId().toString());
+            }
+        }
+
+        sql.append(" ORDER BY p.name, v.license_plate");
+
+        List<ReportRow> rows = jdbcTemplate.query(
+            Objects.requireNonNull(sql.toString()),
+            new ReportRowMapper(),
+            params.toArray(new Object[0])
+        );
 
         Map<UUID, PartnerAccumulator> grouped = new LinkedHashMap<>();
         for (ReportRow row : rows) {
@@ -86,6 +126,17 @@ public class ReportService implements IReportService {
         return new DistributedVehiclesReport(partners, overallCount, overallTotal);
     }
 
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.toUpperCase();
+    }
+
     private record ReportRow(UUID partnerId,
                              String partnerName,
                              UUID vehicleId,
@@ -101,7 +152,7 @@ public class ReportService implements IReportService {
     private static class ReportRowMapper implements RowMapper<ReportRow> {
 
         @Override
-        public ReportRow mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public ReportRow mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
             return new ReportRow(
                 UUID.fromString(rs.getString("partner_id")),
                 rs.getString("partner_name"),
