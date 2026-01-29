@@ -10,6 +10,8 @@ import {
 import { useToast } from "../../component/notification/ToastProvider";
 import TextInput from "../../component/input/TextInput";
 import SelectInput from "../../component/input/SelectInput";
+import ComboboxInput from "../../component/input/ComboboxInput";
+import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
 
 type TotalMode = "purchasePrice" | "totalCost";
 
@@ -19,6 +21,10 @@ export default function DistributedVehiclesReportPage() {
   const [mode, setMode] = useState<TotalMode>("purchasePrice");
   const [loading, setLoading] = useState(true);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
+  const [suggestions, setSuggestions] = useState({
+    brands: [] as string[],
+    models: [] as string[],
+  });
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
@@ -59,9 +65,22 @@ export default function DistributedVehiclesReportPage() {
     }
   };
 
+  const fetchSuggestions = async () => {
+    try {
+      const response = await fetchVehicleSuggestions();
+      setSuggestions({
+        brands: response.brands,
+        models: response.models,
+      });
+    } catch (error) {
+      showToast(extractErrorMessage(error));
+    }
+  };
+
   useEffect(() => {
     fetchReport();
     fetchPartners();
+    fetchSuggestions();
   }, []);
 
   const calculatePartnerTotal = (partner: ReportPartnerGroup) => {
@@ -135,18 +154,20 @@ export default function DistributedVehiclesReportPage() {
               setFilters((prev) => ({ ...prev, endDate: event.target.value }))
             }
           />
-          <TextInput
+          <ComboboxInput
             label="Brand"
             placeholder="e.g. Honda"
             value={filters.brand}
+            suggestions={suggestions.brands}
             onChange={(event) =>
               setFilters((prev) => ({ ...prev, brand: event.target.value }))
             }
           />
-          <TextInput
+          <ComboboxInput
             label="Model"
             placeholder="e.g. Civic"
             value={filters.model}
+            suggestions={suggestions.models}
             onChange={(event) =>
               setFilters((prev) => ({ ...prev, model: event.target.value }))
             }
