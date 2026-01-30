@@ -1,5 +1,6 @@
 services:
-  car-reselling:
+  car-reselling-api:
+    container_name: car-reselling-api
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,7 +14,17 @@ services:
       - ./storage:/storage
     depends_on:
       - mysql
+  car-reselling-ui:
+    container_name: car-reselling-ui
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - car-reselling-api
   mysql:
+    container_name: mysql
     image: mysql:8.0
     environment:
       MYSQL_DATABASE: car_reselling
