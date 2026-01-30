@@ -24,6 +24,14 @@ logging:
   level:
     root: INFO
 
+tax:
+  icms-rate: 0.12
+  icms-base-rate: 0.05
+  pis-rate: 0.0065
+  cofins-rate: 0.03
+  csll-rate: 0.0288
+  irpj-rate: 0.048
+
 management:
   endpoints:
     web:

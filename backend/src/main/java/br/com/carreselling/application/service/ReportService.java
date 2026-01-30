@@ -24,9 +24,11 @@ import org.springframework.stereotype.Service;
 public class ReportService implements IReportService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final VehicleSalesCalculator salesCalculator;
 
-    public ReportService(JdbcTemplate jdbcTemplate) {
+    public ReportService(JdbcTemplate jdbcTemplate, VehicleSalesCalculator salesCalculator) {
         this.jdbcTemplate = jdbcTemplate;
+        this.salesCalculator = salesCalculator;
     }
 
     @Override
@@ -128,6 +130,67 @@ public class ReportService implements IReportService {
         return new DistributedVehiclesReport(partners, overallCount, overallTotal);
     }
 
+    @Override
+    public br.com.carreselling.application.service.model.SoldVehiclesReport soldVehiclesReport(
+        DistributedVehiclesFilter filter
+    ) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT v.id AS vehicle_id,
+                       v.license_plate,
+                       v.brand,
+                       v.model,
+                       v.year,
+                       v.purchase_price,
+                       v.freight_cost,
+                       v.selling_price,
+                       COALESCE(s.services_total, 0) AS services_total
+                FROM vehicles v
+                LEFT JOIN (
+                    SELECT vehicle_id, SUM(service_value) AS services_total
+                    FROM services
+                    GROUP BY vehicle_id
+                ) s ON s.vehicle_id = v.id
+                WHERE v.status = 'SOLD' AND v.selling_price IS NOT NULL
+                """);
+
+        List<Object> params = new ArrayList<>();
+        if (filter != null) {
+            LocalDate startDate = filter.startDate();
+            LocalDate endDate = filter.endDate();
+            String brand = normalizeText(filter.brand());
+            String model = normalizeText(filter.model());
+            if (startDate != null) {
+                sql.append(" AND DATE(v.updated_at) >= ?");
+                params.add(Date.valueOf(startDate));
+            }
+            if (endDate != null) {
+                sql.append(" AND DATE(v.updated_at) <= ?");
+                params.add(Date.valueOf(endDate));
+            }
+            if (brand != null) {
+                sql.append(" AND UPPER(v.brand) LIKE ?");
+                params.add("%" + brand + "%");
+            }
+            if (model != null) {
+                sql.append(" AND UPPER(v.model) LIKE ?");
+                params.add("%" + model + "%");
+            }
+            if (filter.partnerId() != null) {
+                sql.append(" AND v.assigned_partner_id = ?");
+                params.add(filter.partnerId().toString());
+            }
+        }
+        sql.append(" ORDER BY v.updated_at DESC");
+
+        List<VehicleSalesCalculator.SoldVehicleRaw> rows = jdbcTemplate.query(
+            java.util.Objects.requireNonNull(sql.toString()),
+            new SoldVehicleRowMapper(),
+            params.toArray(new Object[0])
+        );
+
+        return salesCalculator.buildReport(rows);
+    }
+
     private String normalizeText(String value) {
         if (value == null) {
             return null;
@@ -150,6 +213,24 @@ public class ReportService implements IReportService {
                              BigDecimal purchasePrice,
                              BigDecimal freightCost,
                              BigDecimal servicesTotal) {
+    }
+
+    private static class SoldVehicleRowMapper implements RowMapper<VehicleSalesCalculator.SoldVehicleRaw> {
+
+        @Override
+        public VehicleSalesCalculator.SoldVehicleRaw mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
+            return new VehicleSalesCalculator.SoldVehicleRaw(
+                UUID.fromString(rs.getString("vehicle_id")),
+                rs.getString("license_plate"),
+                rs.getString("brand"),
+                rs.getString("model"),
+                rs.getInt("year"),
+                rs.getBigDecimal("purchase_price"),
+                rs.getBigDecimal("freight_cost"),
+                rs.getBigDecimal("selling_price"),
+                rs.getBigDecimal("services_total")
+            );
+        }
     }
 
     private static class ReportRowMapper implements RowMapper<ReportRow> {

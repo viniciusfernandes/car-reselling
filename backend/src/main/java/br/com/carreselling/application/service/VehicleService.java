@@ -86,6 +86,7 @@ public class VehicleService implements IVehicleService {
             normalizedFreight,
             null,
             null,
+            null,
             VehicleStatus.IN_LOT,
             null,
             now,
@@ -118,6 +119,7 @@ public class VehicleService implements IVehicleService {
             vehicle.getSupplierSource(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
+            vehicle.getSellingPrice(),
             vehicle.getPurchaseInvoiceDocumentId(),
             vehicle.getPurchasePaymentReceiptDocumentId(),
             vehicle.getStatus(),
@@ -129,6 +131,19 @@ public class VehicleService implements IVehicleService {
             vehicle.getCreatedAt(),
             vehicle.getUpdatedAt()
         );
+    }
+
+    @Override
+    public void updateSellingPrice(UUID vehicleId, BigDecimal sellingPrice) {
+        validateRequiredMoney(sellingPrice, "sellingPrice");
+        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+            .orElseThrow(() -> new NotFoundException("Vehicle not found"));
+        if (vehicle.getStatus() != VehicleStatus.DISTRIBUTED) {
+            throw new InvalidStateException("Selling price can only be updated when distributed.");
+        }
+        vehicle.updateSellingPrice(sellingPrice);
+        vehicle.setUpdatedAt(Instant.now());
+        vehicleRepository.updateVehicle(vehicle);
     }
 
     @Override
@@ -196,6 +211,9 @@ public class VehicleService implements IVehicleService {
         }
         if (targetStatus == VehicleStatus.DISTRIBUTED && assignedPartnerId == null && vehicle.getAssignedPartnerId() == null) {
             throw new InvalidStateException("Assigned partner is required when distributing a vehicle.");
+        }
+        if (targetStatus == VehicleStatus.SOLD && vehicle.getSellingPrice() == null) {
+            throw new InvalidStateException("Selling price is required before marking as sold.");
         }
         if (targetStatus == VehicleStatus.DISTRIBUTED && assignedPartnerId != null) {
             partnerRepository.findPartnerById(assignedPartnerId)
@@ -277,7 +295,8 @@ public class VehicleService implements IVehicleService {
             case IN_LOT -> target == VehicleStatus.IN_SERVICE;
             case IN_SERVICE -> target == VehicleStatus.READY_FOR_DISTRIBUTION;
             case READY_FOR_DISTRIBUTION -> target == VehicleStatus.DISTRIBUTED;
-            case DISTRIBUTED -> false;
+            case DISTRIBUTED -> target == VehicleStatus.SOLD;
+            case SOLD -> false;
         };
     }
 }

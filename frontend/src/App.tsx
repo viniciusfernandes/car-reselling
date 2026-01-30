@@ -3,6 +3,7 @@ import VehicleListPage from "./app/page/vehicle/VehicleListPage";
 import NewVehiclePage from "./app/page/vehicle/NewVehiclePage";
 import VehicleDetailPage from "./app/page/vehicle/VehicleDetailPage";
 import DistributedVehiclesReportPage from "./app/page/report/DistributedVehiclesReportPage";
+import SoldVehiclesReportPage from "./app/page/report/SoldVehiclesReportPage";
 import ToastProvider from "./app/component/notification/ToastProvider";
 
 const linkClass =
@@ -34,6 +35,14 @@ export default function App() {
                 >
                   Reports
                 </NavLink>
+                <NavLink
+                  to="/reports/sold-vehicles"
+                  className={({ isActive }) =>
+                    `${linkClass} ${isActive ? activeClass : ""}`
+                  }
+                >
+                  Sales
+                </NavLink>
               </nav>
             </div>
           </header>
@@ -46,6 +55,10 @@ export default function App() {
               <Route
                 path="/reports/distributed-vehicles"
                 element={<DistributedVehiclesReportPage />}
+              />
+              <Route
+                path="/reports/sold-vehicles"
+                element={<SoldVehiclesReportPage />}
               />
             </Routes>
           </main>

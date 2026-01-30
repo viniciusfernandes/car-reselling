@@ -6,7 +6,8 @@ export type VehicleStatus =
   | "IN_LOT"
   | "IN_SERVICE"
   | "READY_FOR_DISTRIBUTION"
-  | "DISTRIBUTED";
+  | "DISTRIBUTED"
+  | "SOLD";
 
 export type SupplierSource = "INTERNET" | "PERSONAL_CONTACT";
 
@@ -52,6 +53,7 @@ export type VehicleDetail = {
   supplierSource: SupplierSource;
   purchasePrice: number;
   freightCost: number;
+  sellingPrice?: number | null;
   purchaseInvoiceDocumentId?: string | null;
   purchasePaymentReceiptDocumentId?: string | null;
   status: VehicleStatus;
@@ -60,6 +62,26 @@ export type VehicleDetail = {
   servicesTotal: number;
   totalCost: number;
   documentsCount: number;
+};
+
+export type SoldVehicleItem = {
+  vehicleId: string;
+  licensePlate: string;
+  brand: string;
+  model: string;
+  year: number;
+  sellingPrice: number;
+  totalTaxes: number;
+  servicesTotal: number;
+};
+
+export type SoldVehiclesReport = {
+  vehicles: SoldVehicleItem[];
+  totalVehiclesSold: number;
+  totalSoldValue: number;
+  totalTaxesValue: number;
+  totalServiceValue: number;
+  profit: number;
 };
 
 export type ServiceItem = {

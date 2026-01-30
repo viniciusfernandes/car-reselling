@@ -47,6 +47,7 @@ const STATUS_LABELS: Record<VehicleStatus, string> = {
   IN_SERVICE: "In service",
   READY_FOR_DISTRIBUTION: "Ready for distribution",
   DISTRIBUTED: "Distributed",
+  SOLD: "Sold",
 };
 
 type TabKey = "overview" | "services" | "documents" | "distribution";
@@ -98,6 +99,7 @@ export default function VehicleDetailPage() {
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [isAssigningPartner, setIsAssigningPartner] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdatingSellingPrice, setIsUpdatingSellingPrice] = useState(false);
   const [serviceForm, setServiceForm] = useState({
     serviceType: "MECHANICAL" as ServiceType,
     serviceValue: "",
@@ -131,6 +133,7 @@ export default function VehicleDetailPage() {
   });
   const [partnerId, setPartnerId] = useState("");
   const [statusTarget, setStatusTarget] = useState<VehicleStatus>("IN_LOT");
+  const [sellingPrice, setSellingPrice] = useState("");
 
   const isDistributed = vehicle?.status === "DISTRIBUTED";
 
@@ -214,6 +217,11 @@ export default function VehicleDetailPage() {
     });
     setPartnerId(vehicle.assignedPartnerId ?? "");
     setStatusTarget(vehicle.status);
+    setSellingPrice(
+      vehicle.sellingPrice !== null && vehicle.sellingPrice !== undefined
+        ? vehicle.sellingPrice.toFixed(2)
+        : ""
+    );
   }, [vehicle]);
 
   const documentOptions = useMemo(
@@ -498,6 +506,53 @@ export default function VehicleDetailPage() {
     }
   };
 
+  const handleUpdateSellingPrice = async () => {
+    if (!vehicleId) {
+      return;
+    }
+    const error = getMoneyError(sellingPrice, true);
+    if (error) {
+      showToast(error);
+      return;
+    }
+    try {
+      setIsUpdatingSellingPrice(true);
+      await api.put(`/vehicles/${vehicleId}/selling-price`, {
+        sellingPrice: Number(sellingPrice),
+      });
+      showToast("Selling price updated");
+      await fetchAll();
+    } catch (error) {
+      showToast(extractErrorMessage(error));
+    } finally {
+      setIsUpdatingSellingPrice(false);
+    }
+  };
+
+  const handleMarkSold = async () => {
+    if (!vehicleId) {
+      return;
+    }
+    const error = getMoneyError(sellingPrice, true);
+    if (error) {
+      showToast("Set a selling price before marking as sold.");
+      return;
+    }
+    try {
+      setIsUpdatingStatus(true);
+      await api.post(`/vehicles/${vehicleId}/status`, {
+        status: "SOLD",
+        assignedPartnerId: partnerId || null,
+      });
+      showToast("Vehicle marked as sold");
+      await fetchAll();
+    } catch (error) {
+      showToast(extractErrorMessage(error));
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const handleUpdateStatus = async () => {
     if (!vehicleId) {
       return;
@@ -581,43 +636,21 @@ export default function VehicleDetailPage() {
               value={vehicle.licensePlate}
               disabled
             />
-            <div className="space-y-3">
-              <SelectInput
-                label="Status"
-                value={statusTarget}
-                options={[
-                  { value: "IN_LOT", label: "In lot" },
-                  { value: "IN_SERVICE", label: "In service" },
-                  { value: "READY_FOR_DISTRIBUTION", label: "Ready for distribution" },
-                  { value: "DISTRIBUTED", label: "Distributed" },
-                ]}
-                onChange={(event) =>
-                  setStatusTarget(event.target.value as VehicleStatus)
-                }
-              />
-              {statusTarget === "DISTRIBUTED" ? (
-                <SelectInput
-                  label="Partner (required for distribution)"
-                  value={partnerId}
-                  options={[
-                    { value: "", label: "Select partner" },
-                    ...partners.map((partner) => ({
-                      value: partner.id,
-                      label: partner.name,
-                    })),
-                  ]}
-                  onChange={(event) => setPartnerId(event.target.value)}
-                />
-              ) : null}
-              <button
-                type="button"
-                onClick={handleUpdateStatus}
-                disabled={isUpdatingStatus || statusTarget === vehicle.status}
-                className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
-              >
-                {isUpdatingStatus ? "Updating..." : "Update Status"}
-              </button>
-            </div>
+            <SelectInput
+              label="Status"
+              value={statusTarget}
+              options={[
+                { value: "IN_LOT", label: "In lot" },
+                { value: "IN_SERVICE", label: "In service" },
+                { value: "READY_FOR_DISTRIBUTION", label: "Ready for distribution" },
+                { value: "DISTRIBUTED", label: "Distributed" },
+                { value: "SOLD", label: "Sold" },
+              ]}
+              disabled={vehicle.status === "SOLD"}
+              onChange={(event) =>
+                setStatusTarget(event.target.value as VehicleStatus)
+              }
+            />
             <SelectInput
               label="Supplier Source"
               value={updateForm.supplierSource}
@@ -691,6 +724,40 @@ export default function VehicleDetailPage() {
               onBlur={() => validateUpdateField("purchasePrice")}
               error={updateErrors.purchasePrice}
             />
+            {vehicle.status === "DISTRIBUTED" || vehicle.status === "SOLD" ? (
+              <div className="space-y-2">
+                <MoneyInput
+                  label="Selling Price"
+                  value={sellingPrice}
+                  onValueChange={setSellingPrice}
+                  onBlur={() =>
+                    setSellingPrice((value) => (value ? Number(value).toFixed(2) : value))
+                  }
+                  required={vehicle.status === "DISTRIBUTED"}
+                  disabled={vehicle.status === "SOLD"}
+                />
+                {vehicle.status === "DISTRIBUTED" ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleUpdateSellingPrice}
+                      disabled={isUpdatingSellingPrice}
+                      className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
+                    >
+                      {isUpdatingSellingPrice ? "Saving..." : "Save selling price"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleMarkSold}
+                      disabled={isUpdatingStatus || !sellingPrice}
+                      className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      {isUpdatingStatus ? "Updating..." : "Sold"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <MoneyInput
               label="Freight Cost"
               value={updateForm.freightCost}
@@ -704,6 +771,30 @@ export default function VehicleDetailPage() {
               onBlur={() => validateUpdateField("freightCost")}
               error={updateErrors.freightCost}
             />
+            <div className="space-y-3">
+              {statusTarget === "DISTRIBUTED" ? (
+                <SelectInput
+                  label="Partner (required for distribution)"
+                  value={partnerId}
+                  options={[
+                    { value: "", label: "Select partner" },
+                    ...partners.map((partner) => ({
+                      value: partner.id,
+                      label: partner.name,
+                    })),
+                  ]}
+                  onChange={(event) => setPartnerId(event.target.value)}
+                />
+              ) : null}
+              <button
+                type="button"
+                onClick={handleUpdateStatus}
+                disabled={isUpdatingStatus || statusTarget === vehicle.status}
+                className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
+              >
+                {isUpdatingStatus ? "Updating..." : "Update Status"}
+              </button>
+            </div>
             <SelectInput
               label="Invoice Document"
               value={updateForm.purchaseInvoiceDocumentId || ""}

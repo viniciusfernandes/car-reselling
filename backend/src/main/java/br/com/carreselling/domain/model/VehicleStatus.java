@@ -4,5 +4,6 @@ public enum VehicleStatus {
     IN_LOT,
     IN_SERVICE,
     READY_FOR_DISTRIBUTION,
-    DISTRIBUTED
+    DISTRIBUTED,
+    SOLD
 }

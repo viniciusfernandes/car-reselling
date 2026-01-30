@@ -14,6 +14,7 @@ const STATUSES: Array<{ value: VehicleStatus | ""; label: string }> = [
   { value: "IN_SERVICE", label: "In service" },
   { value: "READY_FOR_DISTRIBUTION", label: "Ready" },
   { value: "DISTRIBUTED", label: "Distributed" },
+  { value: "SOLD", label: "Sold" },
 ];
 
 const STATUS_LABELS: Record<VehicleStatus, string> = {
@@ -21,6 +22,7 @@ const STATUS_LABELS: Record<VehicleStatus, string> = {
   IN_SERVICE: "In service",
   READY_FOR_DISTRIBUTION: "Ready",
   DISTRIBUTED: "Distributed",
+  SOLD: "Sold",
 };
 
 const formatMoney = (value: number) =>

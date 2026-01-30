@@ -38,6 +38,8 @@ public interface IVehicleService {
                        UUID invoiceDocumentId,
                        UUID paymentReceiptDocumentId);
 
+    void updateSellingPrice(UUID vehicleId, BigDecimal sellingPrice);
+
     void transitionStatus(UUID vehicleId, VehicleStatus targetStatus, UUID assignedPartnerId);
 
     void assignPartner(UUID vehicleId, UUID partnerId);

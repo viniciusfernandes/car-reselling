@@ -31,9 +31,9 @@ public class VehicleJdbcRepository implements VehicleRepository {
         jdbcTemplate.update("""
                 INSERT INTO vehicles
                 (id, license_plate, renavam, vin, year, color, model, brand, supplier_source,
-                 purchase_price, freight_cost, purchase_payment_receipt_document_id,
+                 purchase_price, freight_cost, selling_price, purchase_payment_receipt_document_id,
                  purchase_invoice_document_id, status, assigned_partner_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             vehicle.getId().toString(),
             vehicle.getLicensePlate(),
@@ -46,6 +46,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
             vehicle.getSupplierSource().name(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
+            vehicle.getSellingPrice(),
             optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
             optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
             vehicle.getStatus().name(),
@@ -114,7 +115,9 @@ public class VehicleJdbcRepository implements VehicleRepository {
         sql.append("ORDER BY created_at DESC LIMIT ? OFFSET ?");
         params.add(size);
         params.add(offset);
-        return jdbcTemplate.query(sql.toString(), new VehicleRowMapper(), params.toArray());
+        return jdbcTemplate.query(java.util.Objects.requireNonNull(sql.toString()),
+            new VehicleRowMapper(),
+            params.toArray(new Object[0]));
     }
 
     @Override
@@ -132,7 +135,11 @@ public class VehicleJdbcRepository implements VehicleRepository {
             params.add(q);
             params.add(q);
         }
-        Long count = jdbcTemplate.queryForObject(sql.toString(), params.toArray(), Long.class);
+        Long count = jdbcTemplate.queryForObject(
+            java.util.Objects.requireNonNull(sql.toString()),
+            Long.class,
+            params.toArray(new Object[0])
+        );
         return count == null ? 0L : count;
     }
 
@@ -141,7 +148,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
         jdbcTemplate.update("""
                 UPDATE vehicles
                 SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, supplier_source = ?,
-                    purchase_price = ?, freight_cost = ?, purchase_payment_receipt_document_id = ?,
+                    purchase_price = ?, freight_cost = ?, selling_price = ?, purchase_payment_receipt_document_id = ?,
                     purchase_invoice_document_id = ?, status = ?, assigned_partner_id = ?, updated_at = ?
                 WHERE id = ?
                 """,
@@ -154,6 +161,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
             vehicle.getSupplierSource().name(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
+            vehicle.getSellingPrice(),
             optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
             optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
             vehicle.getStatus().name(),
@@ -174,8 +182,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
         BigDecimal total = jdbcTemplate.queryForObject("""
                 SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ?
                 """,
-            new Object[]{vehicleId.toString()},
-            BigDecimal.class);
+            BigDecimal.class,
+            vehicleId.toString());
         return total == null ? BigDecimal.ZERO : total;
     }
 
@@ -184,8 +192,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
         Integer count = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM documents WHERE vehicle_id = ?
                 """,
-            new Object[]{vehicleId.toString()},
-            Integer.class);
+            Integer.class,
+            vehicleId.toString());
         return count == null ? 0 : count;
     }
 
@@ -196,7 +204,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
     private static class VehicleRowMapper implements RowMapper<Vehicle> {
 
         @Override
-        public Vehicle mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public Vehicle mapRow(@org.springframework.lang.NonNull ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
             String licensePlate = rs.getString("license_plate");
             String renavam = rs.getString("renavam");
@@ -208,6 +216,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
             SupplierSource supplierSource = SupplierSource.valueOf(rs.getString("supplier_source"));
             BigDecimal purchasePrice = rs.getBigDecimal("purchase_price");
             BigDecimal freightCost = rs.getBigDecimal("freight_cost");
+            BigDecimal sellingPrice = rs.getBigDecimal("selling_price");
             UUID paymentReceiptId = optionalUuid(rs.getString("purchase_payment_receipt_document_id"));
             UUID invoiceId = optionalUuid(rs.getString("purchase_invoice_document_id"));
             VehicleStatus status = VehicleStatus.valueOf(rs.getString("status"));
@@ -226,6 +235,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 supplierSource,
                 purchasePrice,
                 freightCost == null ? BigDecimal.ZERO : freightCost,
+                sellingPrice,
                 paymentReceiptId,
                 invoiceId,
                 status,

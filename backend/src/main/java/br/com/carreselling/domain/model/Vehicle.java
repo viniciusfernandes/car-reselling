@@ -19,6 +19,7 @@ public class Vehicle {
     private SupplierSource supplierSource;
     private BigDecimal purchasePrice;
     private BigDecimal freightCost;
+    private BigDecimal sellingPrice;
     private UUID purchasePaymentReceiptDocumentId;
     private UUID purchaseInvoiceDocumentId;
     private VehicleStatus status;
@@ -37,6 +38,7 @@ public class Vehicle {
                    SupplierSource supplierSource,
                    BigDecimal purchasePrice,
                    BigDecimal freightCost,
+                   BigDecimal sellingPrice,
                    UUID purchasePaymentReceiptDocumentId,
                    UUID purchaseInvoiceDocumentId,
                    VehicleStatus status,
@@ -54,6 +56,7 @@ public class Vehicle {
         this.supplierSource = supplierSource;
         this.purchasePrice = purchasePrice;
         this.freightCost = freightCost;
+        this.sellingPrice = sellingPrice;
         this.purchasePaymentReceiptDocumentId = purchasePaymentReceiptDocumentId;
         this.purchaseInvoiceDocumentId = purchaseInvoiceDocumentId;
         this.status = status;
@@ -78,6 +81,10 @@ public class Vehicle {
         this.freightCost = freightCost;
     }
 
+    public void updateSellingPrice(BigDecimal sellingPrice) {
+        this.sellingPrice = sellingPrice;
+    }
+
     public void updateLinkedDocuments(UUID invoiceDocumentId, UUID paymentReceiptDocumentId) {
         this.purchaseInvoiceDocumentId = invoiceDocumentId;
         this.purchasePaymentReceiptDocumentId = paymentReceiptDocumentId;
@@ -90,7 +97,7 @@ public class Vehicle {
         if (targetStatus == VehicleStatus.DISTRIBUTED) {
             this.assignedPartnerId = partnerId;
         }
-        if (targetStatus != VehicleStatus.DISTRIBUTED) {
+        if (targetStatus != VehicleStatus.DISTRIBUTED && targetStatus != VehicleStatus.SOLD) {
             this.assignedPartnerId = null;
         }
         this.status = targetStatus;
@@ -105,16 +112,16 @@ public class Vehicle {
     }
 
     public void ensureServicesEditable() {
-        if (status == VehicleStatus.DISTRIBUTED) {
+        if (status == VehicleStatus.DISTRIBUTED || status == VehicleStatus.SOLD) {
             throw new InvalidStateException("Services are read-only after distribution.");
         }
     }
 
     public void ensureDistributionInvariant() {
-        if (status == VehicleStatus.DISTRIBUTED && assignedPartnerId == null) {
+        if ((status == VehicleStatus.DISTRIBUTED || status == VehicleStatus.SOLD) && assignedPartnerId == null) {
             throw new InvalidStateException("Assigned partner is required when vehicle is distributed.");
         }
-        if (status != VehicleStatus.DISTRIBUTED && assignedPartnerId != null) {
+        if (status != VehicleStatus.DISTRIBUTED && status != VehicleStatus.SOLD && assignedPartnerId != null) {
             throw new InvalidStateException("Assigned partner can only be set when vehicle is distributed.");
         }
     }
@@ -161,6 +168,10 @@ public class Vehicle {
 
     public BigDecimal getFreightCost() {
         return freightCost;
+    }
+
+    public BigDecimal getSellingPrice() {
+        return sellingPrice;
     }
 
     public UUID getPurchasePaymentReceiptDocumentId() {
