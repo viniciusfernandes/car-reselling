@@ -79,6 +79,7 @@ databaseChangeLog:
   - changeSet:
       id: vinicius-20260123-03
       author: vinicius
+      validCheckSum: ANY
       changes:
         - sql:
             sql: |
@@ -89,3 +90,11 @@ databaseChangeLog:
                 UUID(), 'ABC1234', 2019, 'Black', 'Civic', 'Honda',
                 'INTERNET', 85000.00, 0, 'IN_LOT', NOW(), NOW()
               );
+  - changeSet:
+      id: vinicius-20260130-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE vehicles
+                ADD COLUMN selling_price DECIMAL(13,2) NULL AFTER freight_cost;
