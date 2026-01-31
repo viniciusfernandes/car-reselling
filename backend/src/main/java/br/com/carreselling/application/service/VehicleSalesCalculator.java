@@ -69,6 +69,7 @@ public class VehicleSalesCalculator {
                 vehicle.brand(),
                 vehicle.model(),
                 vehicle.year(),
+                vehicle.soldAt(),
                 sellingPrice,
                 taxes,
                 servicesTotal
@@ -95,6 +96,7 @@ public class VehicleSalesCalculator {
                                  String brand,
                                  String model,
                                  int year,
+                                 java.time.LocalDate soldAt,
                                  BigDecimal purchasePrice,
                                  BigDecimal freightCost,
                                  BigDecimal sellingPrice,

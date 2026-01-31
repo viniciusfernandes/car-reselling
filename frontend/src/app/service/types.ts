@@ -70,6 +70,7 @@ export type SoldVehicleItem = {
   brand: string;
   model: string;
   year: number;
+  soldAt: string;
   sellingPrice: number;
   totalTaxes: number;
   servicesTotal: number;

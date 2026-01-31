@@ -8,6 +8,7 @@ import {
 } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
 import TextInput from "../../component/input/TextInput";
+import DateInput from "../../component/input/DateInput";
 import SelectInput from "../../component/input/SelectInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
 import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
@@ -26,10 +27,93 @@ const getCurrentMonthRange = () => {
   return { startDate: toDateInput(start), endDate: toDateInput(end) };
 };
 
+const toMonthYear = (date: Date) => {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${month}/${date.getFullYear()}`;
+};
+
+const getLast12MonthsRange = () => {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), 1);
+  const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  return { startMonthYear: toMonthYear(start), endMonthYear: toMonthYear(end) };
+};
+
+const parseMonthYear = (value: string) => {
+  const match = value.match(/^(\d{2})\/(\d{4})$/);
+  if (!match) {
+    return null;
+  }
+  const month = Number(match[1]);
+  const year = Number(match[2]);
+  if (month < 1 || month > 12) {
+    return null;
+  }
+  return new Date(year, month - 1, 1);
+};
+
+const monthValueToMonthYear = (value: string) => {
+  const match = value.match(/^(\d{4})-(\d{2})$/);
+  if (!match) {
+    return "";
+  }
+  return `${match[2]}/${match[1]}`;
+};
+
+const monthYearToMonthValue = (value: string) => {
+  const parsed = parseMonthYear(value);
+  if (!parsed) {
+    return "";
+  }
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  return `${parsed.getFullYear()}-${month}`;
+};
+
+const dateValueToMonthYear = (value: string) => {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return "";
+  }
+  return `${match[2]}/${match[1]}`;
+};
+
+const monthYearToDateValue = (value: string) => {
+  const parsed = parseMonthYear(value);
+  if (!parsed) {
+    return "";
+  }
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  return `${parsed.getFullYear()}-${month}-01`;
+};
+
+const clampToTwelveMonths = (start: Date, end: Date) => {
+  const normalizedStart = new Date(start.getFullYear(), start.getMonth(), 1);
+  const normalizedEnd = new Date(end.getFullYear(), end.getMonth(), 1);
+  if (normalizedStart > normalizedEnd) {
+    return { start: normalizedStart, end: normalizedStart };
+  }
+  const maxEnd = new Date(normalizedStart.getFullYear(), normalizedStart.getMonth() + 11, 1);
+  if (normalizedEnd > maxEnd) {
+    return { start: normalizedStart, end: maxEnd };
+  }
+  return { start: normalizedStart, end: normalizedEnd };
+};
+
+const getMonthLabels = (start: Date, end: Date) => {
+  const labels: string[] = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cursor <= end) {
+    labels.push(toMonthYear(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return labels;
+};
+
 export default function SoldVehiclesReportPage() {
   const { showToast } = useToast();
   const [report, setReport] = useState<SoldVehiclesReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isHistogramOpen, setIsHistogramOpen] = useState(true);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
   const [suggestions, setSuggestions] = useState({
     brands: [] as string[],
@@ -45,6 +129,7 @@ export default function SoldVehiclesReportPage() {
       partnerId: "",
     };
   });
+  const [chartFilters, setChartFilters] = useState(() => getLast12MonthsRange());
 
   const fetchReport = async () => {
     try {
@@ -96,6 +181,42 @@ export default function SoldVehiclesReportPage() {
     fetchSuggestions();
   }, []);
 
+  const histogram = (() => {
+    if (!report?.vehicles?.length) {
+      return { labels: [] as string[], values: [] as number[] };
+    }
+    const start = parseMonthYear(chartFilters.startMonthYear);
+    const end = parseMonthYear(chartFilters.endMonthYear);
+    if (!start || !end || start > end) {
+      return { labels: [] as string[], values: [] as number[] };
+    }
+    const labels = getMonthLabels(start, end);
+    const totals = labels.reduce<Record<string, number>>((acc, label) => {
+      acc[label] = 0;
+      return acc;
+    }, {});
+    for (const vehicle of report.vehicles) {
+      if (!vehicle.soldAt) {
+        continue;
+      }
+      const date = new Date(vehicle.soldAt);
+      if (Number.isNaN(date.getTime())) {
+        continue;
+      }
+      const label = toMonthYear(new Date(date.getFullYear(), date.getMonth(), 1));
+      if (label in totals) {
+        totals[label] += vehicle.sellingPrice;
+      }
+    }
+    return {
+      labels,
+      values: labels.map((label) => totals[label] ?? 0),
+    };
+  })();
+
+  const maxHistogramValue =
+    histogram.values.length > 0 ? Math.max(...histogram.values) : 0;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -109,7 +230,7 @@ export default function SoldVehiclesReportPage() {
 
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-5">
-          <TextInput
+          <DateInput
             label="Start date"
             type="date"
             value={filters.startDate}
@@ -117,7 +238,7 @@ export default function SoldVehiclesReportPage() {
               setFilters((prev) => ({ ...prev, startDate: event.target.value }))
             }
           />
-          <TextInput
+          <DateInput
             label="End date"
             type="date"
             value={filters.endDate}
@@ -217,6 +338,105 @@ export default function SoldVehiclesReportPage() {
             {formatMoney(report?.profit ?? 0)}
           </div>
         </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="text-base font-semibold">Monthly Selling Progress</h3>
+            <p className="text-sm text-slate-500">
+              Total selling price per month.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsHistogramOpen((prev) => !prev)}
+              className="rounded-md border border-slate-200 px-3 py-2 text-sm"
+              aria-expanded={isHistogramOpen}
+            >
+              {isHistogramOpen ? "Hide chart" : "Show chart"}
+            </button>
+          </div>
+        </div>
+
+        {isHistogramOpen ? (
+          <>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <DateInput
+                label="Start month/year"
+                type="date"
+                value={monthYearToDateValue(chartFilters.startMonthYear)}
+                onChange={(event) =>
+                  setChartFilters((prev) => {
+                    const start = parseMonthYear(dateValueToMonthYear(event.target.value));
+                    const end = parseMonthYear(prev.endMonthYear);
+                    if (!start || !end) {
+                      return prev;
+                    }
+                    const clamped = clampToTwelveMonths(start, end);
+                    return {
+                      ...prev,
+                      startMonthYear: toMonthYear(clamped.start),
+                      endMonthYear: toMonthYear(clamped.end),
+                    };
+                  })
+                }
+              />
+              <DateInput
+                label="End month/year"
+                type="date"
+                value={monthYearToDateValue(chartFilters.endMonthYear)}
+                onChange={(event) =>
+                  setChartFilters((prev) => {
+                    const start = parseMonthYear(prev.startMonthYear);
+                    const end = parseMonthYear(dateValueToMonthYear(event.target.value));
+                    if (!start || !end) {
+                      return prev;
+                    }
+                    const clamped = clampToTwelveMonths(start, end);
+                    return {
+                      ...prev,
+                      startMonthYear: toMonthYear(clamped.start),
+                      endMonthYear: toMonthYear(clamped.end),
+                    };
+                  })
+                }
+              />
+            </div>
+
+            {histogram.labels.length === 0 ? (
+              <div className="mt-6 rounded-md border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+                Select a valid month range to see the histogram.
+              </div>
+            ) : (
+              <div className="mt-6">
+                <div className="flex items-end gap-2">
+                  {histogram.labels.map((label, index) => {
+                    const value = histogram.values[index] ?? 0;
+                    const height =
+                      maxHistogramValue > 0
+                        ? Math.round((value / maxHistogramValue) * 160)
+                        : 0;
+                    return (
+                      <div key={label} className="flex flex-1 flex-col items-center gap-2">
+                        <div
+                          className="w-full rounded-md bg-slate-900"
+                          style={{ height: `${Math.max(height, 4)}px` }}
+                          title={`${formatMoney(value)}`}
+                        />
+                        <div className="text-[10px] text-slate-500">{label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 text-xs text-slate-500">
+                  Max month: {formatMoney(maxHistogramValue)}
+                </div>
+              </div>
+            )}
+          </>
+        ) : null}
       </div>
 
       {loading ? (

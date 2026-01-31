@@ -140,6 +140,7 @@ public class ReportService implements IReportService {
                        v.brand,
                        v.model,
                        v.year,
+                       DATE(v.updated_at) AS sold_at,
                        v.purchase_price,
                        v.freight_cost,
                        v.selling_price,
@@ -219,12 +220,14 @@ public class ReportService implements IReportService {
 
         @Override
         public VehicleSalesCalculator.SoldVehicleRaw mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
+            Date soldAtDate = rs.getDate("sold_at");
             return new VehicleSalesCalculator.SoldVehicleRaw(
                 UUID.fromString(rs.getString("vehicle_id")),
                 rs.getString("license_plate"),
                 rs.getString("brand"),
                 rs.getString("model"),
                 rs.getInt("year"),
+                soldAtDate != null ? soldAtDate.toLocalDate() : null,
                 rs.getBigDecimal("purchase_price"),
                 rs.getBigDecimal("freight_cost"),
                 rs.getBigDecimal("selling_price"),
