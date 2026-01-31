@@ -141,18 +141,18 @@ export default function VehicleDetailPage() {
     if (!vehicleId) {
       return;
     }
-    setLoading(true);
+      setLoading(true);
     const [
       vehicleResponse,
       serviceResponse,
       documentResponse,
       partnerResponse,
     ] = await Promise.allSettled([
-      api.get<ApiResponse<VehicleDetail>>(`/vehicles/${vehicleId}`),
+          api.get<ApiResponse<VehicleDetail>>(`/vehicles/${vehicleId}`),
       api.get<ApiResponse<ServiceListResponse>>(`/vehicles/${vehicleId}/services`),
       api.get<ApiResponse<DocumentListResponse>>(`/vehicles/${vehicleId}/documents`),
-      api.get<ApiResponse<PartnerListResponse>>(`/partners`),
-    ]);
+          api.get<ApiResponse<PartnerListResponse>>(`/partners`),
+        ]);
 
     if (vehicleResponse.status === "fulfilled") {
       setVehicle(vehicleResponse.value.data.data);
@@ -180,7 +180,7 @@ export default function VehicleDetailPage() {
       showToast(extractErrorMessage(partnerResponse.reason));
     }
 
-    setLoading(false);
+      setLoading(false);
   };
 
   useEffect(() => {

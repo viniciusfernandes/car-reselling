@@ -24,6 +24,9 @@ logging:
   level:
     root: INFO
 
+auth:
+  base-url: ${AUTH_BASE_URL:http://localhost:8081}
+
 tax:
   icms-rate: 0.12
   icms-base-rate: 0.05
