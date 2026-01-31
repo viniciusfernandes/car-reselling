@@ -421,7 +421,7 @@ export default function SoldVehiclesReportPage() {
                     return (
                       <div key={label} className="flex flex-1 flex-col items-center gap-2">
                         <div
-                          className="w-full rounded-md bg-slate-900"
+                          className="w-full rounded-md bg-blue-900"
                           style={{ height: `${Math.max(height, 4)}px` }}
                           title={`${formatMoney(value)}`}
                         />
