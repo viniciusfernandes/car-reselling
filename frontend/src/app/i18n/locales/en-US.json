@@ -1,0 +1,273 @@
+{
+  "app": {
+    "title": "Car Reselling"
+  },
+  "nav": {
+    "vehicles": "Vehicles",
+    "reports": "Reports",
+    "sales": "Sales",
+    "logout": "Logout"
+  },
+  "language": {
+    "portuguese": "Portuguese",
+    "english": "English"
+  },
+  "auth": {
+    "title": "Login",
+    "subtitle": "Use your authentication server credentials.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "validation": {
+      "required": "Email and password are required.",
+      "missingToken": "Login succeeded but token was not returned."
+    }
+  },
+  "errors": {
+    "unexpected": "Unexpected error"
+  },
+  "validation": {
+    "required": "Required",
+    "invalidValue": "Invalid value",
+    "invalidPlate": "Invalid plate format"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "adding": "Adding...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "download": "Download",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "updating": "Updating...",
+    "sold": "Sold",
+    "updateStatus": "Update status",
+    "assigning": "Assigning...",
+    "applyFilters": "Apply filters",
+    "clearFilters": "Clear filters"
+  },
+  "filters": {
+    "all": "All",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "brand": "Brand",
+    "model": "Model",
+    "partner": "Partner",
+    "allPartners": "All partners"
+  },
+  "placeholders": {
+    "brand": "e.g. Honda",
+    "model": "e.g. Civic"
+  },
+  "pagination": {
+    "pageOf": "Page {{page}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "vehicles": {
+    "title": "Vehicles",
+    "subtitle": "Track all vehicles in the lot and their totals.",
+    "new": "New vehicle",
+    "created": "Vehicle created",
+    "searchPlaceholder": "Search by plate, model, brand",
+    "loading": "Loading vehicles...",
+    "empty": "No vehicles found.",
+    "table": {
+      "plate": "Plate",
+      "brand": "Brand",
+      "model": "Model",
+      "year": "Year",
+      "status": "Status",
+      "purchasePrice": "Purchase price",
+      "servicesTotal": "Services total",
+      "totalCost": "Total cost",
+      "partner": "Assigned partner"
+    }
+  },
+  "newVehicle": {
+    "title": "New vehicle",
+    "subtitle": "Register a newly acquired vehicle.",
+    "licensePlate": "License plate",
+    "renavam": "Renavam",
+    "vin": "VIN",
+    "year": "Year",
+    "color": "Color",
+    "model": "Model",
+    "brand": "Brand",
+    "supplierSource": "Supplier source",
+    "purchasePrice": "Purchase price",
+    "freightCost": "Freight cost",
+    "save": "Save vehicle"
+  },
+  "supplier": {
+    "internet": "Internet",
+    "personalContact": "Personal contact"
+  },
+  "status": {
+    "IN_LOT": "In lot",
+    "IN_SERVICE": "In service",
+    "READY_FOR_DISTRIBUTION": "Ready for distribution",
+    "DISTRIBUTED": "Distributed",
+    "SOLD": "Sold"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "services": "Services",
+    "documents": "Documents",
+    "distribution": "Distribution"
+  },
+  "serviceTypes": {
+    "MECHANICAL": "Mechanical",
+    "PAINT": "Paint",
+    "BODYWORK": "Bodywork",
+    "ELECTRICAL": "Electrical",
+    "UPHOLSTERY": "Upholstery",
+    "WINDOWS": "Windows"
+  },
+  "documentTypes": {
+    "INVOICE": "Invoice",
+    "RECEIPT": "Receipt",
+    "SERVICE_ORDER": "Service order",
+    "OTHER": "Other"
+  },
+  "vehicleDetail": {
+    "loading": "Loading vehicle details...",
+    "unavailable": "Vehicle details unavailable. Please refresh.",
+    "status": "Status: {{status}}",
+    "statusLabel": "Status",
+    "servicesTotal": "Services total: {{value}}",
+    "totalCost": "Total cost: {{value}}",
+    "licensePlate": "License plate",
+    "supplierSource": "Supplier source",
+    "year": "Year",
+    "color": "Color",
+    "model": "Model",
+    "brand": "Brand",
+    "purchasePrice": "Purchase price",
+    "sellingPrice": "Selling price",
+    "saveSellingPrice": "Save selling price",
+    "freightCost": "Freight cost",
+    "partnerRequired": "Partner (required for distribution)",
+    "selectPartner": "Select partner",
+    "invoiceDocument": "Invoice document",
+    "paymentReceiptDocument": "Payment receipt document",
+    "notLinked": "Not linked",
+    "updated": "Vehicle updated",
+    "distributed": "Vehicle distributed",
+    "sellingPriceUpdated": "Selling price updated",
+    "setSellingPriceFirst": "Set a selling price before marking as sold.",
+    "markedSold": "Vehicle marked as sold",
+    "selectPartnerFirst": "Select a partner before distributing.",
+    "statusUpdated": "Status updated",
+    "services": {
+      "addTitle": "Add service",
+      "type": "Service type",
+      "value": "Service value",
+      "description": "Description",
+      "performedAt": "Performed at",
+      "addAction": "Add service",
+      "readOnly": "Services are read-only after distribution.",
+      "added": "Service added",
+      "updated": "Service updated",
+      "deleted": "Service deleted",
+      "empty": "No services yet.",
+      "table": {
+        "type": "Type",
+        "date": "Date",
+        "value": "Value",
+        "description": "Description",
+        "actions": "Actions"
+      }
+    },
+    "documents": {
+      "uploadTitle": "Upload document",
+      "type": "Document type",
+      "file": "File",
+      "uploaded": "Document uploaded",
+      "deleted": "Document deleted",
+      "empty": "No documents uploaded.",
+      "table": {
+        "type": "Type",
+        "file": "File",
+        "size": "Size",
+        "uploaded": "Uploaded",
+        "actions": "Actions"
+      }
+    },
+    "distribution": {
+      "title": "Distribution",
+      "currentStatus": "Current status: {{status}}",
+      "assignedPartner": "Assigned partner: {{partner}}",
+      "partner": "Partner",
+      "assign": "Assign to partner",
+      "mustBeReady": "Vehicle must be ready for distribution."
+    }
+  },
+  "confirm": {
+    "deleteService": "Delete this service?",
+    "deleteDocument": "Delete this document?"
+  },
+  "reports": {
+    "distributed": {
+      "title": "Distributed vehicles",
+      "subtitle": "Totals grouped by partner dealership.",
+      "mode": {
+        "purchasePrice": "Purchase price",
+        "totalCost": "Total cost"
+      },
+      "overallTotal": "Overall total",
+      "vehiclesCount": "{{count}} vehicles",
+      "loading": "Loading report...",
+      "partnerTotal": "Partner total",
+      "table": {
+        "plate": "Plate",
+        "brand": "Brand",
+        "model": "Model",
+        "year": "Year",
+        "distributedAt": "Distributed date",
+        "purchasePrice": "Purchase price",
+        "totalCost": "Total cost"
+      },
+      "empty": "No distributed vehicles yet."
+    },
+    "sales": {
+      "title": "Sales summary",
+      "subtitle": "Overview of sold vehicles and profitability.",
+      "loading": "Loading sales data...",
+      "empty": "No sold vehicles found.",
+      "totals": {
+        "vehicles": "Total vehicles sold",
+        "soldValue": "Total sold value",
+        "taxes": "Total taxes value",
+        "services": "Total service value",
+        "profit": "Profit"
+      },
+      "table": {
+        "plate": "Plate",
+        "brand": "Brand",
+        "model": "Model",
+        "year": "Year",
+        "sellingPrice": "Selling price",
+        "totalTaxes": "Total taxes",
+        "servicesTotal": "Services total"
+      },
+      "histogram": {
+        "title": "Monthly selling progress",
+        "subtitle": "Total selling price per month.",
+        "show": "Show chart",
+        "hide": "Hide chart",
+        "startMonth": "Start month/year",
+        "endMonth": "End month/year",
+        "empty": "Select a valid month range to see the histogram.",
+        "maxMonth": "Max month: {{value}}"
+      }
+    }
+  },
+  "units": {
+    "kb": "{{value}} KB"
+  }
+}

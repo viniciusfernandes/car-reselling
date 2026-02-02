@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import TextInput from "../../component/input/TextInput";
@@ -18,6 +19,7 @@ const AUTH_BASE_URL =
   import.meta.env.VITE_AUTH_BASE_URL ?? "http://localhost:8081";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
@@ -28,7 +30,7 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!email || !password) {
-      showToast("Email and password are required.");
+      showToast(t("auth.validation.required"));
       return;
     }
     try {
@@ -42,7 +44,7 @@ export default function LoginPage() {
       );
       const token = response.data?.data?.token;
       if (!token) {
-        showToast("Login succeeded but token was not returned.");
+        showToast(t("auth.validation.missingToken"));
         return;
       }
       authTokenStorage.set(token);
@@ -57,20 +59,20 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold">Login</h2>
+      <h2 className="text-xl font-semibold">{t("auth.title")}</h2>
       <p className="mt-1 text-sm text-slate-500">
-        Use your authentication server credentials.
+        {t("auth.subtitle")}
       </p>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <TextInput
-          label="Email"
+          label={t("auth.email")}
           type="email"
           value={email}
           required
           onChange={(event) => setEmail(event.target.value)}
         />
         <TextInput
-          label="Password"
+          label={t("auth.password")}
           type="password"
           value={password}
           required
@@ -81,7 +83,7 @@ export default function LoginPage() {
           disabled={isSubmitting}
           className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
         >
-          {isSubmitting ? "Signing in..." : "Sign in"}
+          {isSubmitting ? t("auth.signingIn") : t("auth.signIn")}
         </button>
       </form>
     </div>

@@ -1,0 +1,273 @@
+{
+  "app": {
+    "title": "Revenda de carros"
+  },
+  "nav": {
+    "vehicles": "Veículos",
+    "reports": "Relatórios",
+    "sales": "Vendas",
+    "logout": "Sair"
+  },
+  "language": {
+    "portuguese": "Português",
+    "english": "Inglês"
+  },
+  "auth": {
+    "title": "Entrar",
+    "subtitle": "Use suas credenciais do servidor de autenticação.",
+    "email": "Email",
+    "password": "Senha",
+    "signIn": "Entrar",
+    "signingIn": "Entrando...",
+    "validation": {
+      "required": "Email e senha são obrigatórios.",
+      "missingToken": "Login realizado, mas o token não foi retornado."
+    }
+  },
+  "errors": {
+    "unexpected": "Erro inesperado"
+  },
+  "validation": {
+    "required": "Obrigatório",
+    "invalidValue": "Valor inválido",
+    "invalidPlate": "Formato de placa inválido"
+  },
+  "actions": {
+    "cancel": "Cancelar",
+    "saving": "Salvando...",
+    "save": "Salvar",
+    "saveChanges": "Salvar alterações",
+    "adding": "Adicionando...",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "download": "Baixar",
+    "upload": "Enviar",
+    "uploading": "Enviando...",
+    "updating": "Atualizando...",
+    "sold": "Vendido",
+    "updateStatus": "Atualizar status",
+    "assigning": "Atribuindo...",
+    "applyFilters": "Aplicar filtros",
+    "clearFilters": "Limpar filtros"
+  },
+  "filters": {
+    "all": "Todos",
+    "startDate": "Data inicial",
+    "endDate": "Data final",
+    "brand": "Marca",
+    "model": "Modelo",
+    "partner": "Parceiro",
+    "allPartners": "Todos os parceiros"
+  },
+  "placeholders": {
+    "brand": "ex.: Honda",
+    "model": "ex.: Civic"
+  },
+  "pagination": {
+    "pageOf": "Página {{page}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Próxima"
+  },
+  "vehicles": {
+    "title": "Veículos",
+    "subtitle": "Acompanhe todos os veículos no pátio e seus totais.",
+    "new": "Novo veículo",
+    "created": "Veículo criado",
+    "searchPlaceholder": "Buscar por placa, modelo, marca",
+    "loading": "Carregando veículos...",
+    "empty": "Nenhum veículo encontrado.",
+    "table": {
+      "plate": "Placa",
+      "brand": "Marca",
+      "model": "Modelo",
+      "year": "Ano",
+      "status": "Status",
+      "purchasePrice": "Preço de compra",
+      "servicesTotal": "Total de serviços",
+      "totalCost": "Custo total",
+      "partner": "Parceiro"
+    }
+  },
+  "newVehicle": {
+    "title": "Novo veículo",
+    "subtitle": "Cadastre um veículo recém-adquirido.",
+    "licensePlate": "Placa",
+    "renavam": "Renavam",
+    "vin": "VIN",
+    "year": "Ano",
+    "color": "Cor",
+    "model": "Modelo",
+    "brand": "Marca",
+    "supplierSource": "Origem do fornecedor",
+    "purchasePrice": "Preço de compra",
+    "freightCost": "Frete",
+    "save": "Salvar veículo"
+  },
+  "supplier": {
+    "internet": "Internet",
+    "personalContact": "Contato pessoal"
+  },
+  "status": {
+    "IN_LOT": "No pátio",
+    "IN_SERVICE": "Em serviço",
+    "READY_FOR_DISTRIBUTION": "Pronto para distribuição",
+    "DISTRIBUTED": "Distribuído",
+    "SOLD": "Vendido"
+  },
+  "tabs": {
+    "overview": "Visão geral",
+    "services": "Serviços",
+    "documents": "Documentos",
+    "distribution": "Distribuição"
+  },
+  "serviceTypes": {
+    "MECHANICAL": "Mecânico",
+    "PAINT": "Pintura",
+    "BODYWORK": "Funilaria",
+    "ELECTRICAL": "Elétrica",
+    "UPHOLSTERY": "Tapeçaria",
+    "WINDOWS": "Vidros"
+  },
+  "documentTypes": {
+    "INVOICE": "Nota fiscal",
+    "RECEIPT": "Recibo",
+    "SERVICE_ORDER": "Ordem de serviço",
+    "OTHER": "Outro"
+  },
+  "vehicleDetail": {
+    "loading": "Carregando detalhes do veículo...",
+    "unavailable": "Detalhes do veículo indisponíveis. Atualize a página.",
+    "status": "Status: {{status}}",
+    "statusLabel": "Status",
+    "servicesTotal": "Total de serviços: {{value}}",
+    "totalCost": "Custo total: {{value}}",
+    "licensePlate": "Placa",
+    "supplierSource": "Origem do fornecedor",
+    "year": "Ano",
+    "color": "Cor",
+    "model": "Modelo",
+    "brand": "Marca",
+    "purchasePrice": "Preço de compra",
+    "sellingPrice": "Preço de venda",
+    "saveSellingPrice": "Salvar preço de venda",
+    "freightCost": "Frete",
+    "partnerRequired": "Parceiro (obrigatório para distribuição)",
+    "selectPartner": "Selecione um parceiro",
+    "invoiceDocument": "Documento da nota fiscal",
+    "paymentReceiptDocument": "Documento do recibo de pagamento",
+    "notLinked": "Não vinculado",
+    "updated": "Veículo atualizado",
+    "distributed": "Veículo distribuído",
+    "sellingPriceUpdated": "Preço de venda atualizado",
+    "setSellingPriceFirst": "Defina um preço de venda antes de marcar como vendido.",
+    "markedSold": "Veículo marcado como vendido",
+    "selectPartnerFirst": "Selecione um parceiro antes de distribuir.",
+    "statusUpdated": "Status atualizado",
+    "services": {
+      "addTitle": "Adicionar serviço",
+      "type": "Tipo de serviço",
+      "value": "Valor do serviço",
+      "description": "Descrição",
+      "performedAt": "Data de execução",
+      "addAction": "Adicionar serviço",
+      "readOnly": "Os serviços ficam somente leitura após a distribuição.",
+      "added": "Serviço adicionado",
+      "updated": "Serviço atualizado",
+      "deleted": "Serviço excluído",
+      "empty": "Nenhum serviço cadastrado.",
+      "table": {
+        "type": "Tipo",
+        "date": "Data",
+        "value": "Valor",
+        "description": "Descrição",
+        "actions": "Ações"
+      }
+    },
+    "documents": {
+      "uploadTitle": "Enviar documento",
+      "type": "Tipo de documento",
+      "file": "Arquivo",
+      "uploaded": "Documento enviado",
+      "deleted": "Documento excluído",
+      "empty": "Nenhum documento enviado.",
+      "table": {
+        "type": "Tipo",
+        "file": "Arquivo",
+        "size": "Tamanho",
+        "uploaded": "Enviado em",
+        "actions": "Ações"
+      }
+    },
+    "distribution": {
+      "title": "Distribuição",
+      "currentStatus": "Status atual: {{status}}",
+      "assignedPartner": "Parceiro atribuído: {{partner}}",
+      "partner": "Parceiro",
+      "assign": "Atribuir parceiro",
+      "mustBeReady": "O veículo precisa estar pronto para distribuição."
+    }
+  },
+  "confirm": {
+    "deleteService": "Excluir este serviço?",
+    "deleteDocument": "Excluir este documento?"
+  },
+  "reports": {
+    "distributed": {
+      "title": "Veículos distribuídos",
+      "subtitle": "Totais agrupados por parceiro.",
+      "mode": {
+        "purchasePrice": "Preço de compra",
+        "totalCost": "Custo total"
+      },
+      "overallTotal": "Total geral",
+      "vehiclesCount": "{{count}} veículos",
+      "loading": "Carregando relatório...",
+      "partnerTotal": "Total do parceiro",
+      "table": {
+        "plate": "Placa",
+        "brand": "Marca",
+        "model": "Modelo",
+        "year": "Ano",
+        "distributedAt": "Data de distribuição",
+        "purchasePrice": "Preço de compra",
+        "totalCost": "Custo total"
+      },
+      "empty": "Nenhum veículo distribuído ainda."
+    },
+    "sales": {
+      "title": "Resumo de vendas",
+      "subtitle": "Visão geral dos veículos vendidos e lucratividade.",
+      "loading": "Carregando dados de vendas...",
+      "empty": "Nenhum veículo vendido encontrado.",
+      "totals": {
+        "vehicles": "Total de veículos vendidos",
+        "soldValue": "Valor total vendido",
+        "taxes": "Total de impostos",
+        "services": "Total de serviços",
+        "profit": "Lucro"
+      },
+      "table": {
+        "plate": "Placa",
+        "brand": "Marca",
+        "model": "Modelo",
+        "year": "Ano",
+        "sellingPrice": "Preço de venda",
+        "totalTaxes": "Total de impostos",
+        "servicesTotal": "Total de serviços"
+      },
+      "histogram": {
+        "title": "Evolução mensal das vendas",
+        "subtitle": "Total de vendas por mês.",
+        "show": "Mostrar gráfico",
+        "hide": "Ocultar gráfico",
+        "startMonth": "Mês/ano inicial",
+        "endMonth": "Mês/ano final",
+        "empty": "Selecione um intervalo válido para ver o histograma.",
+        "maxMonth": "Maior mês: {{value}}"
+      }
+    }
+  },
+  "units": {
+    "kb": "{{value}} KB"
+  }
+}

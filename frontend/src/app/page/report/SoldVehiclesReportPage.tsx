@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, extractErrorMessage } from "../../service/api";
 import {
   ApiResponse,
@@ -7,17 +8,11 @@ import {
   SoldVehiclesReport,
 } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
-import TextInput from "../../component/input/TextInput";
 import DateInput from "../../component/input/DateInput";
 import SelectInput from "../../component/input/SelectInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
 import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
-
-const formatMoney = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+import { formatMoney } from "../../service/formatters";
 
 const getCurrentMonthRange = () => {
   const now = new Date();
@@ -110,6 +105,7 @@ const getMonthLabels = (start: Date, end: Date) => {
 };
 
 export default function SoldVehiclesReportPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [report, setReport] = useState<SoldVehiclesReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,9 +217,9 @@ export default function SoldVehiclesReportPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Sales Summary</h2>
+          <h2 className="text-xl font-semibold">{t("reports.sales.title")}</h2>
           <p className="text-sm text-slate-500">
-            Overview of sold vehicles and profitability.
+            {t("reports.sales.subtitle")}
           </p>
         </div>
       </div>
@@ -231,7 +227,7 @@ export default function SoldVehiclesReportPage() {
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-5">
           <DateInput
-            label="Start date"
+            label={t("filters.startDate")}
             type="date"
             value={filters.startDate}
             onChange={(event) =>
@@ -239,7 +235,7 @@ export default function SoldVehiclesReportPage() {
             }
           />
           <DateInput
-            label="End date"
+            label={t("filters.endDate")}
             type="date"
             value={filters.endDate}
             onChange={(event) =>
@@ -247,8 +243,8 @@ export default function SoldVehiclesReportPage() {
             }
           />
           <ComboboxInput
-            label="Brand"
-            placeholder="e.g. Honda"
+            label={t("filters.brand")}
+            placeholder={t("placeholders.brand")}
             value={filters.brand}
             suggestions={suggestions.brands}
             onChange={(event) =>
@@ -256,8 +252,8 @@ export default function SoldVehiclesReportPage() {
             }
           />
           <ComboboxInput
-            label="Model"
-            placeholder="e.g. Civic"
+            label={t("filters.model")}
+            placeholder={t("placeholders.model")}
             value={filters.model}
             suggestions={suggestions.models}
             onChange={(event) =>
@@ -265,10 +261,10 @@ export default function SoldVehiclesReportPage() {
             }
           />
           <SelectInput
-            label="Partner"
+            label={t("filters.partner")}
             value={filters.partnerId}
             options={[
-              { value: "", label: "All partners" },
+              { value: "", label: t("filters.allPartners") },
               ...partners.map((partner) => ({
                 value: partner.id,
                 label: partner.name,
@@ -285,7 +281,7 @@ export default function SoldVehiclesReportPage() {
             onClick={fetchReport}
             className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white"
           >
-            Apply filters
+            {t("actions.applyFilters")}
           </button>
           <button
             type="button"
@@ -302,38 +298,46 @@ export default function SoldVehiclesReportPage() {
             }}
             className="rounded-md border border-slate-200 px-4 py-2 text-sm"
           >
-            Clear filters
+            {t("actions.clearFilters")}
           </button>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-5">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Total vehicles sold</div>
+          <div className="text-xs text-slate-500">
+            {t("reports.sales.totals.vehicles")}
+          </div>
           <div className="text-lg font-semibold">
             {report?.totalVehiclesSold ?? 0}
           </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Total sold value</div>
+          <div className="text-xs text-slate-500">
+            {t("reports.sales.totals.soldValue")}
+          </div>
           <div className="text-lg font-semibold">
             {formatMoney(report?.totalSoldValue ?? 0)}
           </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Total taxes value</div>
+          <div className="text-xs text-slate-500">
+            {t("reports.sales.totals.taxes")}
+          </div>
           <div className="text-lg font-semibold">
             {formatMoney(report?.totalTaxesValue ?? 0)}
           </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Total service value</div>
+          <div className="text-xs text-slate-500">
+            {t("reports.sales.totals.services")}
+          </div>
           <div className="text-lg font-semibold">
             {formatMoney(report?.totalServiceValue ?? 0)}
           </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs text-slate-500">Profit</div>
+          <div className="text-xs text-slate-500">{t("reports.sales.totals.profit")}</div>
           <div className="text-lg font-semibold">
             {formatMoney(report?.profit ?? 0)}
           </div>
@@ -343,9 +347,11 @@ export default function SoldVehiclesReportPage() {
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="text-base font-semibold">Monthly Selling Progress</h3>
+            <h3 className="text-base font-semibold">
+              {t("reports.sales.histogram.title")}
+            </h3>
             <p className="text-sm text-slate-500">
-              Total selling price per month.
+              {t("reports.sales.histogram.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -355,7 +361,9 @@ export default function SoldVehiclesReportPage() {
               className="rounded-md border border-slate-200 px-3 py-2 text-sm"
               aria-expanded={isHistogramOpen}
             >
-              {isHistogramOpen ? "Hide chart" : "Show chart"}
+              {isHistogramOpen
+                ? t("reports.sales.histogram.hide")
+                : t("reports.sales.histogram.show")}
             </button>
           </div>
         </div>
@@ -364,7 +372,7 @@ export default function SoldVehiclesReportPage() {
           <>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <DateInput
-                label="Start month/year"
+                label={t("reports.sales.histogram.startMonth")}
                 type="date"
                 value={monthYearToDateValue(chartFilters.startMonthYear)}
                 onChange={(event) =>
@@ -384,7 +392,7 @@ export default function SoldVehiclesReportPage() {
                 }
               />
               <DateInput
-                label="End month/year"
+                label={t("reports.sales.histogram.endMonth")}
                 type="date"
                 value={monthYearToDateValue(chartFilters.endMonthYear)}
                 onChange={(event) =>
@@ -407,7 +415,7 @@ export default function SoldVehiclesReportPage() {
 
             {histogram.labels.length === 0 ? (
               <div className="mt-6 rounded-md border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                Select a valid month range to see the histogram.
+                {t("reports.sales.histogram.empty")}
               </div>
             ) : (
               <div className="mt-6">
@@ -431,7 +439,9 @@ export default function SoldVehiclesReportPage() {
                   })}
                 </div>
                 <div className="mt-3 text-xs text-slate-500">
-                  Max month: {formatMoney(maxHistogramValue)}
+                  {t("reports.sales.histogram.maxMonth", {
+                    value: formatMoney(maxHistogramValue),
+                  })}
                 </div>
               </div>
             )}
@@ -441,7 +451,7 @@ export default function SoldVehiclesReportPage() {
 
       {loading ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
-          Loading sales data...
+          {t("reports.sales.loading")}
         </div>
       ) : null}
 
@@ -449,13 +459,19 @@ export default function SoldVehiclesReportPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
-              <th className="px-6 py-3">Plate</th>
-              <th className="px-6 py-3">Brand</th>
-              <th className="px-6 py-3">Model</th>
-              <th className="px-6 py-3">Year</th>
-              <th className="px-6 py-3 text-right">Selling Price</th>
-              <th className="px-6 py-3 text-right">Total Taxes</th>
-              <th className="px-6 py-3 text-right">Services Total</th>
+              <th className="px-6 py-3">{t("reports.sales.table.plate")}</th>
+              <th className="px-6 py-3">{t("reports.sales.table.brand")}</th>
+              <th className="px-6 py-3">{t("reports.sales.table.model")}</th>
+              <th className="px-6 py-3">{t("reports.sales.table.year")}</th>
+              <th className="px-6 py-3 text-right">
+                {t("reports.sales.table.sellingPrice")}
+              </th>
+              <th className="px-6 py-3 text-right">
+                {t("reports.sales.table.totalTaxes")}
+              </th>
+              <th className="px-6 py-3 text-right">
+                {t("reports.sales.table.servicesTotal")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -480,7 +496,7 @@ export default function SoldVehiclesReportPage() {
             ) : (
               <tr>
                 <td colSpan={7} className="px-6 py-6 text-center text-slate-500">
-                  No sold vehicles found.
+                  {t("reports.sales.empty")}
                 </td>
               </tr>
             )}

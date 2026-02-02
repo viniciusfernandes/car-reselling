@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api, extractErrorMessage } from "../../service/api";
 import {
   ApiResponse,
@@ -8,10 +9,11 @@ import {
   ReportPartnerGroup,
 } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
-import TextInput from "../../component/input/TextInput";
+import DateInput from "../../component/input/DateInput";
 import SelectInput from "../../component/input/SelectInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
 import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
+import { formatDate, formatMoney } from "../../service/formatters";
 
 type TotalMode = "purchasePrice" | "totalCost";
 
@@ -24,6 +26,7 @@ const getCurrentMonthRange = () => {
 };
 
 export default function DistributedVehiclesReportPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [report, setReport] = useState<DistributedVehiclesReport | null>(null);
   const [mode, setMode] = useState<TotalMode>("purchasePrice");
@@ -108,19 +111,13 @@ export default function DistributedVehiclesReportPage() {
       )
     : 0;
 
-  const formatMoney = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Distributed Vehicles</h2>
+          <h2 className="text-xl font-semibold">{t("reports.distributed.title")}</h2>
           <p className="text-sm text-slate-500">
-            Totals grouped by partner dealership.
+            {t("reports.distributed.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-full bg-slate-100 p-1 text-sm">
@@ -133,7 +130,7 @@ export default function DistributedVehiclesReportPage() {
                 : "text-slate-500"
             }`}
           >
-            Purchase Price
+            {t("reports.distributed.mode.purchasePrice")}
           </button>
           <button
             type="button"
@@ -142,23 +139,23 @@ export default function DistributedVehiclesReportPage() {
               mode === "totalCost" ? "bg-white shadow" : "text-slate-500"
             }`}
           >
-            Total Cost
+            {t("reports.distributed.mode.totalCost")}
           </button>
         </div>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-5">
-          <TextInput
-            label="Start date"
+          <DateInput
+            label={t("filters.startDate")}
             type="date"
             value={filters.startDate}
             onChange={(event) =>
               setFilters((prev) => ({ ...prev, startDate: event.target.value }))
             }
           />
-          <TextInput
-            label="End date"
+          <DateInput
+            label={t("filters.endDate")}
             type="date"
             value={filters.endDate}
             onChange={(event) =>
@@ -166,8 +163,8 @@ export default function DistributedVehiclesReportPage() {
             }
           />
           <ComboboxInput
-            label="Brand"
-            placeholder="e.g. Honda"
+            label={t("filters.brand")}
+            placeholder={t("placeholders.brand")}
             value={filters.brand}
             suggestions={suggestions.brands}
             onChange={(event) =>
@@ -175,8 +172,8 @@ export default function DistributedVehiclesReportPage() {
             }
           />
           <ComboboxInput
-            label="Model"
-            placeholder="e.g. Civic"
+            label={t("filters.model")}
+            placeholder={t("placeholders.model")}
             value={filters.model}
             suggestions={suggestions.models}
             onChange={(event) =>
@@ -184,10 +181,10 @@ export default function DistributedVehiclesReportPage() {
             }
           />
           <SelectInput
-            label="Partner"
+            label={t("filters.partner")}
             value={filters.partnerId}
             options={[
-              { value: "", label: "All partners" },
+              { value: "", label: t("filters.allPartners") },
               ...partners.map((partner) => ({
                 value: partner.id,
                 label: partner.name,
@@ -204,7 +201,7 @@ export default function DistributedVehiclesReportPage() {
             onClick={fetchReport}
             className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white"
           >
-            Apply filters
+            {t("actions.applyFilters")}
           </button>
           <button
             type="button"
@@ -221,7 +218,7 @@ export default function DistributedVehiclesReportPage() {
             }}
             className="rounded-md border border-slate-200 px-4 py-2 text-sm"
           >
-            Clear filters
+            {t("actions.clearFilters")}
           </button>
         </div>
       </div>
@@ -229,20 +226,24 @@ export default function DistributedVehiclesReportPage() {
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-slate-500">Overall total</div>
+            <div className="text-sm text-slate-500">
+              {t("reports.distributed.overallTotal")}
+            </div>
             <div className="text-xl font-semibold">
               {formatMoney(overallTotal)}
             </div>
           </div>
           <div className="text-sm text-slate-500">
-            {report?.overallVehiclesCount ?? 0} vehicles
+            {t("reports.distributed.vehiclesCount", {
+              count: report?.overallVehiclesCount ?? 0,
+            })}
           </div>
         </div>
       </div>
 
       {loading ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
-          Loading report...
+          {t("reports.distributed.loading")}
         </div>
       ) : null}
 
@@ -255,11 +256,15 @@ export default function DistributedVehiclesReportPage() {
             <div>
               <h3 className="text-lg font-semibold">{partner.partnerName}</h3>
               <p className="text-sm text-slate-500">
-                {partner.partnerVehiclesCount} vehicles
+                {t("reports.distributed.vehiclesCount", {
+                  count: partner.partnerVehiclesCount,
+                })}
               </p>
             </div>
             <div className="text-right">
-              <div className="text-xs text-slate-500">Partner total</div>
+              <div className="text-xs text-slate-500">
+                {t("reports.distributed.partnerTotal")}
+              </div>
               <div className="text-base font-semibold">
                 {formatMoney(calculatePartnerTotal(partner))}
               </div>
@@ -268,13 +273,19 @@ export default function DistributedVehiclesReportPage() {
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
               <tr>
-                <th className="px-6 py-3">Plate</th>
-                <th className="px-6 py-3">Brand</th>
-                <th className="px-6 py-3">Model</th>
-                <th className="px-6 py-3">Year</th>
-                <th className="px-6 py-3">Distributed Date</th>
-                <th className="px-6 py-3 text-right">Purchase Price</th>
-                <th className="px-6 py-3 text-right">Total Cost</th>
+                <th className="px-6 py-3">{t("reports.distributed.table.plate")}</th>
+                <th className="px-6 py-3">{t("reports.distributed.table.brand")}</th>
+                <th className="px-6 py-3">{t("reports.distributed.table.model")}</th>
+                <th className="px-6 py-3">{t("reports.distributed.table.year")}</th>
+                <th className="px-6 py-3">
+                  {t("reports.distributed.table.distributedAt")}
+                </th>
+                <th className="px-6 py-3 text-right">
+                  {t("reports.distributed.table.purchasePrice")}
+                </th>
+                <th className="px-6 py-3 text-right">
+                  {t("reports.distributed.table.totalCost")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -285,9 +296,7 @@ export default function DistributedVehiclesReportPage() {
                   <td className="px-6 py-3">{vehicle.model}</td>
                   <td className="px-6 py-3">{vehicle.year}</td>
                   <td className="px-6 py-3">
-                    {vehicle.distributedAt
-                      ? new Date(vehicle.distributedAt).toLocaleDateString()
-                      : "-"}
+                    {formatDate(vehicle.distributedAt)}
                   </td>
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.purchasePrice)}
@@ -304,7 +313,7 @@ export default function DistributedVehiclesReportPage() {
 
       {!loading && report?.partners.length === 0 ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-          No distributed vehicles yet.
+          {t("reports.distributed.empty")}
         </div>
       ) : null}
     </div>

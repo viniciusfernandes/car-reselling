@@ -1,4 +1,5 @@
 import axios from "axios";
+import i18n from "../i18n";
 
 const AUTH_TOKEN_KEY = "auth_token";
 const AUTH_TOKEN_EVENT = "auth-token-changed";
@@ -65,7 +66,7 @@ export function extractErrorMessage(error: unknown): string {
       return errors[0];
     }
   }
-  return "Unexpected error";
+  return i18n.t("errors.unexpected");
 }
 
 export function extractFieldErrors(errors?: string[]) {

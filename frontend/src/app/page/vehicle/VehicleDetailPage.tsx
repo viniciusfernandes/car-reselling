@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   api,
   extractErrorMessage,
@@ -23,43 +24,29 @@ import NumberInput from "../../component/input/NumberInput";
 import SelectInput from "../../component/input/SelectInput";
 import MoneyInput from "../../component/input/MoneyInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
+import DateInput from "../../component/input/DateInput";
 import { useToast } from "../../component/notification/ToastProvider";
 import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
+import {
+  formatDate,
+  formatMoney,
+  formatNumber,
+  normalizeMoney,
+  parseMoney,
+} from "../../service/formatters";
 
-const SERVICE_OPTIONS: { value: ServiceType; label: string }[] = [
-  { value: "MECHANICAL", label: "Mechanical" },
-  { value: "PAINT", label: "Paint" },
-  { value: "BODYWORK", label: "Bodywork" },
-  { value: "ELECTRICAL", label: "Electrical" },
-  { value: "UPHOLSTERY", label: "Upholstery" },
-  { value: "WINDOWS", label: "Windows" },
-];
-
-const DOCUMENT_OPTIONS: { value: DocumentType; label: string }[] = [
-  { value: "INVOICE", label: "Invoice" },
-  { value: "RECEIPT", label: "Receipt" },
-  { value: "SERVICE_ORDER", label: "Service order" },
-  { value: "OTHER", label: "Other" },
-];
-
-const STATUS_LABELS: Record<VehicleStatus, string> = {
-  IN_LOT: "In lot",
-  IN_SERVICE: "In service",
-  READY_FOR_DISTRIBUTION: "Ready for distribution",
-  DISTRIBUTED: "Distributed",
-  SOLD: "Sold",
+const STATUS_KEYS: Record<VehicleStatus, string> = {
+  IN_LOT: "status.IN_LOT",
+  IN_SERVICE: "status.IN_SERVICE",
+  READY_FOR_DISTRIBUTION: "status.READY_FOR_DISTRIBUTION",
+  DISTRIBUTED: "status.DISTRIBUTED",
+  SOLD: "status.SOLD",
 };
 
 type TabKey = "overview" | "services" | "documents" | "distribution";
 
-const formatMoney = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-
 const normalizeMoneyInput = (value: string) => {
-  const sanitized = value.replace(",", ".").replace(/[^0-9.]/g, "");
+  const sanitized = normalizeMoney(value);
   const [integerPart, decimalPart = ""] = sanitized.split(".");
   const normalizedDecimal = decimalPart.slice(0, 2);
   return normalizedDecimal.length > 0
@@ -71,14 +58,15 @@ const formatMoneyValue = (value: string) => {
   if (!value) {
     return "";
   }
-  const numeric = Number(value);
+  const numeric = Number(normalizeMoney(value));
   if (Number.isNaN(numeric)) {
     return value;
   }
-  return numeric.toFixed(2);
+  return formatNumber(numeric);
 };
 
 export default function VehicleDetailPage() {
+  const { t, i18n } = useTranslation();
   const { vehicleId } = useParams();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -136,6 +124,33 @@ export default function VehicleDetailPage() {
   const [sellingPrice, setSellingPrice] = useState("");
 
   const isDistributed = vehicle?.status === "DISTRIBUTED";
+  const tabLabels: Record<TabKey, string> = {
+    overview: t("tabs.overview"),
+    services: t("tabs.services"),
+    documents: t("tabs.documents"),
+    distribution: t("tabs.distribution"),
+  };
+  const statusOptions: Array<{ value: VehicleStatus; label: string }> = [
+    { value: "IN_LOT", label: t("status.IN_LOT") },
+    { value: "IN_SERVICE", label: t("status.IN_SERVICE") },
+    { value: "READY_FOR_DISTRIBUTION", label: t("status.READY_FOR_DISTRIBUTION") },
+    { value: "DISTRIBUTED", label: t("status.DISTRIBUTED") },
+    { value: "SOLD", label: t("status.SOLD") },
+  ];
+  const serviceOptions: Array<{ value: ServiceType; label: string }> = [
+    { value: "MECHANICAL", label: t("serviceTypes.MECHANICAL") },
+    { value: "PAINT", label: t("serviceTypes.PAINT") },
+    { value: "BODYWORK", label: t("serviceTypes.BODYWORK") },
+    { value: "ELECTRICAL", label: t("serviceTypes.ELECTRICAL") },
+    { value: "UPHOLSTERY", label: t("serviceTypes.UPHOLSTERY") },
+    { value: "WINDOWS", label: t("serviceTypes.WINDOWS") },
+  ];
+  const documentOptionsLabels: Array<{ value: DocumentType; label: string }> = [
+    { value: "INVOICE", label: t("documentTypes.INVOICE") },
+    { value: "RECEIPT", label: t("documentTypes.RECEIPT") },
+    { value: "SERVICE_ORDER", label: t("documentTypes.SERVICE_ORDER") },
+    { value: "OTHER", label: t("documentTypes.OTHER") },
+  ];
 
   const fetchAll = async () => {
     if (!vehicleId) {
@@ -209,8 +224,8 @@ export default function VehicleDetailPage() {
       model: vehicle.model,
       brand: vehicle.brand,
       supplierSource: vehicle.supplierSource,
-      purchasePrice: vehicle.purchasePrice.toString(),
-      freightCost: vehicle.freightCost.toString(),
+      purchasePrice: formatNumber(vehicle.purchasePrice),
+      freightCost: formatNumber(vehicle.freightCost),
       purchaseInvoiceDocumentId: vehicle.purchaseInvoiceDocumentId ?? "",
       purchasePaymentReceiptDocumentId:
         vehicle.purchasePaymentReceiptDocumentId ?? "",
@@ -219,30 +234,41 @@ export default function VehicleDetailPage() {
     setStatusTarget(vehicle.status);
     setSellingPrice(
       vehicle.sellingPrice !== null && vehicle.sellingPrice !== undefined
-        ? vehicle.sellingPrice.toFixed(2)
+        ? formatNumber(vehicle.sellingPrice)
         : ""
     );
   }, [vehicle]);
+
+  const documentTypeLabels = useMemo(
+    () =>
+      documentOptionsLabels.reduce<Record<string, string>>((acc, option) => {
+        acc[option.value] = option.label;
+        return acc;
+      }, {}),
+    [documentOptionsLabels]
+  );
 
   const documentOptions = useMemo(
     () =>
       documents.map((doc) => ({
         value: doc.id,
-        label: `${doc.documentType} - ${doc.originalFileName}`,
+        label: `${documentTypeLabels[doc.documentType] ?? doc.documentType} - ${
+          doc.originalFileName
+        }`,
       })),
-    [documents]
+    [documents, documentTypeLabels]
   );
 
   const getMoneyError = (value: string, required = false) => {
     if (!value && required) {
-      return "Required";
+      return t("validation.required");
     }
     if (!value) {
       return "";
     }
-    const numeric = Number(value);
+    const numeric = parseMoney(value);
     if (Number.isNaN(numeric) || numeric < 0) {
-      return "Invalid value";
+      return t("validation.invalidValue");
     }
     return "";
   };
@@ -250,16 +276,16 @@ export default function VehicleDetailPage() {
   const validateUpdateForm = () => {
     const nextErrors: Record<string, string> = {};
     if (!updateForm.year) {
-      nextErrors.year = "Required";
+      nextErrors.year = t("validation.required");
     }
     if (!updateForm.color) {
-      nextErrors.color = "Required";
+      nextErrors.color = t("validation.required");
     }
     if (!updateForm.model) {
-      nextErrors.model = "Required";
+      nextErrors.model = t("validation.required");
     }
     if (!updateForm.brand) {
-      nextErrors.brand = "Required";
+      nextErrors.brand = t("validation.required");
     }
     const purchaseError = getMoneyError(updateForm.purchasePrice, true);
     if (purchaseError) {
@@ -277,28 +303,28 @@ export default function VehicleDetailPage() {
     const nextErrors = { ...updateErrors };
     if (field === "year") {
       if (!(value ?? updateForm.year)) {
-        nextErrors.year = "Required";
+        nextErrors.year = t("validation.required");
       } else {
         delete nextErrors.year;
       }
     }
     if (field === "color") {
       if (!(value ?? updateForm.color)) {
-        nextErrors.color = "Required";
+        nextErrors.color = t("validation.required");
       } else {
         delete nextErrors.color;
       }
     }
     if (field === "model") {
       if (!(value ?? updateForm.model)) {
-        nextErrors.model = "Required";
+        nextErrors.model = t("validation.required");
       } else {
         delete nextErrors.model;
       }
     }
     if (field === "brand") {
       if (!(value ?? updateForm.brand)) {
-        nextErrors.brand = "Required";
+        nextErrors.brand = t("validation.required");
       } else {
         delete nextErrors.brand;
       }
@@ -340,11 +366,11 @@ export default function VehicleDetailPage() {
       setIsAddingService(true);
       await api.post(`/vehicles/${vehicleId}/services`, {
         serviceType: serviceForm.serviceType,
-        serviceValue: Number(serviceForm.serviceValue),
+        serviceValue: parseMoney(serviceForm.serviceValue),
         description: serviceForm.description || null,
         performedAt: serviceForm.performedAt || null,
       });
-      showToast("Service added");
+      showToast(t("vehicleDetail.services.added"));
       setServiceForm({
         serviceType: "MECHANICAL",
         serviceValue: "",
@@ -365,7 +391,7 @@ export default function VehicleDetailPage() {
     setEditServiceErrors({});
     setEditServiceForm({
       serviceType: service.serviceType,
-      serviceValue: service.serviceValue.toString(),
+      serviceValue: formatNumber(service.serviceValue),
       description: service.description ?? "",
       performedAt: service.performedAt ?? "",
     });
@@ -384,11 +410,11 @@ export default function VehicleDetailPage() {
       setIsUpdatingService(true);
       await api.put(`/vehicles/${vehicleId}/services/${editServiceId}`, {
         serviceType: editServiceForm.serviceType,
-        serviceValue: Number(editServiceForm.serviceValue),
+        serviceValue: parseMoney(editServiceForm.serviceValue),
         description: editServiceForm.description || null,
         performedAt: editServiceForm.performedAt || null,
       });
-      showToast("Service updated");
+      showToast(t("vehicleDetail.services.updated"));
       setEditServiceId(null);
       setEditServiceErrors({});
       await fetchAll();
@@ -403,12 +429,12 @@ export default function VehicleDetailPage() {
     if (!vehicleId) {
       return;
     }
-    if (!window.confirm("Delete this service?")) {
+    if (!window.confirm(t("confirm.deleteService"))) {
       return;
     }
     try {
       await api.delete(`/vehicles/${vehicleId}/services/${serviceId}`);
-      showToast("Service deleted");
+      showToast(t("vehicleDetail.services.deleted"));
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
@@ -427,7 +453,7 @@ export default function VehicleDetailPage() {
       await api.post(`/vehicles/${vehicleId}/documents`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      showToast("Uploaded successfully");
+      showToast(t("vehicleDetail.documents.uploaded"));
       setDocumentFile(null);
       await fetchAll();
     } catch (error) {
@@ -441,12 +467,12 @@ export default function VehicleDetailPage() {
     if (!vehicleId) {
       return;
     }
-    if (!window.confirm("Delete this document?")) {
+    if (!window.confirm(t("confirm.deleteDocument"))) {
       return;
     }
     try {
       await api.delete(`/vehicles/${vehicleId}/documents/${documentId}`);
-      showToast("Document deleted");
+      showToast(t("vehicleDetail.documents.deleted"));
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
@@ -468,14 +494,14 @@ export default function VehicleDetailPage() {
         model: updateForm.model,
         brand: updateForm.brand,
         supplierSource: updateForm.supplierSource,
-        purchasePrice: Number(updateForm.purchasePrice),
-        freightCost: Number(updateForm.freightCost),
+        purchasePrice: parseMoney(updateForm.purchasePrice),
+        freightCost: parseMoney(updateForm.freightCost),
         purchaseInvoiceDocumentId:
           updateForm.purchaseInvoiceDocumentId || null,
         purchasePaymentReceiptDocumentId:
           updateForm.purchasePaymentReceiptDocumentId || null,
       });
-      showToast("Vehicle updated");
+      showToast(t("vehicleDetail.updated"));
       setUpdateErrors({});
       await fetchAll();
     } catch (error: any) {
@@ -497,7 +523,7 @@ export default function VehicleDetailPage() {
       await api.post(`/vehicles/${vehicleId}/distribution`, {
         partnerId,
       });
-      showToast("Vehicle distributed");
+      showToast(t("vehicleDetail.distributed"));
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
@@ -518,9 +544,9 @@ export default function VehicleDetailPage() {
     try {
       setIsUpdatingSellingPrice(true);
       await api.put(`/vehicles/${vehicleId}/selling-price`, {
-        sellingPrice: Number(sellingPrice),
+        sellingPrice: parseMoney(sellingPrice),
       });
-      showToast("Selling price updated");
+      showToast(t("vehicleDetail.sellingPriceUpdated"));
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
@@ -535,7 +561,7 @@ export default function VehicleDetailPage() {
     }
     const error = getMoneyError(sellingPrice, true);
     if (error) {
-      showToast("Set a selling price before marking as sold.");
+      showToast(t("vehicleDetail.setSellingPriceFirst"));
       return;
     }
     try {
@@ -544,7 +570,7 @@ export default function VehicleDetailPage() {
         status: "SOLD",
         assignedPartnerId: partnerId || null,
       });
-      showToast("Vehicle marked as sold");
+      showToast(t("vehicleDetail.markedSold"));
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
@@ -558,7 +584,7 @@ export default function VehicleDetailPage() {
       return;
     }
     if (statusTarget === "DISTRIBUTED" && !partnerId) {
-      showToast("Select a partner before distributing.");
+      showToast(t("vehicleDetail.selectPartnerFirst"));
       return;
     }
     try {
@@ -567,7 +593,7 @@ export default function VehicleDetailPage() {
         status: statusTarget,
         assignedPartnerId: statusTarget === "DISTRIBUTED" ? partnerId : null,
       });
-      showToast("Status updated");
+      showToast(t("vehicleDetail.statusUpdated"));
       await fetchAll();
     } catch (error) {
       showToast(extractErrorMessage(error));
@@ -579,7 +605,7 @@ export default function VehicleDetailPage() {
   if (loading) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-        Loading vehicle details...
+        {t("vehicleDetail.loading")}
       </div>
     );
   }
@@ -587,7 +613,7 @@ export default function VehicleDetailPage() {
   if (!vehicle) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-        Vehicle details unavailable. Please refresh.
+        {t("vehicleDetail.unavailable")}
       </div>
     );
   }
@@ -600,12 +626,20 @@ export default function VehicleDetailPage() {
             {vehicle.licensePlate} · {vehicle.brand} {vehicle.model}
           </h2>
           <p className="text-sm text-slate-500">
-            Status: {STATUS_LABELS[vehicle.status]}
+            {t("vehicleDetail.status", {
+              status: t(STATUS_KEYS[vehicle.status]),
+            })}
           </p>
         </div>
         <div className="text-right text-sm text-slate-500">
-          <div>Services total: {formatMoney(servicesTotal)}</div>
-          <div>Total cost: {formatMoney(vehicle.totalCost)}</div>
+          <div>
+            {t("vehicleDetail.servicesTotal", {
+              value: formatMoney(servicesTotal),
+            })}
+          </div>
+          <div>
+            {t("vehicleDetail.totalCost", { value: formatMoney(vehicle.totalCost) })}
+          </div>
         </div>
       </div>
 
@@ -622,7 +656,7 @@ export default function VehicleDetailPage() {
                   : "text-slate-500"
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tabLabels[tab]}
             </button>
           )
         )}
@@ -632,31 +666,25 @@ export default function VehicleDetailPage() {
         <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 md:grid-cols-2">
             <TextInput
-              label="License Plate"
+              label={t("vehicleDetail.licensePlate")}
               value={vehicle.licensePlate}
               disabled
             />
             <SelectInput
-              label="Status"
+              label={t("vehicleDetail.statusLabel")}
               value={statusTarget}
-              options={[
-                { value: "IN_LOT", label: "In lot" },
-                { value: "IN_SERVICE", label: "In service" },
-                { value: "READY_FOR_DISTRIBUTION", label: "Ready for distribution" },
-                { value: "DISTRIBUTED", label: "Distributed" },
-                { value: "SOLD", label: "Sold" },
-              ]}
+              options={statusOptions}
               disabled={vehicle.status === "SOLD"}
               onChange={(event) =>
                 setStatusTarget(event.target.value as VehicleStatus)
               }
             />
             <SelectInput
-              label="Supplier Source"
+              label={t("vehicleDetail.supplierSource")}
               value={updateForm.supplierSource}
               options={[
-                { value: "INTERNET", label: "Internet" },
-                { value: "PERSONAL_CONTACT", label: "Personal contact" },
+                { value: "INTERNET", label: t("supplier.internet") },
+                { value: "PERSONAL_CONTACT", label: t("supplier.personalContact") },
               ]}
               required
               onChange={(event) =>
@@ -667,7 +695,7 @@ export default function VehicleDetailPage() {
               }
             />
             <NumberInput
-              label="Year"
+              label={t("vehicleDetail.year")}
               value={updateForm.year}
               required
               min={1900}
@@ -679,7 +707,7 @@ export default function VehicleDetailPage() {
               error={updateErrors.year}
             />
             <ComboboxInput
-              label="Color"
+              label={t("vehicleDetail.color")}
               value={updateForm.color}
               required
               suggestions={suggestions.colors}
@@ -690,7 +718,7 @@ export default function VehicleDetailPage() {
               error={updateErrors.color}
             />
             <ComboboxInput
-              label="Model"
+              label={t("vehicleDetail.model")}
               value={updateForm.model}
               required
               suggestions={suggestions.models}
@@ -701,7 +729,7 @@ export default function VehicleDetailPage() {
               error={updateErrors.model}
             />
             <ComboboxInput
-              label="Brand"
+              label={t("vehicleDetail.brand")}
               value={updateForm.brand}
               required
               suggestions={suggestions.brands}
@@ -712,7 +740,7 @@ export default function VehicleDetailPage() {
               error={updateErrors.brand}
             />
             <MoneyInput
-              label="Purchase Price"
+              label={t("vehicleDetail.purchasePrice")}
               value={updateForm.purchasePrice}
               required
               onValueChange={(value) =>
@@ -727,12 +755,9 @@ export default function VehicleDetailPage() {
             {vehicle.status === "DISTRIBUTED" || vehicle.status === "SOLD" ? (
               <div className="space-y-2">
                 <MoneyInput
-                  label="Selling Price"
+                  label={t("vehicleDetail.sellingPrice")}
                   value={sellingPrice}
                   onValueChange={setSellingPrice}
-                  onBlur={() =>
-                    setSellingPrice((value) => (value ? Number(value).toFixed(2) : value))
-                  }
                   required={vehicle.status === "DISTRIBUTED"}
                   disabled={vehicle.status === "SOLD"}
                 />
@@ -744,7 +769,9 @@ export default function VehicleDetailPage() {
                       disabled={isUpdatingSellingPrice}
                       className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
                     >
-                      {isUpdatingSellingPrice ? "Saving..." : "Save selling price"}
+                      {isUpdatingSellingPrice
+                        ? t("actions.saving")
+                        : t("vehicleDetail.saveSellingPrice")}
                     </button>
                     <button
                       type="button"
@@ -752,14 +779,14 @@ export default function VehicleDetailPage() {
                       disabled={isUpdatingStatus || !sellingPrice}
                       className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
-                      {isUpdatingStatus ? "Updating..." : "Sold"}
+                      {isUpdatingStatus ? t("actions.updating") : t("actions.sold")}
                     </button>
                   </div>
                 ) : null}
               </div>
             ) : null}
             <MoneyInput
-              label="Freight Cost"
+              label={t("vehicleDetail.freightCost")}
               value={updateForm.freightCost}
               required
               onValueChange={(value) =>
@@ -774,10 +801,10 @@ export default function VehicleDetailPage() {
             <div className="space-y-3">
               {statusTarget === "DISTRIBUTED" ? (
                 <SelectInput
-                  label="Partner (required for distribution)"
+                  label={t("vehicleDetail.partnerRequired")}
                   value={partnerId}
                   options={[
-                    { value: "", label: "Select partner" },
+                    { value: "", label: t("vehicleDetail.selectPartner") },
                     ...partners.map((partner) => ({
                       value: partner.id,
                       label: partner.name,
@@ -792,13 +819,16 @@ export default function VehicleDetailPage() {
                 disabled={isUpdatingStatus || statusTarget === vehicle.status}
                 className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
               >
-                {isUpdatingStatus ? "Updating..." : "Update Status"}
+                {isUpdatingStatus ? t("actions.updating") : t("actions.updateStatus")}
               </button>
             </div>
             <SelectInput
-              label="Invoice Document"
+              label={t("vehicleDetail.invoiceDocument")}
               value={updateForm.purchaseInvoiceDocumentId || ""}
-              options={[{ value: "", label: "Not linked" }, ...documentOptions]}
+              options={[
+                { value: "", label: t("vehicleDetail.notLinked") },
+                ...documentOptions,
+              ]}
               onChange={(event) =>
                 setUpdateForm((prev) => ({
                   ...prev,
@@ -807,9 +837,12 @@ export default function VehicleDetailPage() {
               }
             />
             <SelectInput
-              label="Payment Receipt Document"
+              label={t("vehicleDetail.paymentReceiptDocument")}
               value={updateForm.purchasePaymentReceiptDocumentId || ""}
-              options={[{ value: "", label: "Not linked" }, ...documentOptions]}
+              options={[
+                { value: "", label: t("vehicleDetail.notLinked") },
+                ...documentOptions,
+              ]}
               onChange={(event) =>
                 setUpdateForm((prev) => ({
                   ...prev,
@@ -825,7 +858,7 @@ export default function VehicleDetailPage() {
               disabled={isUpdatingVehicle}
               className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              {isUpdatingVehicle ? "Saving..." : "Save changes"}
+              {isUpdatingVehicle ? t("actions.saving") : t("actions.saveChanges")}
             </button>
           </div>
         </div>
@@ -834,12 +867,14 @@ export default function VehicleDetailPage() {
       {activeTab === "services" ? (
         <div className="space-y-6">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700">Add Service</h3>
+            <h3 className="text-sm font-semibold text-slate-700">
+              {t("vehicleDetail.services.addTitle")}
+            </h3>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <SelectInput
-                label="Service Type"
+                label={t("vehicleDetail.services.type")}
                 value={serviceForm.serviceType}
-                options={SERVICE_OPTIONS}
+                options={serviceOptions}
                 required
                 onChange={(event) =>
                   setServiceForm((prev) => ({
@@ -849,7 +884,7 @@ export default function VehicleDetailPage() {
                 }
               />
               <MoneyInput
-                label="Service Value"
+                label={t("vehicleDetail.services.value")}
                 value={serviceForm.serviceValue}
                 required
                 onValueChange={(value) =>
@@ -864,7 +899,7 @@ export default function VehicleDetailPage() {
                 error={serviceErrors.serviceValue}
               />
               <TextInput
-                label="Description"
+                label={t("vehicleDetail.services.description")}
                 value={serviceForm.description}
                 onChange={(event) =>
                   setServiceForm((prev) => ({
@@ -873,8 +908,8 @@ export default function VehicleDetailPage() {
                   }))
                 }
               />
-              <TextInput
-                label="Performed At"
+              <DateInput
+                label={t("vehicleDetail.services.performedAt")}
                 type="date"
                 value={serviceForm.performedAt}
                 onChange={(event) =>
@@ -892,12 +927,14 @@ export default function VehicleDetailPage() {
                 onClick={handleAddService}
                 className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {isAddingService ? "Adding..." : "Add Service"}
+                {isAddingService
+                  ? t("actions.adding")
+                  : t("vehicleDetail.services.addAction")}
               </button>
             </div>
             {isDistributed ? (
               <p className="mt-2 text-xs text-slate-500">
-                Services are read-only after distribution.
+                {t("vehicleDetail.services.readOnly")}
               </p>
             ) : null}
           </div>
@@ -906,18 +943,20 @@ export default function VehicleDetailPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Value</th>
-                  <th className="px-4 py-3">Description</th>
-                  <th className="px-4 py-3">Actions</th>
+                  <th className="px-4 py-3">{t("vehicleDetail.services.table.type")}</th>
+                  <th className="px-4 py-3">{t("vehicleDetail.services.table.date")}</th>
+                  <th className="px-4 py-3">{t("vehicleDetail.services.table.value")}</th>
+                  <th className="px-4 py-3">
+                    {t("vehicleDetail.services.table.description")}
+                  </th>
+                  <th className="px-4 py-3">{t("vehicleDetail.services.table.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {services.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-6 text-center">
-                      No services yet.
+                      {t("vehicleDetail.services.empty")}
                     </td>
                   </tr>
                 ) : (
@@ -936,7 +975,7 @@ export default function VehicleDetailPage() {
                               }
                               className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
                             >
-                              {SERVICE_OPTIONS.map((option) => (
+                              {serviceOptions.map((option) => (
                                 <option key={option.value} value={option.value}>
                                   {option.label}
                                 </option>
@@ -946,6 +985,7 @@ export default function VehicleDetailPage() {
                           <td className="px-4 py-3">
                             <input
                               type="date"
+                              lang={i18n.language}
                               value={editServiceForm.performedAt}
                               onChange={(event) =>
                                 setEditServiceForm((prev) => ({
@@ -1003,7 +1043,9 @@ export default function VehicleDetailPage() {
                                 disabled={isUpdatingService}
                                 className="text-xs font-medium text-slate-900 disabled:text-slate-400"
                               >
-                                {isUpdatingService ? "Saving..." : "Save"}
+                                {isUpdatingService
+                                  ? t("actions.saving")
+                                  : t("actions.save")}
                               </button>
                               <button
                                 type="button"
@@ -1013,16 +1055,18 @@ export default function VehicleDetailPage() {
                                 }}
                                 className="text-xs text-slate-500"
                               >
-                                Cancel
+                                {t("actions.cancel")}
                               </button>
                             </div>
                           </td>
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-3">{service.serviceType}</td>
                           <td className="px-4 py-3">
-                            {service.performedAt ?? "-"}
+                            {t(`serviceTypes.${service.serviceType}`)}
+                          </td>
+                          <td className="px-4 py-3">
+                            {formatDate(service.performedAt)}
                           </td>
                           <td className="px-4 py-3 text-right">
                             {formatMoney(service.serviceValue)}
@@ -1038,7 +1082,7 @@ export default function VehicleDetailPage() {
                                 onClick={() => startEditService(service)}
                                 className="text-slate-900 disabled:text-slate-400"
                               >
-                                Edit
+                                {t("actions.edit")}
                               </button>
                               <button
                                 type="button"
@@ -1046,7 +1090,7 @@ export default function VehicleDetailPage() {
                                 onClick={() => handleDeleteService(service.id)}
                                 className="text-red-600 disabled:text-slate-400"
                               >
-                                Delete
+                                {t("actions.delete")}
                               </button>
                             </div>
                           </td>
@@ -1065,19 +1109,21 @@ export default function VehicleDetailPage() {
         <div className="space-y-6">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-700">
-              Upload Document
+              {t("vehicleDetail.documents.uploadTitle")}
             </h3>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <SelectInput
-                label="Document Type"
+                label={t("vehicleDetail.documents.type")}
                 value={documentType}
-                options={DOCUMENT_OPTIONS}
+                options={documentOptionsLabels}
                 onChange={(event) =>
                   setDocumentType(event.target.value as DocumentType)
                 }
               />
               <label className="block text-sm">
-                <span className="font-medium text-slate-700">File</span>
+                <span className="font-medium text-slate-700">
+                  {t("vehicleDetail.documents.file")}
+                </span>
                 <input
                   type="file"
                   onChange={(event) =>
@@ -1094,7 +1140,9 @@ export default function VehicleDetailPage() {
                 disabled={!documentFile || isUploadingDocument}
                 className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {isUploadingDocument ? "Uploading..." : "Upload"}
+                {isUploadingDocument
+                  ? t("actions.uploading")
+                  : t("actions.upload")}
               </button>
             </div>
           </div>
@@ -1103,30 +1151,38 @@ export default function VehicleDetailPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">File</th>
-                  <th className="px-4 py-3">Size</th>
-                  <th className="px-4 py-3">Uploaded</th>
-                  <th className="px-4 py-3">Actions</th>
+                  <th className="px-4 py-3">{t("vehicleDetail.documents.table.type")}</th>
+                  <th className="px-4 py-3">{t("vehicleDetail.documents.table.file")}</th>
+                  <th className="px-4 py-3">{t("vehicleDetail.documents.table.size")}</th>
+                  <th className="px-4 py-3">
+                    {t("vehicleDetail.documents.table.uploaded")}
+                  </th>
+                  <th className="px-4 py-3">
+                    {t("vehicleDetail.documents.table.actions")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {documents.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-6 text-center">
-                      No documents uploaded.
+                      {t("vehicleDetail.documents.empty")}
                     </td>
                   </tr>
                 ) : (
                   documents.map((doc) => (
                     <tr key={doc.id} className="border-t">
-                      <td className="px-4 py-3">{doc.documentType}</td>
+                      <td className="px-4 py-3">
+                        {t(`documentTypes.${doc.documentType}`)}
+                      </td>
                       <td className="px-4 py-3">{doc.originalFileName}</td>
                       <td className="px-4 py-3">
-                        {(doc.sizeBytes / 1024).toFixed(1)} KB
+                        {t("units.kb", {
+                          value: (doc.sizeBytes / 1024).toFixed(1),
+                        })}
                       </td>
                       <td className="px-4 py-3">
-                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                        {formatDate(doc.uploadedAt)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 text-xs">
@@ -1134,14 +1190,14 @@ export default function VehicleDetailPage() {
                             href={`/api/v1/vehicles/${vehicleId}/documents/${doc.id}/download`}
                             className="text-slate-900"
                           >
-                            Download
+                            {t("actions.download")}
                           </a>
                           <button
                             type="button"
                             onClick={() => handleDeleteDocument(doc.id)}
                             className="text-red-600"
                           >
-                            Delete
+                            {t("actions.delete")}
                           </button>
                         </div>
                       </td>
@@ -1157,19 +1213,25 @@ export default function VehicleDetailPage() {
       {activeTab === "distribution" ? (
         <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div>
-            <h3 className="text-sm font-semibold text-slate-700">Distribution</h3>
+            <h3 className="text-sm font-semibold text-slate-700">
+              {t("vehicleDetail.distribution.title")}
+            </h3>
             <p className="text-sm text-slate-500">
-              Current status: {STATUS_LABELS[vehicle.status]}
+              {t("vehicleDetail.distribution.currentStatus", {
+                status: t(STATUS_KEYS[vehicle.status]),
+              })}
             </p>
             <p className="text-sm text-slate-500">
-              Assigned partner: {vehicle.assignedPartnerName ?? "-"}
+              {t("vehicleDetail.distribution.assignedPartner", {
+                partner: vehicle.assignedPartnerName ?? "-",
+              })}
             </p>
           </div>
           <SelectInput
-            label="Partner"
+            label={t("vehicleDetail.distribution.partner")}
             value={partnerId}
             options={[
-              { value: "", label: "Select partner" },
+              { value: "", label: t("vehicleDetail.selectPartner") },
               ...partners.map((partner) => ({
                 value: partner.id,
                 label: partner.name,
@@ -1188,12 +1250,14 @@ export default function VehicleDetailPage() {
               }
               className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              {isAssigningPartner ? "Assigning..." : "Assign to Partner"}
+              {isAssigningPartner
+                ? t("actions.assigning")
+                : t("vehicleDetail.distribution.assign")}
             </button>
           </div>
           {vehicle.status !== "READY_FOR_DISTRIBUTION" ? (
             <p className="text-xs text-slate-500">
-              Vehicle must be ready for distribution.
+              {t("vehicleDetail.distribution.mustBeReady")}
             </p>
           ) : null}
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { api, extractErrorMessage } from "../../service/api";
 import {
   ApiResponse,
@@ -7,32 +8,11 @@ import {
   VehicleStatus,
 } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
-
-const STATUSES: Array<{ value: VehicleStatus | ""; label: string }> = [
-  { value: "", label: "All" },
-  { value: "IN_LOT", label: "In lot" },
-  { value: "IN_SERVICE", label: "In service" },
-  { value: "READY_FOR_DISTRIBUTION", label: "Ready" },
-  { value: "DISTRIBUTED", label: "Distributed" },
-  { value: "SOLD", label: "Sold" },
-];
-
-const STATUS_LABELS: Record<VehicleStatus, string> = {
-  IN_LOT: "In lot",
-  IN_SERVICE: "In service",
-  READY_FOR_DISTRIBUTION: "Ready",
-  DISTRIBUTED: "Distributed",
-  SOLD: "Sold",
-};
-
-const formatMoney = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+import { formatMoney } from "../../service/formatters";
 
 export default function VehicleListPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<VehicleStatus | "">("");
@@ -75,14 +55,29 @@ export default function VehicleListPage() {
   const totalPages = data ? Math.ceil(data.total / data.size) : 1;
   const canGoPrev = page > 0;
   const canGoNext = data ? page + 1 < totalPages : false;
+  const statuses: Array<{ value: VehicleStatus | ""; label: string }> = [
+    { value: "", label: t("filters.all") },
+    { value: "IN_LOT", label: t("status.IN_LOT") },
+    { value: "IN_SERVICE", label: t("status.IN_SERVICE") },
+    { value: "READY_FOR_DISTRIBUTION", label: t("status.READY_FOR_DISTRIBUTION") },
+    { value: "DISTRIBUTED", label: t("status.DISTRIBUTED") },
+    { value: "SOLD", label: t("status.SOLD") },
+  ];
+  const statusLabels: Record<VehicleStatus, string> = {
+    IN_LOT: t("status.IN_LOT"),
+    IN_SERVICE: t("status.IN_SERVICE"),
+    READY_FOR_DISTRIBUTION: t("status.READY_FOR_DISTRIBUTION"),
+    DISTRIBUTED: t("status.DISTRIBUTED"),
+    SOLD: t("status.SOLD"),
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Vehicles</h2>
+          <h2 className="text-xl font-semibold">{t("vehicles.title")}</h2>
           <p className="text-sm text-slate-500">
-            Track all vehicles in the lot and their totals.
+            {t("vehicles.subtitle")}
           </p>
         </div>
         <button
@@ -90,7 +85,7 @@ export default function VehicleListPage() {
           onClick={() => navigate("/vehicles/new")}
           className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white shadow"
         >
-          New Vehicle
+          {t("vehicles.new")}
         </button>
       </div>
       <div className="flex flex-wrap gap-3">
@@ -100,11 +95,11 @@ export default function VehicleListPage() {
             setQuery(event.target.value);
             setPage(0);
           }}
-          placeholder="Search by plate, model, brand"
+          placeholder={t("vehicles.searchPlaceholder")}
           className="w-full max-w-sm rounded-md border border-slate-200 px-3 py-2 text-sm shadow-sm"
         />
         <div className="flex flex-wrap gap-2">
-          {STATUSES.map((option) => (
+          {statuses.map((option) => (
             <button
               key={option.value || "all"}
               type="button"
@@ -128,22 +123,22 @@ export default function VehicleListPage() {
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">Plate</th>
-                <th className="px-4 py-3">Brand</th>
-                <th className="px-4 py-3">Model</th>
-                <th className="px-4 py-3">Year</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Purchase Price</th>
-                <th className="px-4 py-3 text-right">Services Total</th>
-                <th className="px-4 py-3 text-right">Total Cost</th>
-                <th className="px-4 py-3">Assigned Partner</th>
+                <th className="px-4 py-3">{t("vehicles.table.plate")}</th>
+                <th className="px-4 py-3">{t("vehicles.table.brand")}</th>
+                <th className="px-4 py-3">{t("vehicles.table.model")}</th>
+                <th className="px-4 py-3">{t("vehicles.table.year")}</th>
+                <th className="px-4 py-3">{t("vehicles.table.status")}</th>
+                <th className="px-4 py-3 text-right">{t("vehicles.table.purchasePrice")}</th>
+                <th className="px-4 py-3 text-right">{t("vehicles.table.servicesTotal")}</th>
+                <th className="px-4 py-3 text-right">{t("vehicles.table.totalCost")}</th>
+                <th className="px-4 py-3">{t("vehicles.table.partner")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-6 text-center">
-                    Loading vehicles...
+                    {t("vehicles.loading")}
                   </td>
                 </tr>
               ) : data?.items.length ? (
@@ -160,7 +155,7 @@ export default function VehicleListPage() {
                     <td className="px-4 py-3">{vehicle.model}</td>
                     <td className="px-4 py-3">{vehicle.year}</td>
                     <td className="px-4 py-3">
-                      {STATUS_LABELS[vehicle.status]}
+                      {statusLabels[vehicle.status]}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {formatMoney(vehicle.purchasePrice)}
@@ -179,7 +174,7 @@ export default function VehicleListPage() {
               ) : (
                 <tr>
                   <td colSpan={9} className="px-4 py-6 text-center text-slate-500">
-                    No vehicles found.
+                    {t("vehicles.empty")}
                   </td>
                 </tr>
               )}
@@ -188,9 +183,7 @@ export default function VehicleListPage() {
         </div>
       </div>
       <div className="flex items-center justify-between text-sm text-slate-500">
-        <span>
-          Page {page + 1} of {totalPages || 1}
-        </span>
+        <span>{t("pagination.pageOf", { page: page + 1, total: totalPages || 1 })}</span>
         <div className="flex gap-2">
           <button
             type="button"
@@ -198,7 +191,7 @@ export default function VehicleListPage() {
             onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
             className="rounded-md border border-slate-200 px-3 py-1 disabled:cursor-not-allowed disabled:text-slate-300"
           >
-            Previous
+            {t("pagination.previous")}
           </button>
           <button
             type="button"
@@ -206,7 +199,7 @@ export default function VehicleListPage() {
             onClick={() => setPage((prev) => prev + 1)}
             className="rounded-md border border-slate-200 px-3 py-1 disabled:cursor-not-allowed disabled:text-slate-300"
           >
-            Next
+            {t("pagination.next")}
           </button>
         </div>
       </div>

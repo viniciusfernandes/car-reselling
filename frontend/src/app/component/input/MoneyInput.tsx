@@ -1,4 +1,6 @@
 import { InputHTMLAttributes, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { normalizeMoney, formatNumber } from "../../service/formatters";
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> & {
   label: string;
@@ -7,8 +9,8 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> &
   error?: string;
 };
 
-const normalizeMoneyInput = (value: string) => {
-  const sanitized = value.replace(",", ".").replace(/[^0-9.]/g, "");
+const normalizeMoneyInput = (value: string, locale: string) => {
+  const sanitized = normalizeMoney(value, locale);
   const [integerPart, decimalPart = ""] = sanitized.split(".");
   const normalizedDecimal = decimalPart.slice(0, 2);
   return normalizedDecimal.length > 0
@@ -24,7 +26,7 @@ const formatMoneyValue = (value: string) => {
   if (Number.isNaN(numeric)) {
     return value;
   }
-  return numeric.toFixed(2);
+  return formatNumber(numeric);
 };
 
 export default function MoneyInput({
@@ -35,6 +37,7 @@ export default function MoneyInput({
   required,
   ...props
 }: Props) {
+  const { i18n } = useTranslation();
   const helperId = useMemo(
     () => `money-input-${label.toLowerCase().replace(/\s+/g, "-")}`,
     [label]
@@ -50,7 +53,9 @@ export default function MoneyInput({
         {...props}
         inputMode="decimal"
         value={value}
-        onChange={(event) => onValueChange(normalizeMoneyInput(event.target.value))}
+        onChange={(event) =>
+          onValueChange(normalizeMoneyInput(event.target.value, i18n.language))
+        }
         onBlur={() => onValueChange(formatMoneyValue(value))}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? helperId : undefined}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import TextInput from "../../component/input/TextInput";
 import NumberInput from "../../component/input/NumberInput";
@@ -9,16 +10,18 @@ import { api, extractErrorMessage, extractFieldErrors } from "../../service/api"
 import { ApiResponse, SupplierSource } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
 import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
+import { formatNumber, parseMoney } from "../../service/formatters";
 
-const SUPPLIER_OPTIONS: { value: SupplierSource; label: string }[] = [
-  { value: "INTERNET", label: "Internet" },
-  { value: "PERSONAL_CONTACT", label: "Personal contact" },
+const SUPPLIER_OPTIONS: { value: SupplierSource; labelKey: string }[] = [
+  { value: "INTERNET", labelKey: "supplier.internet" },
+  { value: "PERSONAL_CONTACT", labelKey: "supplier.personalContact" },
 ];
 
 const PLATE_REGEX =
   /^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
 
 export default function NewVehiclePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const currentYear = new Date().getFullYear().toString();
@@ -39,7 +42,7 @@ export default function NewVehiclePage() {
     brand: "",
     supplierSource: "INTERNET" as SupplierSource,
     purchasePrice: "",
-    freightCost: "0.00",
+    freightCost: formatNumber(0),
   });
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -48,14 +51,14 @@ export default function NewVehiclePage() {
 
   const getMoneyError = (value: string, required = false) => {
     if (!value && required) {
-      return "Required";
+      return t("validation.required");
     }
     if (!value) {
       return "";
     }
     const numeric = Number(value);
     if (Number.isNaN(numeric) || numeric < 0) {
-      return "Invalid value";
+      return t("validation.invalidValue");
     }
     return "";
   };
@@ -65,37 +68,37 @@ export default function NewVehiclePage() {
     if (field === "licensePlate") {
       const plate = (value ?? form.licensePlate).trim().toUpperCase();
       if (!plate) {
-        nextErrors.licensePlate = "Required";
+        nextErrors.licensePlate = t("validation.required");
       } else if (!PLATE_REGEX.test(plate)) {
-        nextErrors.licensePlate = "Invalid plate format";
+        nextErrors.licensePlate = t("validation.invalidPlate");
       } else {
         delete nextErrors.licensePlate;
       }
     }
     if (field === "year") {
       if (!(value ?? form.year)) {
-        nextErrors.year = "Required";
+        nextErrors.year = t("validation.required");
       } else {
         delete nextErrors.year;
       }
     }
     if (field === "color") {
       if (!(value ?? form.color)) {
-        nextErrors.color = "Required";
+        nextErrors.color = t("validation.required");
       } else {
         delete nextErrors.color;
       }
     }
     if (field === "model") {
       if (!(value ?? form.model)) {
-        nextErrors.model = "Required";
+        nextErrors.model = t("validation.required");
       } else {
         delete nextErrors.model;
       }
     }
     if (field === "brand") {
       if (!(value ?? form.brand)) {
-        nextErrors.brand = "Required";
+        nextErrors.brand = t("validation.required");
       } else {
         delete nextErrors.brand;
       }
@@ -123,21 +126,21 @@ export default function NewVehiclePage() {
     const nextErrors: Record<string, string> = {};
     const plate = form.licensePlate.trim().toUpperCase();
     if (!plate) {
-      nextErrors.licensePlate = "Required";
+      nextErrors.licensePlate = t("validation.required");
     } else if (!PLATE_REGEX.test(plate)) {
-      nextErrors.licensePlate = "Invalid plate format";
+      nextErrors.licensePlate = t("validation.invalidPlate");
     }
     if (!form.year) {
-      nextErrors.year = "Required";
+      nextErrors.year = t("validation.required");
     }
     if (!form.color) {
-      nextErrors.color = "Required";
+      nextErrors.color = t("validation.required");
     }
     if (!form.model) {
-      nextErrors.model = "Required";
+      nextErrors.model = t("validation.required");
     }
     if (!form.brand) {
-      nextErrors.brand = "Required";
+      nextErrors.brand = t("validation.required");
     }
     const purchasePriceError = getMoneyError(form.purchasePrice, true);
     if (purchasePriceError) {
@@ -190,11 +193,11 @@ export default function NewVehiclePage() {
           model: normalizedModel,
           brand: normalizedBrand,
           supplierSource: form.supplierSource,
-          purchasePrice: Number(form.purchasePrice),
-          freightCost: Number(form.freightCost || 0),
+          purchasePrice: parseMoney(form.purchasePrice),
+          freightCost: parseMoney(form.freightCost || "0"),
         }
       );
-      showToast("Vehicle created");
+      showToast(t("vehicles.created"));
       navigate(`/vehicles/${response.data.data.vehicleId}`);
     } catch (error) {
       if ((error as any)?.response?.data?.errors) {
@@ -209,9 +212,9 @@ export default function NewVehiclePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">New Vehicle</h2>
+        <h2 className="text-xl font-semibold">{t("newVehicle.title")}</h2>
         <p className="text-sm text-slate-500">
-          Register a newly acquired vehicle.
+          {t("newVehicle.subtitle")}
         </p>
       </div>
       <form
@@ -220,7 +223,7 @@ export default function NewVehiclePage() {
       >
         <div className="grid gap-4 md:grid-cols-2">
           <TextInput
-            label="License Plate"
+            label={t("newVehicle.licensePlate")}
             value={form.licensePlate}
             required
             onChange={(event) => handleChange("licensePlate", event.target.value)}
@@ -232,19 +235,19 @@ export default function NewVehiclePage() {
             error={errors.licensePlate}
           />
           <TextInput
-            label="Renavam"
+            label={t("newVehicle.renavam")}
             value={form.renavam}
             onChange={(event) => handleChange("renavam", event.target.value)}
             error={errors.renavam}
           />
           <TextInput
-            label="VIN"
+            label={t("newVehicle.vin")}
             value={form.vin}
             onChange={(event) => handleChange("vin", event.target.value)}
             error={errors.vin}
           />
           <NumberInput
-            label="Year"
+            label={t("newVehicle.year")}
             value={form.year}
             required
             min={1900}
@@ -254,7 +257,7 @@ export default function NewVehiclePage() {
             error={errors.year}
           />
           <ComboboxInput
-            label="Color"
+            label={t("newVehicle.color")}
             value={form.color}
             required
             suggestions={suggestions.colors}
@@ -267,7 +270,7 @@ export default function NewVehiclePage() {
             error={errors.color}
           />
           <ComboboxInput
-            label="Model"
+            label={t("newVehicle.model")}
             value={form.model}
             required
             suggestions={suggestions.models}
@@ -280,7 +283,7 @@ export default function NewVehiclePage() {
             error={errors.model}
           />
           <ComboboxInput
-            label="Brand"
+            label={t("newVehicle.brand")}
             value={form.brand}
             required
             suggestions={suggestions.brands}
@@ -293,16 +296,19 @@ export default function NewVehiclePage() {
             error={errors.brand}
           />
           <SelectInput
-            label="Supplier Source"
+            label={t("newVehicle.supplierSource")}
             value={form.supplierSource}
-            options={SUPPLIER_OPTIONS}
+            options={SUPPLIER_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
             required
             onChange={(event) =>
               handleChange("supplierSource", event.target.value)
             }
           />
           <MoneyInput
-            label="Purchase Price"
+            label={t("newVehicle.purchasePrice")}
             value={form.purchasePrice}
             required
             onValueChange={(value) => handleChange("purchasePrice", value)}
@@ -310,7 +316,7 @@ export default function NewVehiclePage() {
             error={errors.purchasePrice}
           />
           <MoneyInput
-            label="Freight Cost"
+            label={t("newVehicle.freightCost")}
             value={form.freightCost}
             onValueChange={(value) => handleChange("freightCost", value)}
             onBlur={() => validateField("freightCost")}
@@ -324,14 +330,14 @@ export default function NewVehiclePage() {
             disabled={isSubmitting}
             className="rounded-md border border-slate-200 px-4 py-2 text-sm"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
             className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isSubmitting ? "Saving..." : "Save Vehicle"}
+            {isSubmitting ? t("actions.saving") : t("newVehicle.save")}
           </button>
         </div>
       </form>
