@@ -284,6 +284,9 @@ export default function DistributedVehiclesReportPage() {
                   {t("reports.distributed.table.purchasePrice")}
                 </th>
                 <th className="px-6 py-3 text-right">
+                  {t("reports.distributed.table.purchaseCommission")}
+                </th>
+                <th className="px-6 py-3 text-right">
                   {t("reports.distributed.table.totalCost")}
                 </th>
               </tr>
@@ -300,6 +303,9 @@ export default function DistributedVehiclesReportPage() {
                   </td>
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.purchasePrice)}
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    {formatMoney(vehicle.purchaseCommission)}
                   </td>
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.totalCost)}

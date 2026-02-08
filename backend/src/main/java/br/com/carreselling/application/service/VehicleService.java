@@ -2,6 +2,7 @@ package br.com.carreselling.application.service;
 
 import br.com.carreselling.application.service.model.VehicleDetail;
 import br.com.carreselling.application.service.model.VehicleSummary;
+import br.com.carreselling.application.service.model.VehicleTaxes;
 import br.com.carreselling.domain.exception.ConflictException;
 import br.com.carreselling.domain.exception.InvalidStateException;
 import br.com.carreselling.domain.exception.NotFoundException;
@@ -28,13 +29,16 @@ public class VehicleService implements IVehicleService {
     private final VehicleRepository vehicleRepository;
     private final DocumentRepository documentRepository;
     private final PartnerRepository partnerRepository;
+    private final VehicleSalesCalculator salesCalculator;
 
     public VehicleService(VehicleRepository vehicleRepository,
                           DocumentRepository documentRepository,
-                          PartnerRepository partnerRepository) {
+                          PartnerRepository partnerRepository,
+                          VehicleSalesCalculator salesCalculator) {
         this.vehicleRepository = vehicleRepository;
         this.documentRepository = documentRepository;
         this.partnerRepository = partnerRepository;
+        this.salesCalculator = salesCalculator;
     }
 
     @Override
@@ -47,7 +51,8 @@ public class VehicleService implements IVehicleService {
                               String brand,
                               SupplierSource supplierSource,
                               BigDecimal purchasePrice,
-                              BigDecimal freightCost) {
+                              BigDecimal freightCost,
+                              BigDecimal purchaseCommission) {
         String normalizedPlate = normalizePlate(licensePlate);
         String normalizedRenavam = normalizeOptionalText(renavam);
         String normalizedVin = normalizeOptionalText(vin);
@@ -55,6 +60,8 @@ public class VehicleService implements IVehicleService {
         validateRequiredMoney(purchasePrice, "purchasePrice");
         BigDecimal normalizedFreight = freightCost == null ? BigDecimal.ZERO : freightCost;
         validateOptionalMoney(normalizedFreight, "freightCost");
+        BigDecimal normalizedCommission = purchaseCommission == null ? BigDecimal.ZERO : purchaseCommission;
+        validateOptionalMoney(normalizedCommission, "purchaseCommission");
         vehicleRepository.findVehicleByLicensePlate(normalizedPlate)
             .ifPresent(existing -> {
                 throw new ConflictException("License plate already registered");
@@ -84,10 +91,12 @@ public class VehicleService implements IVehicleService {
             supplierSource,
             purchasePrice,
             normalizedFreight,
+            normalizedCommission,
             null,
             null,
             null,
             VehicleStatus.IN_LOT,
+            null,
             null,
             now,
             now
@@ -107,6 +116,9 @@ public class VehicleService implements IVehicleService {
             .add(vehicle.getFreightCost())
             .add(servicesTotal);
         String partnerName = resolvePartnerName(vehicle.getAssignedPartnerId());
+        BigDecimal purchaseCommission = vehicle.getPurchaseCommission() == null
+            ? BigDecimal.ZERO
+            : vehicle.getPurchaseCommission();
         return new VehicleDetail(
             vehicle.getId(),
             vehicle.getLicensePlate(),
@@ -119,6 +131,7 @@ public class VehicleService implements IVehicleService {
             vehicle.getSupplierSource(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
+            purchaseCommission,
             vehicle.getSellingPrice(),
             vehicle.getPurchaseInvoiceDocumentId(),
             vehicle.getPurchasePaymentReceiptDocumentId(),
@@ -129,7 +142,8 @@ public class VehicleService implements IVehicleService {
             totalCost,
             documentsCount,
             vehicle.getCreatedAt(),
-            vehicle.getUpdatedAt()
+            vehicle.getUpdatedAt(),
+            vehicle.getDistributedAt()
         );
     }
 
@@ -147,6 +161,36 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
+    public VehicleTaxes getVehicleTaxes(UUID vehicleId) {
+        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+            .orElseThrow(() -> new NotFoundException("Vehicle not found"));
+        if (vehicle.getSellingPrice() == null) {
+            return new VehicleTaxes(
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO
+            );
+        }
+        BigDecimal baseProfit = vehicle.getSellingPrice().subtract(vehicle.getPurchasePrice());
+        BigDecimal taxableMargin = baseProfit.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : baseProfit;
+        VehicleSalesCalculator.TaxBreakdown taxes = salesCalculator.calculateTaxes(
+            vehicle.getSellingPrice(),
+            taxableMargin
+        );
+        return new VehicleTaxes(
+            taxes.icms(),
+            taxes.pis(),
+            taxes.cofins(),
+            taxes.csll(),
+            taxes.irpj(),
+            taxes.totalTaxes()
+        );
+    }
+
+    @Override
     public List<VehicleSummary> listVehicles(VehicleStatus status, String query, int page, int size) {
         int offset = Math.max(page, 0) * Math.max(size, 1);
         List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(status, query, offset, size);
@@ -157,6 +201,26 @@ public class VehicleService implements IVehicleService {
                     .add(vehicle.getFreightCost())
                     .add(servicesTotal);
                 String partnerName = resolvePartnerName(vehicle.getAssignedPartnerId());
+                BigDecimal purchaseCommission = vehicle.getPurchaseCommission() == null
+                    ? BigDecimal.ZERO
+                    : vehicle.getPurchaseCommission();
+                Long yardDays = null;
+                Instant distributedAt = vehicle.getDistributedAt();
+                if (distributedAt == null
+                    && (vehicle.getStatus() == VehicleStatus.DISTRIBUTED
+                        || vehicle.getStatus() == VehicleStatus.SOLD)) {
+                    distributedAt = vehicle.getUpdatedAt();
+                }
+                if (distributedAt != null && vehicle.getCreatedAt() != null) {
+                    long days = java.time.temporal.ChronoUnit.DAYS.between(
+                        vehicle.getCreatedAt(),
+                        distributedAt
+                    );
+                    yardDays = Math.max(days, 0);
+                } else if (vehicle.getStatus() == VehicleStatus.DISTRIBUTED
+                    || vehicle.getStatus() == VehicleStatus.SOLD) {
+                    yardDays = 0L;
+                }
                 return new VehicleSummary(
                     vehicle.getId(),
                     vehicle.getLicensePlate(),
@@ -165,9 +229,11 @@ public class VehicleService implements IVehicleService {
                     vehicle.getYear(),
                     vehicle.getStatus(),
                     vehicle.getPurchasePrice(),
+                    purchaseCommission,
                     servicesTotal,
                     totalCost,
-                    partnerName
+                    partnerName,
+                    yardDays
                 );
             })
             .toList();
@@ -187,15 +253,26 @@ public class VehicleService implements IVehicleService {
                               SupplierSource supplierSource,
                               BigDecimal purchasePrice,
                               BigDecimal freightCost,
+                              BigDecimal purchaseCommission,
                               UUID invoiceDocumentId,
                               UUID paymentReceiptDocumentId) {
         validateRequiredMoney(purchasePrice, "purchasePrice");
         validateRequiredMoney(freightCost, "freightCost");
+        validateOptionalMoney(purchaseCommission, "purchaseCommission");
         Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
             .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         validateDocumentLink(vehicleId, invoiceDocumentId);
         validateDocumentLink(vehicleId, paymentReceiptDocumentId);
-        vehicle.updateDetails(year, color, model, brand, supplierSource, purchasePrice, freightCost);
+        vehicle.updateDetails(
+            year,
+            color,
+            model,
+            brand,
+            supplierSource,
+            purchasePrice,
+            freightCost,
+            purchaseCommission
+        );
         vehicle.updateLinkedDocuments(invoiceDocumentId, paymentReceiptDocumentId);
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
@@ -221,6 +298,9 @@ public class VehicleService implements IVehicleService {
         }
         UUID partner = assignedPartnerId != null ? assignedPartnerId : vehicle.getAssignedPartnerId();
         vehicle.transitionStatus(targetStatus, partner);
+        if (targetStatus == VehicleStatus.DISTRIBUTED && vehicle.getDistributedAt() == null) {
+            vehicle.setDistributedAt(Instant.now());
+        }
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
         vehicleRepository.updateVehicle(vehicle);
@@ -233,6 +313,9 @@ public class VehicleService implements IVehicleService {
         Partner partner = partnerRepository.findPartnerById(partnerId)
             .orElseThrow(() -> new NotFoundException("Partner not found"));
         vehicle.assignPartner(partner.getId());
+        if (vehicle.getDistributedAt() == null) {
+            vehicle.setDistributedAt(Instant.now());
+        }
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
         vehicleRepository.updateVehicle(vehicle);

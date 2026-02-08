@@ -29,9 +29,11 @@ export type VehicleListItem = {
   year: number;
   status: VehicleStatus;
   purchasePrice: number;
+  purchaseCommission: number;
   servicesTotal: number;
   totalCost: number;
   assignedPartnerName?: string | null;
+  yardDays?: number | null;
 };
 
 export type VehicleListResponse = {
@@ -53,6 +55,7 @@ export type VehicleDetail = {
   supplierSource: SupplierSource;
   purchasePrice: number;
   freightCost: number;
+  purchaseCommission: number;
   sellingPrice?: number | null;
   purchaseInvoiceDocumentId?: string | null;
   purchasePaymentReceiptDocumentId?: string | null;
@@ -62,6 +65,7 @@ export type VehicleDetail = {
   servicesTotal: number;
   totalCost: number;
   documentsCount: number;
+  distributedAt?: string | null;
 };
 
 export type SoldVehicleItem = {
@@ -74,6 +78,7 @@ export type SoldVehicleItem = {
   sellingPrice: number;
   totalTaxes: number;
   servicesTotal: number;
+  purchaseCommission: number;
 };
 
 export type SoldVehiclesReport = {
@@ -82,6 +87,7 @@ export type SoldVehiclesReport = {
   totalSoldValue: number;
   totalTaxesValue: number;
   totalServiceValue: number;
+  totalCommissionValue: number;
   profit: number;
 };
 
@@ -131,7 +137,17 @@ export type ReportVehicleItem = {
   year: number;
   distributedAt?: string | null;
   purchasePrice: number;
+  purchaseCommission: number;
   totalCost: number;
+};
+
+export type VehicleTaxes = {
+  icms: number;
+  pis: number;
+  cofins: number;
+  csll: number;
+  irpj: number;
+  totalTaxes: number;
 };
 
 export type ReportPartnerGroup = {

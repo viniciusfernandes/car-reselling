@@ -11,5 +11,6 @@ public record ReportVehicleItem(UUID vehicleId,
                                 int year,
                                 LocalDate distributedAt,
                                 BigDecimal purchasePrice,
+                               BigDecimal purchaseCommission,
                                 BigDecimal totalCost) {
 }

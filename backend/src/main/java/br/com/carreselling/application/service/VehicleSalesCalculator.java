@@ -18,6 +18,7 @@ public class VehicleSalesCalculator {
     private final BigDecimal cofinsRate;
     private final BigDecimal csllRate;
     private final BigDecimal irpjRate;
+    private final BigDecimal irCommissionRate;
 
     public VehicleSalesCalculator(
         @Value("${tax.icms-rate:0.12}") BigDecimal icmsRate,
@@ -25,7 +26,8 @@ public class VehicleSalesCalculator {
         @Value("${tax.pis-rate:0.0065}") BigDecimal pisRate,
         @Value("${tax.cofins-rate:0.03}") BigDecimal cofinsRate,
         @Value("${tax.csll-rate:0.0288}") BigDecimal csllRate,
-        @Value("${tax.irpj-rate:0.048}") BigDecimal irpjRate
+        @Value("${tax.irpj-rate:0.048}") BigDecimal irpjRate,
+        @Value("${tax.ir-commission-rate:0.15}") BigDecimal irCommissionRate
     ) {
         this.icmsRate = icmsRate;
         this.icmsBaseRate = icmsBaseRate;
@@ -33,6 +35,7 @@ public class VehicleSalesCalculator {
         this.cofinsRate = cofinsRate;
         this.csllRate = csllRate;
         this.irpjRate = irpjRate;
+        this.irCommissionRate = irCommissionRate;
     }
 
     public SoldVehiclesReport buildReport(List<SoldVehicleRaw> vehicles) {
@@ -40,29 +43,28 @@ public class VehicleSalesCalculator {
         BigDecimal totalSold = BigDecimal.ZERO;
         BigDecimal totalTaxes = BigDecimal.ZERO;
         BigDecimal totalServices = BigDecimal.ZERO;
+        BigDecimal totalCommission = BigDecimal.ZERO;
+        BigDecimal totalCommissionIr = BigDecimal.ZERO;
+        BigDecimal totalProfit = BigDecimal.ZERO;
 
         for (SoldVehicleRaw vehicle : vehicles) {
             BigDecimal sellingPrice = vehicle.sellingPrice();
             BigDecimal servicesTotal = vehicle.servicesTotal();
-            BigDecimal vehicleCost = vehicle.purchasePrice()
-                .add(vehicle.freightCost())
-                .add(servicesTotal);
-            BigDecimal margin = sellingPrice.subtract(vehicleCost);
-            BigDecimal taxableMargin = margin.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : margin;
+            BigDecimal purchaseCommission = vehicle.purchaseCommission() == null
+                ? BigDecimal.ZERO
+                : vehicle.purchaseCommission();
+            BigDecimal baseProfit = sellingPrice.subtract(vehicle.purchasePrice());
+            BigDecimal taxableMargin = baseProfit.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : baseProfit;
 
-            BigDecimal icms = sellingPrice
-                .multiply(icmsBaseRate)
-                .multiply(icmsRate);
-            BigDecimal pis = taxableMargin.multiply(pisRate);
-            BigDecimal cofins = taxableMargin.multiply(cofinsRate);
-            BigDecimal csll = taxableMargin.multiply(csllRate);
-            BigDecimal irpj = taxableMargin.multiply(irpjRate);
-            BigDecimal taxes = icms
-                .add(pis)
-                .add(cofins)
-                .add(csll)
-                .add(irpj)
+            TaxBreakdown taxes = calculateTaxes(sellingPrice, taxableMargin);
+            BigDecimal commissionIr = purchaseCommission
+                .multiply(irCommissionRate)
                 .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal vehicleProfit = baseProfit
+                .subtract(taxes.totalTaxes())
+                .subtract(vehicle.freightCost())
+                .subtract(servicesTotal)
+                .subtract(commissionIr);
             items.add(new SoldVehicleItem(
                 vehicle.vehicleId(),
                 vehicle.licensePlate(),
@@ -71,15 +73,17 @@ public class VehicleSalesCalculator {
                 vehicle.year(),
                 vehicle.soldAt(),
                 sellingPrice,
-                taxes,
-                servicesTotal
+                taxes.totalTaxes(),
+                servicesTotal,
+                purchaseCommission
             ));
             totalSold = totalSold.add(sellingPrice);
-            totalTaxes = totalTaxes.add(taxes);
+            totalTaxes = totalTaxes.add(taxes.totalTaxes());
             totalServices = totalServices.add(servicesTotal);
+            totalCommission = totalCommission.add(purchaseCommission);
+            totalCommissionIr = totalCommissionIr.add(commissionIr);
+            totalProfit = totalProfit.add(vehicleProfit);
         }
-
-        BigDecimal profit = totalSold.subtract(totalTaxes).subtract(totalServices);
 
         return new SoldVehiclesReport(
             items,
@@ -87,8 +91,51 @@ public class VehicleSalesCalculator {
             totalSold,
             totalTaxes,
             totalServices,
-            profit
+            totalCommission,
+            totalProfit
         );
+    }
+
+    public TaxBreakdown calculateTaxes(BigDecimal sellingPrice, BigDecimal taxableMargin) {
+        if (sellingPrice == null || taxableMargin == null) {
+            return new TaxBreakdown(
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO
+            );
+        }
+        BigDecimal icms = sellingPrice
+            .multiply(icmsBaseRate)
+            .multiply(icmsRate);
+        BigDecimal pis = taxableMargin.multiply(pisRate);
+        BigDecimal cofins = taxableMargin.multiply(cofinsRate);
+        BigDecimal csll = taxableMargin.multiply(csllRate);
+        BigDecimal irpj = taxableMargin.multiply(irpjRate);
+        BigDecimal total = icms
+            .add(pis)
+            .add(cofins)
+            .add(csll)
+            .add(irpj)
+            .setScale(2, RoundingMode.HALF_UP);
+        return new TaxBreakdown(
+            icms.setScale(2, RoundingMode.HALF_UP),
+            pis.setScale(2, RoundingMode.HALF_UP),
+            cofins.setScale(2, RoundingMode.HALF_UP),
+            csll.setScale(2, RoundingMode.HALF_UP),
+            irpj.setScale(2, RoundingMode.HALF_UP),
+            total
+        );
+    }
+
+    public record TaxBreakdown(BigDecimal icms,
+                               BigDecimal pis,
+                               BigDecimal cofins,
+                               BigDecimal csll,
+                               BigDecimal irpj,
+                               BigDecimal totalTaxes) {
     }
 
     public record SoldVehicleRaw(java.util.UUID vehicleId,
@@ -98,6 +145,7 @@ public class VehicleSalesCalculator {
                                  int year,
                                  java.time.LocalDate soldAt,
                                  BigDecimal purchasePrice,
+                                 BigDecimal purchaseCommission,
                                  BigDecimal freightCost,
                                  BigDecimal sellingPrice,
                                  BigDecimal servicesTotal) {

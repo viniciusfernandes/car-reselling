@@ -83,9 +83,11 @@
       "year": "Ano",
       "status": "Status",
       "purchasePrice": "Preço de compra",
+      "purchaseCommission": "Comissão",
       "servicesTotal": "Total de serviços",
       "totalCost": "Custo total",
-      "partner": "Parceiro"
+      "partner": "Parceiro",
+      "yardTime": "Tempo pátio"
     }
   },
   "newVehicle": {
@@ -101,6 +103,7 @@
     "supplierSource": "Origem do fornecedor",
     "purchasePrice": "Preço de compra",
     "freightCost": "Frete",
+    "purchaseCommission": "Comissão de compra",
     "save": "Salvar veículo"
   },
   "supplier": {
@@ -118,7 +121,8 @@
     "overview": "Visão geral",
     "services": "Serviços",
     "documents": "Documentos",
-    "distribution": "Distribuição"
+    "distribution": "Distribuição",
+    "taxes": "Impostos"
   },
   "serviceTypes": {
     "MECHANICAL": "Mecânico",
@@ -148,6 +152,7 @@
     "model": "Modelo",
     "brand": "Marca",
     "purchasePrice": "Preço de compra",
+    "purchaseCommission": "Comissão de compra",
     "sellingPrice": "Preço de venda",
     "saveSellingPrice": "Salvar preço de venda",
     "freightCost": "Frete",
@@ -205,6 +210,11 @@
       "partner": "Parceiro",
       "assign": "Atribuir parceiro",
       "mustBeReady": "O veículo precisa estar pronto para distribuição."
+    },
+    "taxes": {
+      "title": "Impostos",
+      "subtitle": "Baseado no preço de venda e nos custos do veículo.",
+      "missingSellingPrice": "Defina um preço de venda para calcular os impostos."
     }
   },
   "confirm": {
@@ -230,6 +240,7 @@
         "year": "Ano",
         "distributedAt": "Data de distribuição",
         "purchasePrice": "Preço de compra",
+        "purchaseCommission": "Comissão",
         "totalCost": "Custo total"
       },
       "empty": "Nenhum veículo distribuído ainda."
@@ -244,6 +255,7 @@
         "soldValue": "Valor total vendido",
         "taxes": "Total de impostos",
         "services": "Total de serviços",
+        "commission": "Total de comissão",
         "profit": "Lucro"
       },
       "table": {
@@ -253,7 +265,8 @@
         "year": "Ano",
         "sellingPrice": "Preço de venda",
         "totalTaxes": "Total de impostos",
-        "servicesTotal": "Total de serviços"
+        "servicesTotal": "Total de serviços",
+        "commission": "Comissão"
       },
       "histogram": {
         "title": "Evolução mensal das vendas",
@@ -268,6 +281,15 @@
     }
   },
   "units": {
-    "kb": "{{value}} KB"
+    "kb": "{{value}} KB",
+    "days": "{{value}} dias"
+  },
+  "taxes": {
+    "icms": "ICMS",
+    "pis": "PIS",
+    "cofins": "COFINS",
+    "csll": "CSLL",
+    "irpj": "IRPJ",
+    "total": "Total de impostos"
   }
 }

@@ -15,8 +15,7 @@ type LoginResponseEnvelope = {
   data?: LoginResponse;
 };
 
-const AUTH_BASE_URL =
-  import.meta.env.VITE_AUTH_BASE_URL ?? "http://localhost:8081";
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL ?? "/auth";
 
 export default function LoginPage() {
   const { t } = useTranslation();

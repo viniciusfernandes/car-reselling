@@ -31,9 +31,9 @@ public class VehicleJdbcRepository implements VehicleRepository {
         jdbcTemplate.update("""
                 INSERT INTO vehicles
                 (id, license_plate, renavam, vin, year, color, model, brand, supplier_source,
-                 purchase_price, freight_cost, selling_price, purchase_payment_receipt_document_id,
-                 purchase_invoice_document_id, status, assigned_partner_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 purchase_price, freight_cost, purchase_commission, selling_price, purchase_payment_receipt_document_id,
+                 purchase_invoice_document_id, status, assigned_partner_id, distributed_at, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             vehicle.getId().toString(),
             vehicle.getLicensePlate(),
@@ -46,11 +46,13 @@ public class VehicleJdbcRepository implements VehicleRepository {
             vehicle.getSupplierSource().name(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
+            vehicle.getPurchaseCommission(),
             vehicle.getSellingPrice(),
             optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
             optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
             vehicle.getStatus().name(),
             optionalUuid(vehicle.getAssignedPartnerId()),
+            vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
             Timestamp.from(vehicle.getCreatedAt()),
             vehicle.getUpdatedAt() == null ? null : Timestamp.from(vehicle.getUpdatedAt())
         );
@@ -148,8 +150,9 @@ public class VehicleJdbcRepository implements VehicleRepository {
         jdbcTemplate.update("""
                 UPDATE vehicles
                 SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, supplier_source = ?,
-                    purchase_price = ?, freight_cost = ?, selling_price = ?, purchase_payment_receipt_document_id = ?,
-                    purchase_invoice_document_id = ?, status = ?, assigned_partner_id = ?, updated_at = ?
+                    purchase_price = ?, freight_cost = ?, purchase_commission = ?, selling_price = ?,
+                    purchase_payment_receipt_document_id = ?, purchase_invoice_document_id = ?,
+                    status = ?, assigned_partner_id = ?, distributed_at = ?, updated_at = ?
                 WHERE id = ?
                 """,
             vehicle.getRenavam(),
@@ -161,11 +164,13 @@ public class VehicleJdbcRepository implements VehicleRepository {
             vehicle.getSupplierSource().name(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
+            vehicle.getPurchaseCommission(),
             vehicle.getSellingPrice(),
             optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
             optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
             vehicle.getStatus().name(),
             optionalUuid(vehicle.getAssignedPartnerId()),
+            vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
             vehicle.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(vehicle.getUpdatedAt()),
             vehicle.getId().toString()
         );
@@ -216,11 +221,13 @@ public class VehicleJdbcRepository implements VehicleRepository {
             SupplierSource supplierSource = SupplierSource.valueOf(rs.getString("supplier_source"));
             BigDecimal purchasePrice = rs.getBigDecimal("purchase_price");
             BigDecimal freightCost = rs.getBigDecimal("freight_cost");
+            BigDecimal purchaseCommission = rs.getBigDecimal("purchase_commission");
             BigDecimal sellingPrice = rs.getBigDecimal("selling_price");
             UUID paymentReceiptId = optionalUuid(rs.getString("purchase_payment_receipt_document_id"));
             UUID invoiceId = optionalUuid(rs.getString("purchase_invoice_document_id"));
             VehicleStatus status = VehicleStatus.valueOf(rs.getString("status"));
             UUID assignedPartnerId = optionalUuid(rs.getString("assigned_partner_id"));
+            Timestamp distributedAt = rs.getTimestamp("distributed_at");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
             return new Vehicle(
@@ -235,11 +242,13 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 supplierSource,
                 purchasePrice,
                 freightCost == null ? BigDecimal.ZERO : freightCost,
+                purchaseCommission == null ? BigDecimal.ZERO : purchaseCommission,
                 sellingPrice,
                 paymentReceiptId,
                 invoiceId,
                 status,
                 assignedPartnerId,
+                distributedAt == null ? null : distributedAt.toInstant(),
                 createdAt,
                 updatedAt == null ? null : updatedAt.toInstant()
             );

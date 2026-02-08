@@ -19,11 +19,13 @@ public class Vehicle {
     private SupplierSource supplierSource;
     private BigDecimal purchasePrice;
     private BigDecimal freightCost;
+    private BigDecimal purchaseCommission;
     private BigDecimal sellingPrice;
     private UUID purchasePaymentReceiptDocumentId;
     private UUID purchaseInvoiceDocumentId;
     private VehicleStatus status;
     private UUID assignedPartnerId;
+    private Instant distributedAt;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -38,11 +40,13 @@ public class Vehicle {
                    SupplierSource supplierSource,
                    BigDecimal purchasePrice,
                    BigDecimal freightCost,
+                   BigDecimal purchaseCommission,
                    BigDecimal sellingPrice,
                    UUID purchasePaymentReceiptDocumentId,
                    UUID purchaseInvoiceDocumentId,
                    VehicleStatus status,
                    UUID assignedPartnerId,
+                   Instant distributedAt,
                    Instant createdAt,
                    Instant updatedAt) {
         this.id = id;
@@ -56,11 +60,13 @@ public class Vehicle {
         this.supplierSource = supplierSource;
         this.purchasePrice = purchasePrice;
         this.freightCost = freightCost;
+        this.purchaseCommission = purchaseCommission;
         this.sellingPrice = sellingPrice;
         this.purchasePaymentReceiptDocumentId = purchasePaymentReceiptDocumentId;
         this.purchaseInvoiceDocumentId = purchaseInvoiceDocumentId;
         this.status = status;
         this.assignedPartnerId = assignedPartnerId;
+        this.distributedAt = distributedAt;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -71,7 +77,8 @@ public class Vehicle {
                               String brand,
                               SupplierSource supplierSource,
                               BigDecimal purchasePrice,
-                              BigDecimal freightCost) {
+                              BigDecimal freightCost,
+                              BigDecimal purchaseCommission) {
         this.year = year;
         this.color = color;
         this.model = model;
@@ -79,6 +86,7 @@ public class Vehicle {
         this.supplierSource = supplierSource;
         this.purchasePrice = purchasePrice;
         this.freightCost = freightCost;
+        this.purchaseCommission = purchaseCommission;
     }
 
     public void updateSellingPrice(BigDecimal sellingPrice) {
@@ -174,6 +182,10 @@ public class Vehicle {
         return sellingPrice;
     }
 
+    public BigDecimal getPurchaseCommission() {
+        return purchaseCommission;
+    }
+
     public UUID getPurchasePaymentReceiptDocumentId() {
         return purchasePaymentReceiptDocumentId;
     }
@@ -188,6 +200,10 @@ public class Vehicle {
 
     public UUID getAssignedPartnerId() {
         return assignedPartnerId;
+    }
+
+    public Instant getDistributedAt() {
+        return distributedAt;
     }
 
     public Instant getCreatedAt() {
@@ -216,6 +232,10 @@ public class Vehicle {
 
     public void setAssignedPartnerId(UUID assignedPartnerId) {
         this.assignedPartnerId = assignedPartnerId;
+    }
+
+    public void setDistributedAt(Instant distributedAt) {
+        this.distributedAt = distributedAt;
     }
 
     @Override

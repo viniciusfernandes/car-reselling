@@ -17,6 +17,7 @@ import {
   ServiceListResponse,
   ServiceType,
   VehicleDetail,
+  VehicleTaxes,
   VehicleStatus,
 } from "../../service/types";
 import TextInput from "../../component/input/TextInput";
@@ -43,7 +44,7 @@ const STATUS_KEYS: Record<VehicleStatus, string> = {
   SOLD: "status.SOLD",
 };
 
-type TabKey = "overview" | "services" | "documents" | "distribution";
+type TabKey = "overview" | "services" | "documents" | "distribution" | "taxes";
 
 const normalizeMoneyInput = (value: string) => {
   const sanitized = normalizeMoney(value);
@@ -75,6 +76,7 @@ export default function VehicleDetailPage() {
   const [servicesTotal, setServicesTotal] = useState(0);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
+  const [taxes, setTaxes] = useState<VehicleTaxes | null>(null);
   const [suggestions, setSuggestions] = useState({
     colors: [] as string[],
     brands: [] as string[],
@@ -116,6 +118,7 @@ export default function VehicleDetailPage() {
     supplierSource: "INTERNET",
     purchasePrice: "",
     freightCost: "",
+    purchaseCommission: "",
     purchaseInvoiceDocumentId: "",
     purchasePaymentReceiptDocumentId: "",
   });
@@ -129,6 +132,7 @@ export default function VehicleDetailPage() {
     services: t("tabs.services"),
     documents: t("tabs.documents"),
     distribution: t("tabs.distribution"),
+    taxes: t("tabs.taxes"),
   };
   const statusOptions: Array<{ value: VehicleStatus; label: string }> = [
     { value: "IN_LOT", label: t("status.IN_LOT") },
@@ -162,11 +166,13 @@ export default function VehicleDetailPage() {
       serviceResponse,
       documentResponse,
       partnerResponse,
+      taxesResponse,
     ] = await Promise.allSettled([
           api.get<ApiResponse<VehicleDetail>>(`/vehicles/${vehicleId}`),
       api.get<ApiResponse<ServiceListResponse>>(`/vehicles/${vehicleId}/services`),
       api.get<ApiResponse<DocumentListResponse>>(`/vehicles/${vehicleId}/documents`),
           api.get<ApiResponse<PartnerListResponse>>(`/partners`),
+          api.get<ApiResponse<VehicleTaxes>>(`/vehicles/${vehicleId}/taxes`),
         ]);
 
     if (vehicleResponse.status === "fulfilled") {
@@ -193,6 +199,12 @@ export default function VehicleDetailPage() {
       setPartners(partnerResponse.value.data.data.partners);
     } else {
       showToast(extractErrorMessage(partnerResponse.reason));
+    }
+
+    if (taxesResponse.status === "fulfilled") {
+      setTaxes(taxesResponse.value.data.data);
+    } else {
+      setTaxes(null);
     }
 
       setLoading(false);
@@ -226,6 +238,7 @@ export default function VehicleDetailPage() {
       supplierSource: vehicle.supplierSource,
       purchasePrice: formatNumber(vehicle.purchasePrice),
       freightCost: formatNumber(vehicle.freightCost),
+      purchaseCommission: formatNumber(vehicle.purchaseCommission ?? 0),
       purchaseInvoiceDocumentId: vehicle.purchaseInvoiceDocumentId ?? "",
       purchasePaymentReceiptDocumentId:
         vehicle.purchasePaymentReceiptDocumentId ?? "",
@@ -295,6 +308,10 @@ export default function VehicleDetailPage() {
     if (freightError) {
       nextErrors.freightCost = freightError;
     }
+    const commissionError = getMoneyError(updateForm.purchaseCommission, true);
+    if (commissionError) {
+      nextErrors.purchaseCommission = commissionError;
+    }
     setUpdateErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -343,6 +360,14 @@ export default function VehicleDetailPage() {
         nextErrors.freightCost = error;
       } else {
         delete nextErrors.freightCost;
+      }
+    }
+    if (field === "purchaseCommission") {
+      const error = getMoneyError(value ?? updateForm.purchaseCommission, true);
+      if (error) {
+        nextErrors.purchaseCommission = error;
+      } else {
+        delete nextErrors.purchaseCommission;
       }
     }
     setUpdateErrors(nextErrors);
@@ -496,6 +521,7 @@ export default function VehicleDetailPage() {
         supplierSource: updateForm.supplierSource,
         purchasePrice: parseMoney(updateForm.purchasePrice),
         freightCost: parseMoney(updateForm.freightCost),
+        purchaseCommission: parseMoney(updateForm.purchaseCommission),
         purchaseInvoiceDocumentId:
           updateForm.purchaseInvoiceDocumentId || null,
         purchasePaymentReceiptDocumentId:
@@ -644,7 +670,7 @@ export default function VehicleDetailPage() {
       </div>
 
       <div className="flex gap-2 border-b border-slate-200">
-        {(["overview", "services", "documents", "distribution"] as TabKey[]).map(
+        {(["overview", "services", "documents", "distribution", "taxes"] as TabKey[]).map(
           (tab) => (
             <button
               key={tab}
@@ -751,6 +777,19 @@ export default function VehicleDetailPage() {
               }
               onBlur={() => validateUpdateField("purchasePrice")}
               error={updateErrors.purchasePrice}
+            />
+            <MoneyInput
+              label={t("vehicleDetail.purchaseCommission")}
+              value={updateForm.purchaseCommission}
+              required
+              onValueChange={(value) =>
+                setUpdateForm((prev) => ({
+                  ...prev,
+                  purchaseCommission: value,
+                }))
+              }
+              onBlur={() => validateUpdateField("purchaseCommission")}
+              error={updateErrors.purchaseCommission}
             />
             {vehicle.status === "DISTRIBUTED" || vehicle.status === "SOLD" ? (
               <div className="space-y-2">
@@ -1260,6 +1299,63 @@ export default function VehicleDetailPage() {
               {t("vehicleDetail.distribution.mustBeReady")}
             </p>
           ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === "taxes" ? (
+        <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700">
+              {t("vehicleDetail.taxes.title")}
+            </h3>
+            <p className="text-sm text-slate-500">
+              {t("vehicleDetail.taxes.subtitle")}
+            </p>
+          </div>
+          {vehicle.sellingPrice !== null && vehicle.sellingPrice !== undefined ? (
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-md border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">{t("taxes.icms")}</div>
+                <div className="text-base font-semibold">
+                  {formatMoney(taxes?.icms ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-md border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">{t("taxes.pis")}</div>
+                <div className="text-base font-semibold">
+                  {formatMoney(taxes?.pis ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-md border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">{t("taxes.cofins")}</div>
+                <div className="text-base font-semibold">
+                  {formatMoney(taxes?.cofins ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-md border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">{t("taxes.csll")}</div>
+                <div className="text-base font-semibold">
+                  {formatMoney(taxes?.csll ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-md border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">{t("taxes.irpj")}</div>
+                <div className="text-base font-semibold">
+                  {formatMoney(taxes?.irpj ?? 0)}
+                </div>
+              </div>
+              <div className="rounded-md border border-slate-100 p-4">
+                <div className="text-xs text-slate-500">{t("taxes.total")}</div>
+                <div className="text-base font-semibold">
+                  {formatMoney(taxes?.totalTaxes ?? 0)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border border-dashed border-slate-200 p-4 text-sm text-slate-500">
+              {t("vehicleDetail.taxes.missingSellingPrice")}
+            </div>
+          )}
         </div>
       ) : null}
     </div>

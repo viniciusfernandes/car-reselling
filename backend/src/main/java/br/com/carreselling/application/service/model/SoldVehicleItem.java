@@ -12,5 +12,6 @@ public record SoldVehicleItem(UUID vehicleId,
                               LocalDate soldAt,
                               BigDecimal sellingPrice,
                               BigDecimal totalTaxes,
-                              BigDecimal servicesTotal) {
+                              BigDecimal servicesTotal,
+                              BigDecimal purchaseCommission) {
 }

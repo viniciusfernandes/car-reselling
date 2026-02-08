@@ -17,6 +17,7 @@ public record CreateVehicleRequest(
     @NotBlank String brand,
     @NotNull SupplierSource supplierSource,
     @NotNull @PositiveOrZero BigDecimal purchasePrice,
-    @PositiveOrZero BigDecimal freightCost
+    @PositiveOrZero BigDecimal freightCost,
+    @NotNull @PositiveOrZero BigDecimal purchaseCommission
 ) {
 }

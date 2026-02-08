@@ -8,5 +8,6 @@ public record SoldVehiclesReport(List<SoldVehicleItem> vehicles,
                                  BigDecimal totalSoldValue,
                                  BigDecimal totalTaxesValue,
                                  BigDecimal totalServiceValue,
+                                 BigDecimal totalCommissionValue,
                                  BigDecimal profit) {
 }

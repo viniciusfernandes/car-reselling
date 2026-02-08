@@ -21,7 +21,8 @@ public class CreateVehicleMapper {
             request.brand(),
             request.supplierSource(),
             request.purchasePrice(),
-            request.freightCost()
+            request.freightCost(),
+            request.purchaseCommission()
         );
     }
 }

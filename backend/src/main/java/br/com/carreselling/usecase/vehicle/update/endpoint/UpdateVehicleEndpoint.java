@@ -34,6 +34,7 @@ public class UpdateVehicleEndpoint {
             request.supplierSource(),
             request.purchasePrice(),
             request.freightCost(),
+            request.purchaseCommission(),
             request.purchaseInvoiceDocumentId(),
             request.purchasePaymentReceiptDocumentId()
         );

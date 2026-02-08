@@ -17,6 +17,7 @@ public record VehicleDetailResponse(UUID id,
                                     SupplierSource supplierSource,
                                     BigDecimal purchasePrice,
                                     BigDecimal freightCost,
+                                    BigDecimal purchaseCommission,
                                     BigDecimal sellingPrice,
                                     UUID purchaseInvoiceDocumentId,
                                     UUID purchasePaymentReceiptDocumentId,
@@ -27,5 +28,6 @@ public record VehicleDetailResponse(UUID id,
                                     BigDecimal totalCost,
                                     int documentsCount,
                                     Instant createdAt,
-                                    Instant updatedAt) {
+                                    Instant updatedAt,
+                                    Instant distributedAt) {
 }

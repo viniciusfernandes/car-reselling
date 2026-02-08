@@ -11,7 +11,9 @@ public record VehicleListItem(UUID id,
                               int year,
                               VehicleStatus status,
                               BigDecimal purchasePrice,
+                              BigDecimal purchaseCommission,
                               BigDecimal servicesTotal,
                               BigDecimal totalCost,
-                              String assignedPartnerName) {
+                              String assignedPartnerName,
+                              Long yardDays) {
 }

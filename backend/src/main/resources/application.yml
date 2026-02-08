@@ -34,6 +34,7 @@ tax:
   cofins-rate: 0.03
   csll-rate: 0.0288
   irpj-rate: 0.048
+  ir-commission-rate: 0.15
 
 management:
   endpoints:

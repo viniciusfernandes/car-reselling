@@ -2,6 +2,7 @@ package br.com.carreselling.application.service;
 
 import br.com.carreselling.application.service.model.VehicleDetail;
 import br.com.carreselling.application.service.model.VehicleSummary;
+import br.com.carreselling.application.service.model.VehicleTaxes;
 import br.com.carreselling.domain.model.SupplierSource;
 import br.com.carreselling.domain.model.VehicleStatus;
 import java.math.BigDecimal;
@@ -19,7 +20,8 @@ public interface IVehicleService {
                        String brand,
                        SupplierSource supplierSource,
                        BigDecimal purchasePrice,
-                       BigDecimal freightCost);
+                       BigDecimal freightCost,
+                       BigDecimal purchaseCommission);
 
     VehicleDetail getVehicle(UUID vehicleId);
 
@@ -35,10 +37,13 @@ public interface IVehicleService {
                        SupplierSource supplierSource,
                        BigDecimal purchasePrice,
                        BigDecimal freightCost,
+                       BigDecimal purchaseCommission,
                        UUID invoiceDocumentId,
                        UUID paymentReceiptDocumentId);
 
     void updateSellingPrice(UUID vehicleId, BigDecimal sellingPrice);
+
+    VehicleTaxes getVehicleTaxes(UUID vehicleId);
 
     void transitionStatus(UUID vehicleId, VehicleStatus targetStatus, UUID assignedPartnerId);
 

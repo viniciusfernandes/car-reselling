@@ -43,6 +43,7 @@ export default function NewVehiclePage() {
     supplierSource: "INTERNET" as SupplierSource,
     purchasePrice: "",
     freightCost: formatNumber(0),
+    purchaseCommission: formatNumber(0),
   });
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -56,7 +57,7 @@ export default function NewVehiclePage() {
     if (!value) {
       return "";
     }
-    const numeric = Number(value);
+    const numeric = parseMoney(value);
     if (Number.isNaN(numeric) || numeric < 0) {
       return t("validation.invalidValue");
     }
@@ -119,6 +120,14 @@ export default function NewVehiclePage() {
         delete nextErrors.freightCost;
       }
     }
+    if (field === "purchaseCommission") {
+      const error = getMoneyError(value ?? form.purchaseCommission, true);
+      if (error) {
+        nextErrors.purchaseCommission = error;
+      } else {
+        delete nextErrors.purchaseCommission;
+      }
+    }
     setErrors(nextErrors);
   };
 
@@ -149,6 +158,10 @@ export default function NewVehiclePage() {
     const freightCostError = getMoneyError(form.freightCost);
     if (freightCostError) {
       nextErrors.freightCost = freightCostError;
+    }
+    const commissionError = getMoneyError(form.purchaseCommission, true);
+    if (commissionError) {
+      nextErrors.purchaseCommission = commissionError;
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -195,6 +208,7 @@ export default function NewVehiclePage() {
           supplierSource: form.supplierSource,
           purchasePrice: parseMoney(form.purchasePrice),
           freightCost: parseMoney(form.freightCost || "0"),
+          purchaseCommission: parseMoney(form.purchaseCommission),
         }
       );
       showToast(t("vehicles.created"));
@@ -321,6 +335,14 @@ export default function NewVehiclePage() {
             onValueChange={(value) => handleChange("freightCost", value)}
             onBlur={() => validateField("freightCost")}
             error={errors.freightCost}
+          />
+          <MoneyInput
+            label={t("newVehicle.purchaseCommission")}
+            value={form.purchaseCommission}
+            required
+            onValueChange={(value) => handleChange("purchaseCommission", value)}
+            onBlur={() => validateField("purchaseCommission")}
+            error={errors.purchaseCommission}
           />
         </div>
         <div className="flex justify-end gap-3">

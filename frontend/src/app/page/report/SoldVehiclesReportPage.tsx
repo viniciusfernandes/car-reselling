@@ -303,7 +303,7 @@ export default function SoldVehiclesReportPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-6">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="text-xs text-slate-500">
             {t("reports.sales.totals.vehicles")}
@@ -334,6 +334,14 @@ export default function SoldVehiclesReportPage() {
           </div>
           <div className="text-lg font-semibold">
             {formatMoney(report?.totalServiceValue ?? 0)}
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-xs text-slate-500">
+            {t("reports.sales.totals.commission")}
+          </div>
+          <div className="text-lg font-semibold">
+            {formatMoney(report?.totalCommissionValue ?? 0)}
           </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -472,6 +480,9 @@ export default function SoldVehiclesReportPage() {
               <th className="px-6 py-3 text-right">
                 {t("reports.sales.table.servicesTotal")}
               </th>
+              <th className="px-6 py-3 text-right">
+                {t("reports.sales.table.commission")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -491,11 +502,14 @@ export default function SoldVehiclesReportPage() {
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.servicesTotal)}
                   </td>
+                  <td className="px-6 py-3 text-right">
+                    {formatMoney(vehicle.purchaseCommission)}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-6 py-6 text-center text-slate-500">
+                <td colSpan={8} className="px-6 py-6 text-center text-slate-500">
                   {t("reports.sales.empty")}
                 </td>
               </tr>

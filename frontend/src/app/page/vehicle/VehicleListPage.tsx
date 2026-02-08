@@ -129,15 +129,19 @@ export default function VehicleListPage() {
                 <th className="px-4 py-3">{t("vehicles.table.year")}</th>
                 <th className="px-4 py-3">{t("vehicles.table.status")}</th>
                 <th className="px-4 py-3 text-right">{t("vehicles.table.purchasePrice")}</th>
+                <th className="px-4 py-3 text-right">
+                  {t("vehicles.table.purchaseCommission")}
+                </th>
                 <th className="px-4 py-3 text-right">{t("vehicles.table.servicesTotal")}</th>
                 <th className="px-4 py-3 text-right">{t("vehicles.table.totalCost")}</th>
                 <th className="px-4 py-3">{t("vehicles.table.partner")}</th>
+                <th className="px-4 py-3">{t("vehicles.table.yardTime")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center">
+                  <td colSpan={11} className="px-4 py-6 text-center">
                     {t("vehicles.loading")}
                   </td>
                 </tr>
@@ -161,6 +165,9 @@ export default function VehicleListPage() {
                       {formatMoney(vehicle.purchasePrice)}
                     </td>
                     <td className="px-4 py-3 text-right">
+                      {formatMoney(vehicle.purchaseCommission)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
                       {formatMoney(vehicle.servicesTotal)}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -169,11 +176,16 @@ export default function VehicleListPage() {
                     <td className="px-4 py-3">
                       {vehicle.assignedPartnerName ?? "-"}
                     </td>
+                    <td className="px-4 py-3">
+                      {vehicle.yardDays !== null && vehicle.yardDays !== undefined
+                        ? t("units.days", { value: vehicle.yardDays })
+                        : "-"}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={11} className="px-4 py-6 text-center text-slate-500">
                     {t("vehicles.empty")}
                   </td>
                 </tr>

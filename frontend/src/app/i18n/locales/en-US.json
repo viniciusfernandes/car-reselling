@@ -83,9 +83,11 @@
       "year": "Year",
       "status": "Status",
       "purchasePrice": "Purchase price",
+      "purchaseCommission": "Commission",
       "servicesTotal": "Services total",
       "totalCost": "Total cost",
-      "partner": "Assigned partner"
+      "partner": "Assigned partner",
+      "yardTime": "Yard time"
     }
   },
   "newVehicle": {
@@ -101,6 +103,7 @@
     "supplierSource": "Supplier source",
     "purchasePrice": "Purchase price",
     "freightCost": "Freight cost",
+    "purchaseCommission": "Purchase commission",
     "save": "Save vehicle"
   },
   "supplier": {
@@ -118,7 +121,8 @@
     "overview": "Overview",
     "services": "Services",
     "documents": "Documents",
-    "distribution": "Distribution"
+    "distribution": "Distribution",
+    "taxes": "Taxes"
   },
   "serviceTypes": {
     "MECHANICAL": "Mechanical",
@@ -148,6 +152,7 @@
     "model": "Model",
     "brand": "Brand",
     "purchasePrice": "Purchase price",
+    "purchaseCommission": "Purchase commission",
     "sellingPrice": "Selling price",
     "saveSellingPrice": "Save selling price",
     "freightCost": "Freight cost",
@@ -205,6 +210,11 @@
       "partner": "Partner",
       "assign": "Assign to partner",
       "mustBeReady": "Vehicle must be ready for distribution."
+    },
+    "taxes": {
+      "title": "Taxes",
+      "subtitle": "Based on selling price and vehicle costs.",
+      "missingSellingPrice": "Set a selling price to calculate taxes."
     }
   },
   "confirm": {
@@ -230,6 +240,7 @@
         "year": "Year",
         "distributedAt": "Distributed date",
         "purchasePrice": "Purchase price",
+        "purchaseCommission": "Commission",
         "totalCost": "Total cost"
       },
       "empty": "No distributed vehicles yet."
@@ -244,6 +255,7 @@
         "soldValue": "Total sold value",
         "taxes": "Total taxes value",
         "services": "Total service value",
+        "commission": "Total commission",
         "profit": "Profit"
       },
       "table": {
@@ -253,7 +265,8 @@
         "year": "Year",
         "sellingPrice": "Selling price",
         "totalTaxes": "Total taxes",
-        "servicesTotal": "Services total"
+        "servicesTotal": "Services total",
+        "commission": "Commission"
       },
       "histogram": {
         "title": "Monthly selling progress",
@@ -268,6 +281,15 @@
     }
   },
   "units": {
-    "kb": "{{value}} KB"
+    "kb": "{{value}} KB",
+    "days": "{{value}} days"
+  },
+  "taxes": {
+    "icms": "ICMS",
+    "pis": "PIS",
+    "cofins": "COFINS",
+    "csll": "CSLL",
+    "irpj": "IRPJ",
+    "total": "Total taxes"
   }
 }

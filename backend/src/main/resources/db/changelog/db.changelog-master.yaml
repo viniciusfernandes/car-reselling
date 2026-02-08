@@ -98,3 +98,17 @@ databaseChangeLog:
             sql: |
               ALTER TABLE vehicles
                 ADD COLUMN selling_price DECIMAL(13,2) NULL AFTER freight_cost;
+  - changeSet:
+      id: vinicius-20260206-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE vehicles
+                ADD COLUMN purchase_commission DECIMAL(13,2) NOT NULL DEFAULT 0 AFTER freight_cost,
+                ADD COLUMN distributed_at DATETIME NULL AFTER assigned_partner_id;
+
+              UPDATE vehicles
+              SET distributed_at = updated_at
+              WHERE distributed_at IS NULL
+                AND status IN ('DISTRIBUTED', 'SOLD');

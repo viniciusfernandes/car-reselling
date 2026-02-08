@@ -21,6 +21,7 @@ public class VehicleDetailMapper {
             detail.supplierSource(),
             detail.purchasePrice(),
             detail.freightCost(),
+            detail.purchaseCommission(),
             detail.sellingPrice(),
             detail.purchaseInvoiceDocumentId(),
             detail.purchasePaymentReceiptDocumentId(),
@@ -31,7 +32,8 @@ public class VehicleDetailMapper {
             detail.totalCost(),
             detail.documentsCount(),
             detail.createdAt(),
-            detail.updatedAt()
+            detail.updatedAt(),
+            detail.distributedAt()
         );
     }
 }

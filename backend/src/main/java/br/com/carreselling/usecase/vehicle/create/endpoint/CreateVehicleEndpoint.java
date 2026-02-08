@@ -39,7 +39,8 @@ public class CreateVehicleEndpoint {
             normalized.brand(),
             normalized.supplierSource(),
             normalized.purchasePrice(),
-            normalized.freightCost()
+            normalized.freightCost(),
+            normalized.purchaseCommission()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(new CreateVehicleResponse(vehicleId)));

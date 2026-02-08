@@ -41,8 +41,9 @@ public class ReportService implements IReportService {
                        v.brand,
                        v.model,
                        v.year,
-                       DATE(v.updated_at) AS distributed_at,
+                       DATE(COALESCE(v.distributed_at, v.updated_at)) AS distributed_at,
                        v.purchase_price,
+                       COALESCE(v.purchase_commission, 0) AS purchase_commission,
                        v.freight_cost,
                        COALESCE(s.services_total, 0) AS services_total
                 FROM vehicles v
@@ -107,6 +108,7 @@ public class ReportService implements IReportService {
                 row.year(),
                 row.distributedAt(),
                 row.purchasePrice(),
+                row.purchaseCommission(),
                 totalCost
             ));
             accumulator.totalValue = accumulator.totalValue.add(row.purchasePrice());
@@ -142,6 +144,7 @@ public class ReportService implements IReportService {
                        v.year,
                        DATE(v.updated_at) AS sold_at,
                        v.purchase_price,
+                       COALESCE(v.purchase_commission, 0) AS purchase_commission,
                        v.freight_cost,
                        v.selling_price,
                        COALESCE(s.services_total, 0) AS services_total
@@ -212,6 +215,7 @@ public class ReportService implements IReportService {
                              int year,
                              LocalDate distributedAt,
                              BigDecimal purchasePrice,
+                             BigDecimal purchaseCommission,
                              BigDecimal freightCost,
                              BigDecimal servicesTotal) {
     }
@@ -229,6 +233,7 @@ public class ReportService implements IReportService {
                 rs.getInt("year"),
                 soldAtDate != null ? soldAtDate.toLocalDate() : null,
                 rs.getBigDecimal("purchase_price"),
+                rs.getBigDecimal("purchase_commission"),
                 rs.getBigDecimal("freight_cost"),
                 rs.getBigDecimal("selling_price"),
                 rs.getBigDecimal("services_total")
@@ -250,6 +255,7 @@ public class ReportService implements IReportService {
                 rs.getInt("year"),
                 rs.getDate("distributed_at") == null ? null : rs.getDate("distributed_at").toLocalDate(),
                 rs.getBigDecimal("purchase_price"),
+                rs.getBigDecimal("purchase_commission"),
                 rs.getBigDecimal("freight_cost"),
                 rs.getBigDecimal("services_total")
             );

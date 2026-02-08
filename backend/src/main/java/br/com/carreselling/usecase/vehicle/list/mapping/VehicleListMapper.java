@@ -17,9 +17,11 @@ public class VehicleListMapper {
             summary.year(),
             summary.status(),
             summary.purchasePrice(),
+            summary.purchaseCommission(),
             summary.servicesTotal(),
             summary.totalCost(),
-            summary.assignedPartnerName()
+            summary.assignedPartnerName(),
+            summary.yardDays()
         );
     }
 }
