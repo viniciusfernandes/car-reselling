@@ -733,17 +733,6 @@ export default function VehicleDetailPage() {
               error={updateErrors.brand}
             />
             <ComboboxInput
-              label={t("vehicleDetail.color")}
-              value={updateForm.color}
-              required
-              suggestions={colorSuggestions}
-              onChange={(event) =>
-                setUpdateForm((prev) => ({ ...prev, color: event.target.value }))
-              }
-              onBlur={() => validateUpdateField("color")}
-              error={updateErrors.color}
-            />
-            <ComboboxInput
               label={t("vehicleDetail.model")}
               value={updateForm.model}
               required
@@ -753,6 +742,17 @@ export default function VehicleDetailPage() {
               }
               onBlur={() => validateUpdateField("model")}
               error={updateErrors.model}
+            />
+            <ComboboxInput
+              label={t("vehicleDetail.color")}
+              value={updateForm.color}
+              required
+              suggestions={colorSuggestions}
+              onChange={(event) =>
+                setUpdateForm((prev) => ({ ...prev, color: event.target.value }))
+              }
+              onBlur={() => validateUpdateField("color")}
+              error={updateErrors.color}
             />
             <MoneyInput
               label={t("vehicleDetail.purchasePrice")}
