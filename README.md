@@ -67,6 +67,55 @@ SPRING_DATASOURCE_USERNAME=car
 SPRING_DATASOURCE_PASSWORD=car
 ```
 
+#### HTTPS (Let’s Encrypt)
+
+1) Obtain a certificate with Certbot (example for Nginx/standalone):
+
+```
+sudo certbot certonly --standalone -d your-domain.com
+```
+
+2) Convert the certificate to PKCS12 for Spring Boot:
+
+```
+sudo openssl pkcs12 -export \
+  -in /etc/letsencrypt/live/your-domain.com/fullchain.pem \
+  -inkey /etc/letsencrypt/live/your-domain.com/privkey.pem \
+  -out /etc/letsencrypt/live/your-domain.com/keystore.p12 \
+  -name springboot
+```
+
+3) Configure Spring Boot SSL via environment variables:
+
+```
+SERVER_PORT=443
+SERVER_SSL_ENABLED=true
+SERVER_SSL_KEY_STORE=file:/etc/letsencrypt/live/your-domain.com/keystore.p12
+SERVER_SSL_KEY_STORE_PASSWORD=yourpassword
+SERVER_SSL_KEY_STORE_TYPE=PKCS12
+SERVER_SSL_KEY_ALIAS=springboot
+```
+
+4) Start the backend with those env vars set.
+
+Docker note: mount the Let’s Encrypt folder into the container and point
+`SERVER_SSL_KEY_STORE` to the mounted file path.
+
+Example docker compose override:
+
+```
+services:
+  car-reselling-api:
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    environment:
+      SERVER_PORT: 443
+      SERVER_SSL_ENABLED: "true"
+      SERVER_SSL_KEY_STORE: "file:/etc/letsencrypt/live/your-domain.com/keystore.p12"
+      SERVER_SSL_KEY_STORE_PASSWORD: "yourpassword"
+      SERVER_SSL_KEY_STORE_TYPE: "PKCS12"
+      SERVER_SSL_KEY_ALIAS: "springboot"
+
 ### Frontend
 
 Vite dev server runs on `http://localhost:5173` and proxies `/api` to `http://localhost:8080`.
