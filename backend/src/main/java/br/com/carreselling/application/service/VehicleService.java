@@ -204,23 +204,7 @@ public class VehicleService implements IVehicleService {
                 BigDecimal purchaseCommission = vehicle.getPurchaseCommission() == null
                     ? BigDecimal.ZERO
                     : vehicle.getPurchaseCommission();
-                Long yardDays = null;
-                Instant distributedAt = vehicle.getDistributedAt();
-                if (distributedAt == null
-                    && (vehicle.getStatus() == VehicleStatus.DISTRIBUTED
-                        || vehicle.getStatus() == VehicleStatus.SOLD)) {
-                    distributedAt = vehicle.getUpdatedAt();
-                }
-                if (distributedAt != null && vehicle.getCreatedAt() != null) {
-                    long days = java.time.temporal.ChronoUnit.DAYS.between(
-                        vehicle.getCreatedAt(),
-                        distributedAt
-                    );
-                    yardDays = Math.max(days, 0);
-                } else if (vehicle.getStatus() == VehicleStatus.DISTRIBUTED
-                    || vehicle.getStatus() == VehicleStatus.SOLD) {
-                    yardDays = 0L;
-                }
+
                 return new VehicleSummary(
                     vehicle.getId(),
                     vehicle.getLicensePlate(),
@@ -233,7 +217,7 @@ public class VehicleService implements IVehicleService {
                     servicesTotal,
                     totalCost,
                     partnerName,
-                    yardDays
+                    vehicle.calculateTotalYardDays()
                 );
             })
             .toList();

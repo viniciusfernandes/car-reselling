@@ -88,6 +88,56 @@ Tables:
 - `documents`
 - `partners`
 
+### MySQL via Docker Compose
+
+Start only MySQL:
+
+```
+docker compose up -d mysql
+```
+
+Connect to MySQL and run a query on `vehicles`:
+
+```
+docker compose exec mysql mysql -u car -p car_reselling
+SELECT id, license_plate, status FROM vehicles LIMIT 10;
+```
+
+Connect to MySQL and run an update on `vehicles`:
+
+```
+docker compose exec mysql mysql -u car -p car_reselling
+UPDATE vehicles SET status = 'SOLD' WHERE license_plate = 'ABC1234';
+```
+
+Show all tables:
+
+```
+docker compose exec mysql mysql -u car -p car_reselling
+SHOW TABLES;
+```
+
+Show all tables filtering by name:
+
+```
+docker compose exec mysql mysql -u car -p car_reselling
+SHOW TABLES LIKE '%vehicle%';
+```
+
+Show all columns from a specific table:
+
+```
+docker compose exec mysql mysql -u car -p car_reselling
+SHOW COLUMNS FROM vehicles;
+```
+
+Show all indexes from a specific table:
+
+```
+docker compose exec mysql mysql -u car -p car_reselling
+SHOW INDEX FROM vehicles;
+```
+
 ### Seed Data
 
 The changelog seeds:

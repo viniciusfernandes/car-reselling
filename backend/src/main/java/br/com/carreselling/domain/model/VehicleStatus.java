@@ -5,5 +5,9 @@ public enum VehicleStatus {
     IN_SERVICE,
     READY_FOR_DISTRIBUTION,
     DISTRIBUTED,
-    SOLD
+    SOLD;
+
+    public boolean alreadyDistribuited() {
+        return this == DISTRIBUTED || this == SOLD;
+    }
 }

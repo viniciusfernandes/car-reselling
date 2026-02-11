@@ -1,6 +1,7 @@
 package br.com.carreselling.domain.model;
 
 import br.com.carreselling.domain.exception.InvalidStateException;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
@@ -236,6 +237,22 @@ public class Vehicle {
 
     public void setDistributedAt(Instant distributedAt) {
         this.distributedAt = distributedAt;
+    }
+
+    public int calculateTotalYardDays() {
+        Instant lastDate = this.distributedAt;
+        if (!status.alreadyDistribuited()) {
+            lastDate = Instant.now();
+        }
+
+        if (createdAt == null || lastDate == null) {
+            return 0;
+        }
+        long days = java.time.temporal.ChronoUnit.DAYS.between(
+                createdAt,
+                lastDate
+        );
+        return (int) Math.max(days, 0);
     }
 
     @Override

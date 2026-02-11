@@ -15,5 +15,5 @@ public record VehicleSummary(UUID id,
                              BigDecimal servicesTotal,
                              BigDecimal totalCost,
                              String assignedPartnerName,
-                             Long yardDays) {
+                             int yardDays) {
 }
