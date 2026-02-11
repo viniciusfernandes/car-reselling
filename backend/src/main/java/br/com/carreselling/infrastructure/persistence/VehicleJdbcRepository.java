@@ -30,10 +30,10 @@ public class VehicleJdbcRepository implements VehicleRepository {
     public Vehicle saveVehicle(Vehicle vehicle) {
         jdbcTemplate.update("""
                 INSERT INTO vehicles
-                (id, license_plate, renavam, vin, year, color, model, brand, supplier_source,
+                (id, license_plate, renavam, vin, year, color, model, brand, brand_id, model_id, supplier_source,
                  purchase_price, freight_cost, purchase_commission, selling_price, purchase_payment_receipt_document_id,
                  purchase_invoice_document_id, status, assigned_partner_id, distributed_at, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             vehicle.getId().toString(),
             vehicle.getLicensePlate(),
@@ -43,6 +43,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
             vehicle.getColor(),
             vehicle.getModel(),
             vehicle.getBrand(),
+            optionalUuid(vehicle.getBrandId()),
+            optionalUuid(vehicle.getModelId()),
             vehicle.getSupplierSource().name(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
@@ -149,7 +151,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
     public Vehicle updateVehicle(Vehicle vehicle) {
         jdbcTemplate.update("""
                 UPDATE vehicles
-                SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, supplier_source = ?,
+                SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, brand_id = ?, model_id = ?, supplier_source = ?,
                     purchase_price = ?, freight_cost = ?, purchase_commission = ?, selling_price = ?,
                     purchase_payment_receipt_document_id = ?, purchase_invoice_document_id = ?,
                     status = ?, assigned_partner_id = ?, distributed_at = ?, updated_at = ?
@@ -161,6 +163,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
             vehicle.getColor(),
             vehicle.getModel(),
             vehicle.getBrand(),
+            optionalUuid(vehicle.getBrandId()),
+            optionalUuid(vehicle.getModelId()),
             vehicle.getSupplierSource().name(),
             vehicle.getPurchasePrice(),
             vehicle.getFreightCost(),
@@ -218,6 +222,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
             String color = rs.getString("color");
             String model = rs.getString("model");
             String brand = rs.getString("brand");
+            UUID brandId = optionalUuid(rs.getString("brand_id"));
+            UUID modelId = optionalUuid(rs.getString("model_id"));
             SupplierSource supplierSource = SupplierSource.valueOf(rs.getString("supplier_source"));
             BigDecimal purchasePrice = rs.getBigDecimal("purchase_price");
             BigDecimal freightCost = rs.getBigDecimal("freight_cost");
@@ -239,6 +245,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 color,
                 model,
                 brand,
+                brandId,
+                modelId,
                 supplierSource,
                 purchasePrice,
                 freightCost == null ? BigDecimal.ZERO : freightCost,

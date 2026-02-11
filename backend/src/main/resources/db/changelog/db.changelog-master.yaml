@@ -112,3 +112,57 @@ databaseChangeLog:
               SET distributed_at = updated_at
               WHERE distributed_at IS NULL
                 AND status IN ('DISTRIBUTED', 'SOLD');
+  - changeSet:
+      id: vinicius-20260211-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE IF NOT EXISTS brands (
+                id CHAR(36) PRIMARY KEY,
+                name VARCHAR(128) NOT NULL UNIQUE,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS models (
+                id CHAR(36) PRIMARY KEY,
+                brand_id CHAR(36) NOT NULL,
+                name VARCHAR(128) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NULL,
+                UNIQUE KEY uk_models_brand_name (brand_id, name),
+                KEY idx_models_brand (brand_id),
+                CONSTRAINT fk_models_brand FOREIGN KEY (brand_id) REFERENCES brands(id)
+              );
+
+              ALTER TABLE vehicles
+                ADD COLUMN brand_id CHAR(36) NULL AFTER brand,
+                ADD COLUMN model_id CHAR(36) NULL AFTER brand_id,
+                ADD KEY idx_vehicles_brand (brand_id),
+                ADD KEY idx_vehicles_model (model_id);
+
+              INSERT INTO brands (id, name, created_at)
+              SELECT UUID(), v.brand, NOW()
+              FROM (SELECT DISTINCT brand FROM vehicles) v
+              LEFT JOIN brands b ON b.name = v.brand
+              WHERE b.id IS NULL;
+
+              INSERT INTO models (id, brand_id, name, created_at)
+              SELECT UUID(), b.id, v.model, NOW()
+              FROM (SELECT DISTINCT brand, model FROM vehicles) v
+              JOIN brands b ON b.name = v.brand
+              LEFT JOIN models m ON m.brand_id = b.id AND m.name = v.model
+              WHERE m.id IS NULL;
+
+              UPDATE vehicles v
+              JOIN brands b ON b.name = v.brand
+              JOIN models m ON m.brand_id = b.id AND m.name = v.model
+              SET v.brand_id = b.id,
+                  v.model_id = m.id;
+
+              ALTER TABLE vehicles
+                MODIFY brand_id CHAR(36) NOT NULL,
+                MODIFY model_id CHAR(36) NOT NULL,
+                ADD CONSTRAINT fk_vehicles_brand FOREIGN KEY (brand_id) REFERENCES brands(id),
+                ADD CONSTRAINT fk_vehicles_model FOREIGN KEY (model_id) REFERENCES models(id);

@@ -17,6 +17,8 @@ public class Vehicle {
     private String color;
     private String model;
     private String brand;
+    private UUID brandId;
+    private UUID modelId;
     private SupplierSource supplierSource;
     private BigDecimal purchasePrice;
     private BigDecimal freightCost;
@@ -38,6 +40,8 @@ public class Vehicle {
                    String color,
                    String model,
                    String brand,
+                   UUID brandId,
+                   UUID modelId,
                    SupplierSource supplierSource,
                    BigDecimal purchasePrice,
                    BigDecimal freightCost,
@@ -58,6 +62,8 @@ public class Vehicle {
         this.color = color;
         this.model = model;
         this.brand = brand;
+        this.brandId = brandId;
+        this.modelId = modelId;
         this.supplierSource = supplierSource;
         this.purchasePrice = purchasePrice;
         this.freightCost = freightCost;
@@ -99,6 +105,10 @@ public class Vehicle {
         this.purchasePaymentReceiptDocumentId = paymentReceiptDocumentId;
     }
 
+    public void transitionStatus(VehicleStatus targetStatus) {
+        transitionStatus(targetStatus, null);
+    }
+
     public void transitionStatus(VehicleStatus targetStatus, UUID partnerId) {
         if (targetStatus == VehicleStatus.DISTRIBUTED && partnerId == null) {
             throw new InvalidStateException("Assigned partner is required when distributing a vehicle.");
@@ -127,7 +137,7 @@ public class Vehicle {
     }
 
     public void ensureDistributionInvariant() {
-        if ((status == VehicleStatus.DISTRIBUTED || status == VehicleStatus.SOLD) && assignedPartnerId == null) {
+        if (status == VehicleStatus.DISTRIBUTED && assignedPartnerId == null) {
             throw new InvalidStateException("Assigned partner is required when vehicle is distributed.");
         }
         if (status != VehicleStatus.DISTRIBUTED && status != VehicleStatus.SOLD && assignedPartnerId != null) {
@@ -165,6 +175,14 @@ public class Vehicle {
 
     public String getBrand() {
         return brand;
+    }
+
+    public UUID getBrandId() {
+        return brandId;
+    }
+
+    public UUID getModelId() {
+        return modelId;
     }
 
     public SupplierSource getSupplierSource() {
@@ -223,6 +241,14 @@ public class Vehicle {
         this.vin = vin;
     }
 
+    public void setBrandId(UUID brandId) {
+        this.brandId = brandId;
+    }
+
+    public void setModelId(UUID modelId) {
+        this.modelId = modelId;
+    }
+
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
@@ -237,6 +263,10 @@ public class Vehicle {
 
     public void setDistributedAt(Instant distributedAt) {
         this.distributedAt = distributedAt;
+    }
+
+    public boolean isStatusTransitionAllowed(VehicleStatus target) {
+        return status == null || status.isTransitionAllowed(target);
     }
 
     public int calculateTotalYardDays() {

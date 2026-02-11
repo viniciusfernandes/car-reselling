@@ -7,9 +7,10 @@ import SelectInput from "../../component/input/SelectInput";
 import MoneyInput from "../../component/input/MoneyInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
 import { api, extractErrorMessage, extractFieldErrors } from "../../service/api";
-import { ApiResponse, SupplierSource } from "../../service/types";
+import { ApiResponse, BrandItem, ModelItem, SupplierSource } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
 import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
+import { fetchBrands, fetchModelsByBrand } from "../../service/brandModels";
 import { formatNumber, parseMoney } from "../../service/formatters";
 
 const SUPPLIER_OPTIONS: { value: SupplierSource; labelKey: string }[] = [
@@ -27,11 +28,9 @@ export default function NewVehiclePage() {
   const currentYear = new Date().getFullYear().toString();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [suggestions, setSuggestions] = useState({
-    colors: [] as string[],
-    brands: [] as string[],
-    models: [] as string[],
-  });
+  const [colorSuggestions, setColorSuggestions] = useState<string[]>([]);
+  const [brandOptions, setBrandOptions] = useState<BrandItem[]>([]);
+  const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
   const [form, setForm] = useState({
     licensePlate: "",
     renavam: "",
@@ -171,13 +170,45 @@ export default function NewVehiclePage() {
     const loadSuggestions = async () => {
       try {
         const response = await fetchVehicleSuggestions();
-        setSuggestions(response);
+        setColorSuggestions(response.colors);
       } catch (error) {
         showToast(extractErrorMessage(error));
       }
     };
     loadSuggestions();
   }, [showToast]);
+
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        const brands = await fetchBrands();
+        setBrandOptions(brands);
+      } catch (error) {
+        showToast(extractErrorMessage(error));
+      }
+    };
+    loadBrands();
+  }, [showToast]);
+
+  useEffect(() => {
+    const selectedBrand = brandOptions.find((brand) => brand.name === form.brand);
+    if (!selectedBrand) {
+      setModelOptions([]);
+      return;
+    }
+    const loadModels = async () => {
+      try {
+        const models = await fetchModelsByBrand(selectedBrand.id);
+        setModelOptions(models);
+        if (form.model && !models.some((model) => model.name === form.model)) {
+          handleChange("model", "");
+        }
+      } catch (error) {
+        showToast(extractErrorMessage(error));
+      }
+    };
+    loadModels();
+  }, [brandOptions, form.brand, form.model, showToast]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -274,7 +305,7 @@ export default function NewVehiclePage() {
             label={t("newVehicle.color")}
             value={form.color}
             required
-            suggestions={suggestions.colors}
+            suggestions={colorSuggestions}
             onChange={(event) => handleChange("color", event.target.value)}
             onBlur={() => {
               const normalized = form.color.trim().toUpperCase();
@@ -287,7 +318,7 @@ export default function NewVehiclePage() {
             label={t("newVehicle.model")}
             value={form.model}
             required
-            suggestions={suggestions.models}
+            suggestions={modelOptions.map((model) => model.name)}
             onChange={(event) => handleChange("model", event.target.value)}
             onBlur={() => {
               const normalized = form.model.trim().toUpperCase();
@@ -300,7 +331,7 @@ export default function NewVehiclePage() {
             label={t("newVehicle.brand")}
             value={form.brand}
             required
-            suggestions={suggestions.brands}
+            suggestions={brandOptions.map((brand) => brand.name)}
             onChange={(event) => handleChange("brand", event.target.value)}
             onBlur={() => {
               const normalized = form.brand.trim().toUpperCase();

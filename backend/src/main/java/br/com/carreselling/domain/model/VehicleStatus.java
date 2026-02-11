@@ -10,4 +10,8 @@ public enum VehicleStatus {
     public boolean alreadyDistribuited() {
         return this == DISTRIBUTED || this == SOLD;
     }
+
+    public boolean isTransitionAllowed(VehicleStatus target) {
+        return this != SOLD || target == SOLD;
+    }
 }

@@ -8,9 +8,11 @@ import {
 } from "../../service/api";
 import {
   ApiResponse,
+  BrandItem,
   DocumentItem,
   DocumentListResponse,
   DocumentType,
+  ModelItem,
   PartnerItem,
   PartnerListResponse,
   ServiceItem,
@@ -28,6 +30,7 @@ import ComboboxInput from "../../component/input/ComboboxInput";
 import DateInput from "../../component/input/DateInput";
 import { useToast } from "../../component/notification/ToastProvider";
 import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
+import { fetchBrands, fetchModelsByBrand } from "../../service/brandModels";
 import {
   formatDate,
   formatMoney,
@@ -77,19 +80,15 @@ export default function VehicleDetailPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
   const [taxes, setTaxes] = useState<VehicleTaxes | null>(null);
-  const [suggestions, setSuggestions] = useState({
-    colors: [] as string[],
-    brands: [] as string[],
-    models: [] as string[],
-  });
+  const [colorSuggestions, setColorSuggestions] = useState<string[]>([]);
+  const [brandOptions, setBrandOptions] = useState<BrandItem[]>([]);
+  const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUpdatingVehicle, setIsUpdatingVehicle] = useState(false);
   const [isAddingService, setIsAddingService] = useState(false);
   const [isUpdatingService, setIsUpdatingService] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [isAssigningPartner, setIsAssigningPartner] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [isUpdatingSellingPrice, setIsUpdatingSellingPrice] = useState(false);
   const [serviceForm, setServiceForm] = useState({
     serviceType: "MECHANICAL" as ServiceType,
     serviceValue: "",
@@ -218,13 +217,48 @@ export default function VehicleDetailPage() {
     const loadSuggestions = async () => {
       try {
         const response = await fetchVehicleSuggestions();
-        setSuggestions(response);
+        setColorSuggestions(response.colors);
       } catch (error) {
         showToast(extractErrorMessage(error));
       }
     };
     loadSuggestions();
   }, [showToast]);
+
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        const brands = await fetchBrands();
+        setBrandOptions(brands);
+      } catch (error) {
+        showToast(extractErrorMessage(error));
+      }
+    };
+    loadBrands();
+  }, [showToast]);
+
+  useEffect(() => {
+    const selectedBrand = brandOptions.find((brand) => brand.name === updateForm.brand);
+    if (!selectedBrand) {
+      setModelOptions([]);
+      return;
+    }
+    const loadModels = async () => {
+      try {
+        const models = await fetchModelsByBrand(selectedBrand.id);
+        setModelOptions(models);
+        if (
+          updateForm.model &&
+          !models.some((model) => model.name === updateForm.model)
+        ) {
+          setUpdateForm((prev) => ({ ...prev, model: "" }));
+        }
+      } catch (error) {
+        showToast(extractErrorMessage(error));
+      }
+    };
+    loadModels();
+  }, [brandOptions, updateForm.brand, updateForm.model, showToast]);
 
   useEffect(() => {
     if (!vehicle) {
@@ -508,6 +542,17 @@ export default function VehicleDetailPage() {
     if (!vehicleId) {
       return;
     }
+    if (statusTarget === "DISTRIBUTED" && !partnerId) {
+      showToast(t("vehicleDetail.selectPartnerFirst"));
+      return;
+    }
+    if (statusTarget === "SOLD") {
+      const error = getMoneyError(sellingPrice, true);
+      if (error) {
+        showToast(t("vehicleDetail.setSellingPriceFirst"));
+        return;
+      }
+    }
     if (!validateUpdateForm()) {
       return;
     }
@@ -527,6 +572,20 @@ export default function VehicleDetailPage() {
         purchasePaymentReceiptDocumentId:
           updateForm.purchasePaymentReceiptDocumentId || null,
       });
+      if (
+        (statusTarget === "DISTRIBUTED" || statusTarget === "SOLD") &&
+        sellingPrice
+      ) {
+        await api.put(`/vehicles/${vehicleId}/selling-price`, {
+          sellingPrice: parseMoney(sellingPrice),
+        });
+      }
+      if (statusTarget !== vehicle.status) {
+        await api.post(`/vehicles/${vehicleId}/status`, {
+          status: statusTarget,
+          assignedPartnerId: statusTarget === "DISTRIBUTED" ? partnerId : null,
+        });
+      }
       showToast(t("vehicleDetail.updated"));
       setUpdateErrors({});
       await fetchAll();
@@ -555,76 +614,6 @@ export default function VehicleDetailPage() {
       showToast(extractErrorMessage(error));
     } finally {
       setIsAssigningPartner(false);
-    }
-  };
-
-  const handleUpdateSellingPrice = async () => {
-    if (!vehicleId) {
-      return;
-    }
-    const error = getMoneyError(sellingPrice, true);
-    if (error) {
-      showToast(error);
-      return;
-    }
-    try {
-      setIsUpdatingSellingPrice(true);
-      await api.put(`/vehicles/${vehicleId}/selling-price`, {
-        sellingPrice: parseMoney(sellingPrice),
-      });
-      showToast(t("vehicleDetail.sellingPriceUpdated"));
-      await fetchAll();
-    } catch (error) {
-      showToast(extractErrorMessage(error));
-    } finally {
-      setIsUpdatingSellingPrice(false);
-    }
-  };
-
-  const handleMarkSold = async () => {
-    if (!vehicleId) {
-      return;
-    }
-    const error = getMoneyError(sellingPrice, true);
-    if (error) {
-      showToast(t("vehicleDetail.setSellingPriceFirst"));
-      return;
-    }
-    try {
-      setIsUpdatingStatus(true);
-      await api.post(`/vehicles/${vehicleId}/status`, {
-        status: "SOLD",
-        assignedPartnerId: partnerId || null,
-      });
-      showToast(t("vehicleDetail.markedSold"));
-      await fetchAll();
-    } catch (error) {
-      showToast(extractErrorMessage(error));
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
-  const handleUpdateStatus = async () => {
-    if (!vehicleId) {
-      return;
-    }
-    if (statusTarget === "DISTRIBUTED" && !partnerId) {
-      showToast(t("vehicleDetail.selectPartnerFirst"));
-      return;
-    }
-    try {
-      setIsUpdatingStatus(true);
-      await api.post(`/vehicles/${vehicleId}/status`, {
-        status: statusTarget,
-        assignedPartnerId: statusTarget === "DISTRIBUTED" ? partnerId : null,
-      });
-      showToast(t("vehicleDetail.statusUpdated"));
-      await fetchAll();
-    } catch (error) {
-      showToast(extractErrorMessage(error));
-    } finally {
-      setIsUpdatingStatus(false);
     }
   };
 
@@ -733,10 +722,21 @@ export default function VehicleDetailPage() {
               error={updateErrors.year}
             />
             <ComboboxInput
+              label={t("vehicleDetail.brand")}
+              value={updateForm.brand}
+              required
+              suggestions={brandOptions.map((brand) => brand.name)}
+              onChange={(event) =>
+                setUpdateForm((prev) => ({ ...prev, brand: event.target.value }))
+              }
+              onBlur={() => validateUpdateField("brand")}
+              error={updateErrors.brand}
+            />
+            <ComboboxInput
               label={t("vehicleDetail.color")}
               value={updateForm.color}
               required
-              suggestions={suggestions.colors}
+              suggestions={colorSuggestions}
               onChange={(event) =>
                 setUpdateForm((prev) => ({ ...prev, color: event.target.value }))
               }
@@ -747,23 +747,12 @@ export default function VehicleDetailPage() {
               label={t("vehicleDetail.model")}
               value={updateForm.model}
               required
-              suggestions={suggestions.models}
+              suggestions={modelOptions.map((model) => model.name)}
               onChange={(event) =>
                 setUpdateForm((prev) => ({ ...prev, model: event.target.value }))
               }
               onBlur={() => validateUpdateField("model")}
               error={updateErrors.model}
-            />
-            <ComboboxInput
-              label={t("vehicleDetail.brand")}
-              value={updateForm.brand}
-              required
-              suggestions={suggestions.brands}
-              onChange={(event) =>
-                setUpdateForm((prev) => ({ ...prev, brand: event.target.value }))
-              }
-              onBlur={() => validateUpdateField("brand")}
-              error={updateErrors.brand}
             />
             <MoneyInput
               label={t("vehicleDetail.purchasePrice")}
@@ -791,37 +780,17 @@ export default function VehicleDetailPage() {
               onBlur={() => validateUpdateField("purchaseCommission")}
               error={updateErrors.purchaseCommission}
             />
-            {vehicle.status === "DISTRIBUTED" || vehicle.status === "SOLD" ? (
+            {vehicle.status === "DISTRIBUTED" ||
+            vehicle.status === "SOLD" ||
+            statusTarget === "SOLD" ? (
               <div className="space-y-2">
                 <MoneyInput
                   label={t("vehicleDetail.sellingPrice")}
                   value={sellingPrice}
                   onValueChange={setSellingPrice}
-                  required={vehicle.status === "DISTRIBUTED"}
+                  required={vehicle.status === "DISTRIBUTED" || statusTarget === "SOLD"}
                   disabled={vehicle.status === "SOLD"}
                 />
-                {vehicle.status === "DISTRIBUTED" ? (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={handleUpdateSellingPrice}
-                      disabled={isUpdatingSellingPrice}
-                      className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
-                    >
-                      {isUpdatingSellingPrice
-                        ? t("actions.saving")
-                        : t("vehicleDetail.saveSellingPrice")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleMarkSold}
-                      disabled={isUpdatingStatus || !sellingPrice}
-                      className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                      {isUpdatingStatus ? t("actions.updating") : t("actions.sold")}
-                    </button>
-                  </div>
-                ) : null}
               </div>
             ) : null}
             <MoneyInput
@@ -838,7 +807,7 @@ export default function VehicleDetailPage() {
               error={updateErrors.freightCost}
             />
             <div className="space-y-3">
-              {statusTarget === "DISTRIBUTED" ? (
+              {statusTarget === "DISTRIBUTED" || statusTarget === "SOLD" ? (
                 <SelectInput
                   label={t("vehicleDetail.partnerRequired")}
                   value={partnerId}
@@ -852,14 +821,6 @@ export default function VehicleDetailPage() {
                   onChange={(event) => setPartnerId(event.target.value)}
                 />
               ) : null}
-              <button
-                type="button"
-                onClick={handleUpdateStatus}
-                disabled={isUpdatingStatus || statusTarget === vehicle.status}
-                className="rounded-md border border-slate-200 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:text-slate-300"
-              >
-                {isUpdatingStatus ? t("actions.updating") : t("actions.updateStatus")}
-              </button>
             </div>
             <SelectInput
               label={t("vehicleDetail.invoiceDocument")}

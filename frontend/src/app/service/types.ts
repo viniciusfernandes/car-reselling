@@ -129,6 +129,24 @@ export type PartnerListResponse = {
   partners: PartnerItem[];
 };
 
+export type BrandItem = {
+  id: string;
+  name: string;
+};
+
+export type BrandListResponse = {
+  brands: BrandItem[];
+};
+
+export type ModelItem = {
+  id: string;
+  name: string;
+};
+
+export type ModelListResponse = {
+  models: ModelItem[];
+};
+
 export type ReportVehicleItem = {
   vehicleId: string;
   licensePlate: string;
