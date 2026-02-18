@@ -13,7 +13,7 @@ const uniqueSorted = (values: string[]) =>
   ).sort((a, b) => a.localeCompare(b));
 
 export async function fetchVehicleSuggestions(
-  limit = 200
+  limit = 20
 ): Promise<VehicleSuggestions> {
   const listResponse = await api.get<ApiResponse<VehicleListResponse>>(
     "/vehicles",

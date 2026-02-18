@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, extractErrorMessage } from "../../service/api";
 import {
   ApiResponse,
+  BrandItem,
+  ModelItem,
   PartnerItem,
   PartnerListResponse,
   SoldVehiclesReport,
@@ -11,7 +13,7 @@ import { useToast } from "../../component/notification/ToastProvider";
 import DateInput from "../../component/input/DateInput";
 import SelectInput from "../../component/input/SelectInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
-import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
+import { fetchBrands, fetchModelsByBrand } from "../../service/brandModels";
 import { formatMoney } from "../../service/formatters";
 
 const getCurrentMonthRange = () => {
@@ -111,10 +113,8 @@ export default function SoldVehiclesReportPage() {
   const [loading, setLoading] = useState(true);
   const [isHistogramOpen, setIsHistogramOpen] = useState(true);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
-  const [suggestions, setSuggestions] = useState({
-    brands: [] as string[],
-    models: [] as string[],
-  });
+  const [brandOptions, setBrandOptions] = useState<BrandItem[]>([]);
+  const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
   const [filters, setFilters] = useState(() => {
     const range = getCurrentMonthRange();
     return {
@@ -126,6 +126,7 @@ export default function SoldVehiclesReportPage() {
     };
   });
   const [chartFilters, setChartFilters] = useState(() => getLast12MonthsRange());
+  const hasLoaded = useRef(false);
 
   const fetchReport = async () => {
     try {
@@ -159,23 +160,43 @@ export default function SoldVehiclesReportPage() {
     }
   };
 
-  const fetchSuggestions = async () => {
-    try {
-      const response = await fetchVehicleSuggestions();
-      setSuggestions({
-        brands: response.brands,
-        models: response.models,
-      });
-    } catch (error) {
-      showToast(extractErrorMessage(error));
-    }
-  };
-
   useEffect(() => {
+    if (hasLoaded.current) {
+      return;
+    }
+    hasLoaded.current = true;
     fetchReport();
     fetchPartners();
-    fetchSuggestions();
+    const loadBrands = async () => {
+      try {
+        const brands = await fetchBrands();
+        setBrandOptions(brands);
+      } catch (error) {
+        showToast(extractErrorMessage(error));
+      }
+    };
+    loadBrands();
   }, []);
+
+  useEffect(() => {
+    const selectedBrand = brandOptions.find((brand) => brand.name === filters.brand);
+    if (!selectedBrand) {
+      setModelOptions([]);
+      return;
+    }
+    const loadModels = async () => {
+      try {
+        const models = await fetchModelsByBrand(selectedBrand.id);
+        setModelOptions(models);
+        if (filters.model && !models.some((model) => model.name === filters.model)) {
+          setFilters((prev) => ({ ...prev, model: "" }));
+        }
+      } catch (error) {
+        showToast(extractErrorMessage(error));
+      }
+    };
+    loadModels();
+  }, [brandOptions, filters.brand, filters.model, showToast]);
 
   const histogram = (() => {
     if (!report?.vehicles?.length) {
@@ -246,7 +267,7 @@ export default function SoldVehiclesReportPage() {
             label={t("filters.brand")}
             placeholder={t("placeholders.brand")}
             value={filters.brand}
-            suggestions={suggestions.brands}
+            suggestions={brandOptions.map((brand) => brand.name)}
             onChange={(event) =>
               setFilters((prev) => ({ ...prev, brand: event.target.value }))
             }
@@ -255,7 +276,7 @@ export default function SoldVehiclesReportPage() {
             label={t("filters.model")}
             placeholder={t("placeholders.model")}
             value={filters.model}
-            suggestions={suggestions.models}
+            suggestions={modelOptions.map((model) => model.name)}
             onChange={(event) =>
               setFilters((prev) => ({ ...prev, model: event.target.value }))
             }

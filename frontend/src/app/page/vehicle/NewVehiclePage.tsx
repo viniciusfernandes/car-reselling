@@ -9,7 +9,6 @@ import ComboboxInput from "../../component/input/ComboboxInput";
 import { api, extractErrorMessage, extractFieldErrors } from "../../service/api";
 import { ApiResponse, BrandItem, ModelItem, SupplierSource } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
-import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
 import { fetchBrands, fetchModelsByBrand } from "../../service/brandModels";
 import { formatNumber, parseMoney } from "../../service/formatters";
 
@@ -21,6 +20,19 @@ const SUPPLIER_OPTIONS: { value: SupplierSource; labelKey: string }[] = [
 const PLATE_REGEX =
   /^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
 
+const COLOR_SUGGESTIONS = [
+  "BLACK",
+  "WHITE",
+  "SILVER",
+  "GRAY",
+  "RED",
+  "BLUE",
+  "GREEN",
+  "BROWN",
+  "YELLOW",
+  "BEIGE",
+];
+
 export default function NewVehiclePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -28,7 +40,7 @@ export default function NewVehiclePage() {
   const currentYear = new Date().getFullYear().toString();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [colorSuggestions, setColorSuggestions] = useState<string[]>([]);
+  const [colorSuggestions] = useState<string[]>(COLOR_SUGGESTIONS);
   const [brandOptions, setBrandOptions] = useState<BrandItem[]>([]);
   const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
   const [form, setForm] = useState({
@@ -165,18 +177,6 @@ export default function NewVehiclePage() {
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
-
-  useEffect(() => {
-    const loadSuggestions = async () => {
-      try {
-        const response = await fetchVehicleSuggestions();
-        setColorSuggestions(response.colors);
-      } catch (error) {
-        showToast(extractErrorMessage(error));
-      }
-    };
-    loadSuggestions();
-  }, [showToast]);
 
   useEffect(() => {
     const loadBrands = async () => {

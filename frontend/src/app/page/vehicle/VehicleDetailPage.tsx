@@ -29,7 +29,6 @@ import MoneyInput from "../../component/input/MoneyInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
 import DateInput from "../../component/input/DateInput";
 import { useToast } from "../../component/notification/ToastProvider";
-import { fetchVehicleSuggestions } from "../../service/vehicleSuggestions";
 import { fetchBrands, fetchModelsByBrand } from "../../service/brandModels";
 import {
   formatDate,
@@ -212,18 +211,6 @@ export default function VehicleDetailPage() {
   useEffect(() => {
     fetchAll();
   }, [vehicleId]);
-
-  useEffect(() => {
-    const loadSuggestions = async () => {
-      try {
-        const response = await fetchVehicleSuggestions();
-        setColorSuggestions(response.colors);
-      } catch (error) {
-        showToast(extractErrorMessage(error));
-      }
-    };
-    loadSuggestions();
-  }, [showToast]);
 
   useEffect(() => {
     const loadBrands = async () => {
