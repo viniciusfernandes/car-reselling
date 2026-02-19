@@ -7,6 +7,15 @@ server:
     key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:PKCS12}
     key-alias: ${SERVER_SSL_KEY_ALIAS:carreselling}
 
+observability:
+  tracing:
+    enabled: ${OBSERVABILITY_TRACING_ENABLED:false}
+    service-name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}
+    otlp:
+      endpoint: ${OBSERVABILITY_OTLP_ENDPOINT:http://localhost:4317}
+      headers: ${OBSERVABILITY_OTLP_HEADERS:}
+    metrics-export-interval: ${OBSERVABILITY_METRICS_INTERVAL:30s}
+
 spring:
   threads:
     virtual:

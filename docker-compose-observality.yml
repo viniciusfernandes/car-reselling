@@ -1,0 +1,60 @@
+services:
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:12.4.0-22081664032
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+
+  loki:
+    container_name: loki
+    image: grafana/loki:3.2.0
+    ports:
+      - "3100:3100"
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+
+  tempo:
+    container_name: tempo
+    image: grafana/tempo:2.6.1
+    ports:
+      - "3200:3200"   # Tempo HTTP query API (used by Grafana datasource)
+      - "4319:4317"   # OTLP gRPC exposed to host (optional, for direct pushes)
+      - "4320:4318"   # OTLP HTTP exposed to host (optional)
+    command: ["-config.file=/etc/tempo/config.yml"]
+    volumes:
+      - ./tempo-config.yml:/etc/tempo/config.yml:ro
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9090:9090"
+    # --web.enable-remote-write-receiver lets Tempo's metrics-generator push span-metrics
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    command: ["--config=/etc/otelcol/config.yml"]
+    ports:
+      - "4317:4317"  # OTLP gRPC (what your app is trying to use)
+      - "4318:4318"  # OTLP HTTP (optional)
+    volumes:
+      - ./otel-collector-config.yml:/etc/otelcol/config.yml:ro
+    depends_on:
+      - loki
+      - tempo
+
+volumes:
+  grafana-data:
