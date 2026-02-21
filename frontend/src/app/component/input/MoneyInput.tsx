@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, useMemo } from "react";
+import { InputHTMLAttributes, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { normalizeMoney, formatNumber } from "../../service/formatters";
 
@@ -19,13 +19,9 @@ const normalizeMoneyInput = (value: string, locale: string) => {
 };
 
 const formatMoneyValue = (value: string) => {
-  if (!value) {
-    return "";
-  }
+  if (!value) return "";
   const numeric = Number(value);
-  if (Number.isNaN(numeric)) {
-    return value;
-  }
+  if (Number.isNaN(numeric)) return value;
   return formatNumber(numeric);
 };
 
@@ -38,6 +34,35 @@ export default function MoneyInput({
   ...props
 }: Props) {
   const { i18n } = useTranslation();
+
+  // Refs so the effect always reads the latest value/callback without re-running
+  const isFocusedRef = useRef(false);
+  const prevLocaleRef = useRef(i18n.language);
+  const valueRef = useRef(value);
+  const onValueChangeRef = useRef(onValueChange);
+  valueRef.current = value;
+  onValueChangeRef.current = onValueChange;
+
+  // When the UI language changes, re-parse the stored formatted value with the
+  // OLD locale and re-format it with the NEW locale so the input always shows
+  // the correct pattern (e.g. "1.000,50" → "1,000.50" when switching pt-BR → en-US).
+  useEffect(() => {
+    const prevLocale = prevLocaleRef.current;
+    const nextLocale = i18n.language;
+    if (prevLocale === nextLocale) return;
+    prevLocaleRef.current = nextLocale;
+
+    // Don't interrupt the user while they are actively typing
+    if (isFocusedRef.current || !valueRef.current) return;
+
+    const normalized = normalizeMoney(valueRef.current, prevLocale);
+    const numeric = Number(normalized);
+    if (!Number.isNaN(numeric)) {
+      // formatNumber reads i18n.language at call-time → uses the NEW locale
+      onValueChangeRef.current(formatNumber(numeric));
+    }
+  }, [i18n.language]);
+
   const helperId = useMemo(
     () => `money-input-${label.toLowerCase().replace(/\s+/g, "-")}`,
     [label]
@@ -53,10 +78,14 @@ export default function MoneyInput({
         {...props}
         inputMode="decimal"
         value={value}
+        onFocus={() => { isFocusedRef.current = true; }}
         onChange={(event) =>
           onValueChange(normalizeMoneyInput(event.target.value, i18n.language))
         }
-        onBlur={() => onValueChange(formatMoneyValue(value))}
+        onBlur={() => {
+          isFocusedRef.current = false;
+          onValueChange(formatMoneyValue(value));
+        }}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? helperId : undefined}
         className={`mt-1 w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 ${
