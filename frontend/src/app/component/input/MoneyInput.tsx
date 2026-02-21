@@ -9,18 +9,22 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> &
   error?: string;
 };
 
-const normalizeMoneyInput = (value: string, locale: string) => {
-  const sanitized = normalizeMoney(value, locale);
-  const [integerPart, decimalPart = ""] = sanitized.split(".");
-  const normalizedDecimal = decimalPart.slice(0, 2);
-  return normalizedDecimal.length > 0
-    ? `${integerPart}.${normalizedDecimal}`
-    : integerPart;
+const formatMoneyOnTyping = (typed: string, locale: string) => {
+  const digitsOnly = typed.replace(/\D/g, "");
+  if (!digitsOnly) {
+    return "";
+  }
+  const centsValue = Number(digitsOnly) / 100;
+  if (Number.isNaN(centsValue)) return "";
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(centsValue);
 };
 
-const formatMoneyValue = (value: string) => {
+const formatMoneyValue = (value: string, locale: string) => {
   if (!value) return "";
-  const numeric = Number(value);
+  const numeric = Number(normalizeMoney(value, locale));
   if (Number.isNaN(numeric)) return value;
   return formatNumber(numeric);
 };
@@ -80,11 +84,11 @@ export default function MoneyInput({
         value={value}
         onFocus={() => { isFocusedRef.current = true; }}
         onChange={(event) =>
-          onValueChange(normalizeMoneyInput(event.target.value, i18n.language))
+          onValueChange(formatMoneyOnTyping(event.target.value, i18n.language))
         }
         onBlur={() => {
           isFocusedRef.current = false;
-          onValueChange(formatMoneyValue(value));
+          onValueChange(formatMoneyValue(value, i18n.language));
         }}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? helperId : undefined}
