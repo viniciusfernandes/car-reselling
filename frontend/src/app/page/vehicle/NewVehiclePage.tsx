@@ -7,9 +7,15 @@ import SelectInput from "../../component/input/SelectInput";
 import MoneyInput from "../../component/input/MoneyInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
 import { api, extractErrorMessage, extractFieldErrors } from "../../service/api";
-import { ApiResponse, BrandItem, ModelItem, SupplierSource } from "../../service/types";
+import {
+  ApiResponse,
+  BrandItem,
+  ColorItem,
+  ModelItem,
+  SupplierSource,
+} from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
-import { fetchBrands, fetchModelsByBrand } from "../../service/brandModels";
+import { fetchBrands, fetchColors, fetchModelsByBrand } from "../../service/brandModels";
 import { formatNumber, parseMoney } from "../../service/formatters";
 
 const SUPPLIER_OPTIONS: { value: SupplierSource; labelKey: string }[] = [
@@ -20,19 +26,6 @@ const SUPPLIER_OPTIONS: { value: SupplierSource; labelKey: string }[] = [
 const PLATE_REGEX =
   /^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
 
-const COLOR_SUGGESTIONS = [
-  "BLACK",
-  "WHITE",
-  "SILVER",
-  "GRAY",
-  "RED",
-  "BLUE",
-  "GREEN",
-  "BROWN",
-  "YELLOW",
-  "BEIGE",
-];
-
 export default function NewVehiclePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -40,7 +33,7 @@ export default function NewVehiclePage() {
   const currentYear = new Date().getFullYear().toString();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [colorSuggestions] = useState<string[]>(COLOR_SUGGESTIONS);
+  const [colorOptions, setColorOptions] = useState<ColorItem[]>([]);
   const [brandOptions, setBrandOptions] = useState<BrandItem[]>([]);
   const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
   const [form, setForm] = useState({
@@ -179,15 +172,16 @@ export default function NewVehiclePage() {
   };
 
   useEffect(() => {
-    const loadBrands = async () => {
+    const loadLookupData = async () => {
       try {
-        const brands = await fetchBrands();
+        const [brands, colors] = await Promise.all([fetchBrands(), fetchColors()]);
         setBrandOptions(brands);
+        setColorOptions(colors);
       } catch (error) {
         showToast(extractErrorMessage(error), "error");
       }
     };
-    loadBrands();
+    loadLookupData();
   }, [showToast]);
 
   useEffect(() => {
@@ -331,7 +325,7 @@ export default function NewVehiclePage() {
                       label={t("newVehicle.color")}
                       value={form.color}
                       required
-                      suggestions={colorSuggestions}
+                      suggestions={colorOptions.map((color) => color.name)}
                       onChange={(event) => handleChange("color", event.target.value)}
                       onBlur={() => {
                         const normalized = form.color.trim().toUpperCase();

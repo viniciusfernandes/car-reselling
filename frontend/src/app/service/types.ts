@@ -147,6 +147,15 @@ export type ModelListResponse = {
   models: ModelItem[];
 };
 
+export type ColorItem = {
+  id: string;
+  name: string;
+};
+
+export type ColorListResponse = {
+  colors: ColorItem[];
+};
+
 export type ReportVehicleItem = {
   vehicleId: string;
   licensePlate: string;

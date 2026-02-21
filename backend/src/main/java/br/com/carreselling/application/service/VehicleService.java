@@ -7,12 +7,14 @@ import br.com.carreselling.domain.exception.ConflictException;
 import br.com.carreselling.domain.exception.InvalidStateException;
 import br.com.carreselling.domain.exception.NotFoundException;
 import br.com.carreselling.domain.model.Brand;
+import br.com.carreselling.domain.model.Color;
 import br.com.carreselling.domain.model.Partner;
 import br.com.carreselling.domain.model.SupplierSource;
 import br.com.carreselling.domain.model.Vehicle;
 import br.com.carreselling.domain.model.VehicleModel;
 import br.com.carreselling.domain.model.VehicleStatus;
 import br.com.carreselling.domain.repository.BrandRepository;
+import br.com.carreselling.domain.repository.ColorRepository;
 import br.com.carreselling.domain.repository.DocumentRepository;
 import br.com.carreselling.domain.repository.PartnerRepository;
 import br.com.carreselling.domain.repository.VehicleModelRepository;
@@ -36,6 +38,7 @@ public class VehicleService implements IVehicleService {
     private final DocumentRepository documentRepository;
     private final PartnerRepository partnerRepository;
     private final BrandRepository brandRepository;
+    private final ColorRepository colorRepository;
     private final VehicleModelRepository vehicleModelRepository;
     private final VehicleSalesCalculator salesCalculator;
 
@@ -43,12 +46,14 @@ public class VehicleService implements IVehicleService {
                           DocumentRepository documentRepository,
                           PartnerRepository partnerRepository,
                           BrandRepository brandRepository,
+                          ColorRepository colorRepository,
                           VehicleModelRepository vehicleModelRepository,
                           VehicleSalesCalculator salesCalculator) {
         this.vehicleRepository = vehicleRepository;
         this.documentRepository = documentRepository;
         this.partnerRepository = partnerRepository;
         this.brandRepository = brandRepository;
+        this.colorRepository = colorRepository;
         this.vehicleModelRepository = vehicleModelRepository;
         this.salesCalculator = salesCalculator;
     }
@@ -68,6 +73,7 @@ public class VehicleService implements IVehicleService {
         String normalizedPlate = normalizePlate(licensePlate);
         String normalizedRenavam = normalizeOptionalText(renavam);
         String normalizedVin = normalizeOptionalText(vin);
+        String normalizedColor = normalizeColor(color);
         String normalizedBrand = normalizeOptionalText(brand);
         String normalizedModel = normalizeOptionalText(model);
         validatePlate(normalizedPlate);
@@ -80,6 +86,7 @@ public class VehicleService implements IVehicleService {
         Optional<Vehicle> existingByPlate = vehicleRepository.findVehicleByLicensePlate(normalizedPlate);
         UUID currentVehicleId = existingByPlate.map(Vehicle::getId).orElse(null);
         validateUniqueRenavamAndVin(normalizedRenavam, normalizedVin, currentVehicleId);
+        resolveColor(normalizedColor, now);
         Brand brandEntity = resolveBrand(normalizedBrand, now);
         VehicleModel modelEntity = resolveModel(brandEntity.getId(), normalizedModel, now);
         if (existingByPlate.isPresent()) {
@@ -88,7 +95,7 @@ public class VehicleService implements IVehicleService {
             existingVehicle.setVin(normalizedVin);
             existingVehicle.updateDetails(
                     year,
-                    color,
+                    normalizedColor,
                     normalizedModel,
                     normalizedBrand,
                     supplierSource,
@@ -109,7 +116,7 @@ public class VehicleService implements IVehicleService {
                 normalizedRenavam,
                 normalizedVin,
                 year,
-                color,
+                normalizedColor,
                 normalizedModel,
                 normalizedBrand,
                 brandEntity.getId(),
@@ -292,13 +299,15 @@ public class VehicleService implements IVehicleService {
         validateDocumentLink(vehicleId, invoiceDocumentId);
         validateDocumentLink(vehicleId, paymentReceiptDocumentId);
         Instant now = Instant.now();
+        String normalizedColor = normalizeColor(color);
+        resolveColor(normalizedColor, now);
         String normalizedBrand = normalizeOptionalText(brand);
         String normalizedModel = normalizeOptionalText(model);
         Brand brandEntity = resolveBrand(normalizedBrand, now);
         VehicleModel modelEntity = resolveModel(brandEntity.getId(), normalizedModel, now);
         vehicle.updateDetails(
                 year,
-                color,
+                normalizedColor,
                 normalizedModel,
                 normalizedBrand,
                 supplierSource,
@@ -370,6 +379,19 @@ public class VehicleService implements IVehicleService {
             )));
     }
 
+    private void resolveColor(String color, Instant now) {
+        if (!StringUtils.hasText(color)) {
+            throw new IllegalArgumentException("color: required.");
+        }
+        colorRepository.findColorByName(color)
+            .orElseGet(() -> colorRepository.saveColor(new Color(
+                UUID.randomUUID(),
+                color,
+                now,
+                now
+            )));
+    }
+
     private VehicleModel resolveModel(UUID brandId, String model, Instant now) {
         String normalized = normalizeOptionalText(model);
         if (!StringUtils.hasText(normalized)) {
@@ -424,6 +446,11 @@ public class VehicleService implements IVehicleService {
 
     private String normalizeOptionalText(String value) {
         return value == null ? null : value.trim();
+    }
+
+    private String normalizeColor(String value) {
+        String normalized = normalizeOptionalText(value);
+        return normalized == null ? null : normalized.toUpperCase();
     }
 
     private String resolvePartnerName(UUID partnerId) {

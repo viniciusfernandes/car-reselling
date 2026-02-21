@@ -166,3 +166,21 @@ databaseChangeLog:
                 MODIFY model_id CHAR(36) NOT NULL,
                 ADD CONSTRAINT fk_vehicles_brand FOREIGN KEY (brand_id) REFERENCES brands(id),
                 ADD CONSTRAINT fk_vehicles_model FOREIGN KEY (model_id) REFERENCES models(id);
+  - changeSet:
+      id: vinicius-20260221-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE IF NOT EXISTS colors (
+                id CHAR(36) PRIMARY KEY,
+                name VARCHAR(64) NOT NULL UNIQUE,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NULL
+              );
+
+              INSERT INTO colors (id, name, created_at)
+              SELECT UUID(), UPPER(TRIM(v.color)), NOW()
+              FROM (SELECT DISTINCT color FROM vehicles WHERE color IS NOT NULL AND TRIM(color) <> '') v
+              LEFT JOIN colors c ON c.name = UPPER(TRIM(v.color))
+              WHERE c.id IS NULL;

@@ -9,6 +9,7 @@ import {
 import {
   ApiResponse,
   BrandItem,
+  ColorItem,
   DocumentItem,
   DocumentListResponse,
   DocumentType,
@@ -29,7 +30,7 @@ import MoneyInput from "../../component/input/MoneyInput";
 import ComboboxInput from "../../component/input/ComboboxInput";
 import DateInput from "../../component/input/DateInput";
 import { useToast } from "../../component/notification/ToastProvider";
-import { fetchBrands, fetchModelsByBrand } from "../../service/brandModels";
+import { fetchBrands, fetchColors, fetchModelsByBrand } from "../../service/brandModels";
 import {
   formatDate,
   formatMoney,
@@ -79,7 +80,7 @@ export default function VehicleDetailPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [partners, setPartners] = useState<PartnerItem[]>([]);
   const [taxes, setTaxes] = useState<VehicleTaxes | null>(null);
-  const [colorSuggestions, setColorSuggestions] = useState<string[]>([]);
+  const [colorOptions, setColorOptions] = useState<ColorItem[]>([]);
   const [brandOptions, setBrandOptions] = useState<BrandItem[]>([]);
   const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,15 +214,16 @@ export default function VehicleDetailPage() {
   }, [vehicleId]);
 
   useEffect(() => {
-    const loadBrands = async () => {
+    const loadLookupData = async () => {
       try {
-        const brands = await fetchBrands();
+        const [brands, colors] = await Promise.all([fetchBrands(), fetchColors()]);
         setBrandOptions(brands);
+        setColorOptions(colors);
       } catch (error) {
         showToast(extractErrorMessage(error), "error");
       }
     };
-    loadBrands();
+    loadLookupData();
   }, [showToast]);
 
   useEffect(() => {
@@ -734,11 +736,15 @@ export default function VehicleDetailPage() {
               label={t("vehicleDetail.color")}
               value={updateForm.color}
               required
-              suggestions={colorSuggestions}
+              suggestions={colorOptions.map((color) => color.name)}
               onChange={(event) =>
                 setUpdateForm((prev) => ({ ...prev, color: event.target.value }))
               }
-              onBlur={() => validateUpdateField("color")}
+              onBlur={() => {
+                const normalized = updateForm.color.trim().toUpperCase();
+                setUpdateForm((prev) => ({ ...prev, color: normalized }));
+                validateUpdateField("color", normalized);
+              }}
               error={updateErrors.color}
             />
             <MoneyInput
