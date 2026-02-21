@@ -166,6 +166,12 @@ docker compose exec mysql mysql -u car -p car_reselling
 SHOW TABLES;
 ```
 
+Show all tables (single command with `docker exec`):
+
+```
+docker exec -it mysql mysql -u car -pcar -D car_reselling -e "SHOW TABLES;"
+```
+
 Show all tables filtering by name:
 
 ```
