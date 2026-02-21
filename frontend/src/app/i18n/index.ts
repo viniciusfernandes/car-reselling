@@ -3,8 +3,15 @@ import { initReactI18next } from "react-i18next";
 import enUS from "./locales/en-US.json";
 import ptBR from "./locales/pt-BR.json";
 
+const SUPPORTED_LANGUAGES = new Set(["pt-BR", "en-US"]);
 const storedLanguage = localStorage.getItem("app-language");
-const defaultLanguage = storedLanguage || "pt-BR";
+const defaultLanguage = SUPPORTED_LANGUAGES.has(storedLanguage ?? "")
+  ? (storedLanguage as "pt-BR" | "en-US")
+  : "pt-BR";
+
+if (!storedLanguage || !SUPPORTED_LANGUAGES.has(storedLanguage)) {
+  localStorage.setItem("app-language", "pt-BR");
+}
 
 i18n.use(initReactI18next).init({
   resources: {
