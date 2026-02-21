@@ -76,25 +76,33 @@ public class VehicleService implements IVehicleService {
         validateOptionalMoney(normalizedFreight, "freightCost");
         BigDecimal normalizedCommission = purchaseCommission == null ? BigDecimal.ZERO : purchaseCommission;
         validateOptionalMoney(normalizedCommission, "purchaseCommission");
-        vehicleRepository.findVehicleByLicensePlate(normalizedPlate)
-                .ifPresent(existing -> {
-                    throw new ConflictException("License plate already registered");
-                });
-        if (StringUtils.hasText(normalizedRenavam)) {
-            vehicleRepository.findVehicleByRenavam(normalizedRenavam)
-                    .ifPresent(existing -> {
-                        throw new ConflictException("Renavam already registered");
-                    });
-        }
-        if (StringUtils.hasText(normalizedVin)) {
-            vehicleRepository.findVehicleByVin(normalizedVin)
-                    .ifPresent(existing -> {
-                        throw new ConflictException("VIN already registered");
-                    });
-        }
         Instant now = Instant.now();
+        Optional<Vehicle> existingByPlate = vehicleRepository.findVehicleByLicensePlate(normalizedPlate);
+        UUID currentVehicleId = existingByPlate.map(Vehicle::getId).orElse(null);
+        validateUniqueRenavamAndVin(normalizedRenavam, normalizedVin, currentVehicleId);
         Brand brandEntity = resolveBrand(normalizedBrand, now);
         VehicleModel modelEntity = resolveModel(brandEntity.getId(), normalizedModel, now);
+        if (existingByPlate.isPresent()) {
+            Vehicle existingVehicle = existingByPlate.get();
+            existingVehicle.setRenavam(normalizedRenavam);
+            existingVehicle.setVin(normalizedVin);
+            existingVehicle.updateDetails(
+                    year,
+                    color,
+                    normalizedModel,
+                    normalizedBrand,
+                    supplierSource,
+                    purchasePrice,
+                    normalizedFreight,
+                    normalizedCommission
+            );
+            existingVehicle.setBrandId(brandEntity.getId());
+            existingVehicle.setModelId(modelEntity.getId());
+            existingVehicle.setUpdatedAt(now);
+            existingVehicle.ensureDistributionInvariant();
+            vehicleRepository.updateVehicle(existingVehicle);
+            return existingVehicle.getId();
+        }
         Vehicle vehicle = new Vehicle(
                 UUID.randomUUID(),
                 normalizedPlate,
@@ -122,6 +130,25 @@ public class VehicleService implements IVehicleService {
         vehicle.ensureDistributionInvariant();
         vehicleRepository.saveVehicle(vehicle);
         return vehicle.getId();
+    }
+
+    private void validateUniqueRenavamAndVin(String renavam, String vin, UUID currentVehicleId) {
+        if (StringUtils.hasText(renavam)) {
+            vehicleRepository.findVehicleByRenavam(renavam)
+                    .ifPresent(existing -> {
+                        if (currentVehicleId == null || !existing.getId().equals(currentVehicleId)) {
+                            throw new ConflictException("Renavam already registered");
+                        }
+                    });
+        }
+        if (StringUtils.hasText(vin)) {
+            vehicleRepository.findVehicleByVin(vin)
+                    .ifPresent(existing -> {
+                        if (currentVehicleId == null || !existing.getId().equals(currentVehicleId)) {
+                            throw new ConflictException("VIN already registered");
+                        }
+                    });
+        }
     }
 
     @Override
