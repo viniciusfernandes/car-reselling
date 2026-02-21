@@ -29,7 +29,7 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!email || !password) {
-      showToast(t("auth.validation.required"));
+      showToast(t("auth.validation.required"), "error");
       return;
     }
     try {
@@ -43,14 +43,14 @@ export default function LoginPage() {
       );
       const token = response.data?.data?.token;
       if (!token) {
-        showToast(t("auth.validation.missingToken"));
+        showToast(t("auth.validation.missingToken"), "error");
         return;
       }
       authTokenStorage.set(token);
       const redirectTo = (location.state as any)?.from?.pathname || "/vehicles";
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setIsSubmitting(false);
     }

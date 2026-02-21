@@ -177,26 +177,26 @@ export default function VehicleDetailPage() {
       setVehicle(vehicleResponse.value.data.data);
     } else {
       setVehicle(null);
-      showToast(extractErrorMessage(vehicleResponse.reason));
+      showToast(extractErrorMessage(vehicleResponse.reason), "error");
     }
 
     if (serviceResponse.status === "fulfilled") {
       setServices(serviceResponse.value.data.data.services);
       setServicesTotal(serviceResponse.value.data.data.total);
     } else {
-      showToast(extractErrorMessage(serviceResponse.reason));
+      showToast(extractErrorMessage(serviceResponse.reason), "error");
     }
 
     if (documentResponse.status === "fulfilled") {
       setDocuments(documentResponse.value.data.data.documents);
     } else {
-      showToast(extractErrorMessage(documentResponse.reason));
+      showToast(extractErrorMessage(documentResponse.reason), "error");
     }
 
     if (partnerResponse.status === "fulfilled") {
       setPartners(partnerResponse.value.data.data.partners);
     } else {
-      showToast(extractErrorMessage(partnerResponse.reason));
+      showToast(extractErrorMessage(partnerResponse.reason), "error");
     }
 
     if (taxesResponse.status === "fulfilled") {
@@ -218,7 +218,7 @@ export default function VehicleDetailPage() {
         const brands = await fetchBrands();
         setBrandOptions(brands);
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadBrands();
@@ -241,7 +241,7 @@ export default function VehicleDetailPage() {
           setUpdateForm((prev) => ({ ...prev, model: "" }));
         }
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadModels();
@@ -416,7 +416,7 @@ export default function VehicleDetailPage() {
         description: serviceForm.description || null,
         performedAt: serviceForm.performedAt || null,
       });
-      showToast(t("vehicleDetail.services.added"));
+      showToast(t("vehicleDetail.services.added"), "success");
       setServiceForm({
         serviceType: "MECHANICAL",
         serviceValue: "",
@@ -426,7 +426,7 @@ export default function VehicleDetailPage() {
       setServiceErrors({});
       await fetchAll();
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setIsAddingService(false);
     }
@@ -460,12 +460,12 @@ export default function VehicleDetailPage() {
         description: editServiceForm.description || null,
         performedAt: editServiceForm.performedAt || null,
       });
-      showToast(t("vehicleDetail.services.updated"));
+      showToast(t("vehicleDetail.services.updated"), "success");
       setEditServiceId(null);
       setEditServiceErrors({});
       await fetchAll();
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setIsUpdatingService(false);
     }
@@ -480,10 +480,10 @@ export default function VehicleDetailPage() {
     }
     try {
       await api.delete(`/vehicles/${vehicleId}/services/${serviceId}`);
-      showToast(t("vehicleDetail.services.deleted"));
+      showToast(t("vehicleDetail.services.deleted"), "success");
       await fetchAll();
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     }
   };
 
@@ -499,11 +499,11 @@ export default function VehicleDetailPage() {
       await api.post(`/vehicles/${vehicleId}/documents`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      showToast(t("vehicleDetail.documents.uploaded"));
+      showToast(t("vehicleDetail.documents.uploaded"), "success");
       setDocumentFile(null);
       await fetchAll();
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setIsUploadingDocument(false);
     }
@@ -518,10 +518,10 @@ export default function VehicleDetailPage() {
     }
     try {
       await api.delete(`/vehicles/${vehicleId}/documents/${documentId}`);
-      showToast(t("vehicleDetail.documents.deleted"));
+      showToast(t("vehicleDetail.documents.deleted"), "success");
       await fetchAll();
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     }
   };
 
@@ -530,13 +530,13 @@ export default function VehicleDetailPage() {
       return;
     }
     if (statusTarget === "DISTRIBUTED" && !partnerId) {
-      showToast(t("vehicleDetail.selectPartnerFirst"));
+      showToast(t("vehicleDetail.selectPartnerFirst"), "error");
       return;
     }
     if (statusTarget === "SOLD") {
       const error = getMoneyError(sellingPrice, true);
       if (error) {
-        showToast(t("vehicleDetail.setSellingPriceFirst"));
+        showToast(t("vehicleDetail.setSellingPriceFirst"), "error");
         return;
       }
     }
@@ -573,14 +573,14 @@ export default function VehicleDetailPage() {
           assignedPartnerId: statusTarget === "DISTRIBUTED" ? partnerId : null,
         });
       }
-      showToast(t("vehicleDetail.updated"));
+      showToast(t("vehicleDetail.updated"), "success");
       setUpdateErrors({});
       await fetchAll();
     } catch (error: any) {
       if (error?.response?.data?.errors) {
         setUpdateErrors(extractFieldErrors(error.response.data.errors));
       }
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setIsUpdatingVehicle(false);
     }
@@ -595,10 +595,10 @@ export default function VehicleDetailPage() {
       await api.post(`/vehicles/${vehicleId}/distribution`, {
         partnerId,
       });
-      showToast(t("vehicleDetail.distributed"));
+      showToast(t("vehicleDetail.distributed"), "success");
       await fetchAll();
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setIsAssigningPartner(false);
     }

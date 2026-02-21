@@ -145,7 +145,7 @@ export default function SoldVehiclesReportPage() {
       );
       setReport(response.data.data);
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setLoading(false);
     }
@@ -156,7 +156,7 @@ export default function SoldVehiclesReportPage() {
       const response = await api.get<ApiResponse<PartnerListResponse>>("/partners");
       setPartners(response.data.data.partners);
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     }
   };
 
@@ -172,7 +172,7 @@ export default function SoldVehiclesReportPage() {
         const brands = await fetchBrands();
         setBrandOptions(brands);
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadBrands();
@@ -192,7 +192,7 @@ export default function SoldVehiclesReportPage() {
           setFilters((prev) => ({ ...prev, model: "" }));
         }
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadModels();

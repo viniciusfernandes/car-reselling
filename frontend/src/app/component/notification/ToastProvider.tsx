@@ -1,9 +1,18 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-type Toast = { id: number; message: string };
+type ToastVariant = "success" | "warn" | "error";
+type Toast = { id: number; message: string; variant: ToastVariant };
 
 type ToastContextValue = {
-  showToast: (message: string) => void;
+  showToast: (message: string, variant?: ToastVariant) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -17,13 +26,27 @@ export function useToast() {
 }
 
 export default function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
-  const showToast = (message: string) => {
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = (message: string, variant: ToastVariant = "warn") => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, message }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToast({ id, message, variant });
+
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = window.setTimeout(() => {
+      setToast((current) => (current?.id === id ? null : current));
+      timeoutRef.current = null;
     }, 3000);
   };
 
@@ -32,15 +55,21 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed right-6 top-6 space-y-2">
-        {toasts.map((toast) => (
+      <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 space-y-2">
+        {toast ? (
           <div
             key={toast.id}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white shadow"
+            className={`rounded-md px-4 py-2 text-sm text-white shadow ${
+              toast.variant === "success"
+                ? "bg-blue-600"
+                : toast.variant === "error"
+                  ? "bg-red-600"
+                  : "bg-yellow-500"
+            }`}
           >
             {toast.message}
           </div>
-        ))}
+        ) : null}
       </div>
     </ToastContext.Provider>
   );

@@ -132,7 +132,7 @@ export default function NewVehiclePage() {
       }
     }
     if (field === "purchaseCommission") {
-      const error = getMoneyError(value ?? form.purchaseCommission, true);
+      const error = getMoneyError(value ?? form.purchaseCommission);
       if (error) {
         nextErrors.purchaseCommission = error;
       } else {
@@ -170,7 +170,7 @@ export default function NewVehiclePage() {
     if (freightCostError) {
       nextErrors.freightCost = freightCostError;
     }
-    const commissionError = getMoneyError(form.purchaseCommission, true);
+    const commissionError = getMoneyError(form.purchaseCommission);
     if (commissionError) {
       nextErrors.purchaseCommission = commissionError;
     }
@@ -184,7 +184,7 @@ export default function NewVehiclePage() {
         const brands = await fetchBrands();
         setBrandOptions(brands);
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadBrands();
@@ -204,7 +204,7 @@ export default function NewVehiclePage() {
           handleChange("model", "");
         }
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadModels();
@@ -242,13 +242,13 @@ export default function NewVehiclePage() {
           purchaseCommission: parseMoney(form.purchaseCommission),
         }
       );
-      showToast(t("vehicles.created"));
+      showToast(t("vehicles.created"), "success");
       navigate(`/vehicles/${response.data.data.vehicleId}`);
     } catch (error) {
       if ((error as any)?.response?.data?.errors) {
         setErrors(extractFieldErrors((error as any).response.data.errors));
       }
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -302,18 +302,18 @@ export default function NewVehiclePage() {
             error={errors.year}
           />
           <ComboboxInput
-            label={t("newVehicle.color")}
-            value={form.color}
-            required
-            suggestions={colorSuggestions}
-            onChange={(event) => handleChange("color", event.target.value)}
-            onBlur={() => {
-              const normalized = form.color.trim().toUpperCase();
-              handleChange("color", normalized);
-              validateField("color", normalized);
-            }}
-            error={errors.color}
-          />
+                      label={t("newVehicle.brand")}
+                      value={form.brand}
+                      required
+                      suggestions={brandOptions.map((brand) => brand.name)}
+                      onChange={(event) => handleChange("brand", event.target.value)}
+                      onBlur={() => {
+                        const normalized = form.brand.trim().toUpperCase();
+                        handleChange("brand", normalized);
+                        validateField("brand", normalized);
+                      }}
+                      error={errors.brand}
+                    />
           <ComboboxInput
             label={t("newVehicle.model")}
             value={form.model}
@@ -328,18 +328,18 @@ export default function NewVehiclePage() {
             error={errors.model}
           />
           <ComboboxInput
-            label={t("newVehicle.brand")}
-            value={form.brand}
-            required
-            suggestions={brandOptions.map((brand) => brand.name)}
-            onChange={(event) => handleChange("brand", event.target.value)}
-            onBlur={() => {
-              const normalized = form.brand.trim().toUpperCase();
-              handleChange("brand", normalized);
-              validateField("brand", normalized);
-            }}
-            error={errors.brand}
-          />
+                      label={t("newVehicle.color")}
+                      value={form.color}
+                      required
+                      suggestions={colorSuggestions}
+                      onChange={(event) => handleChange("color", event.target.value)}
+                      onBlur={() => {
+                        const normalized = form.color.trim().toUpperCase();
+                        handleChange("color", normalized);
+                        validateField("color", normalized);
+                      }}
+                      error={errors.color}
+                    />
           <SelectInput
             label={t("newVehicle.supplierSource")}
             value={form.supplierSource}
@@ -370,7 +370,6 @@ export default function NewVehiclePage() {
           <MoneyInput
             label={t("newVehicle.purchaseCommission")}
             value={form.purchaseCommission}
-            required
             onValueChange={(value) => handleChange("purchaseCommission", value)}
             onBlur={() => validateField("purchaseCommission")}
             error={errors.purchaseCommission}

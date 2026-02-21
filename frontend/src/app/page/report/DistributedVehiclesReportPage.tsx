@@ -65,7 +65,7 @@ export default function DistributedVehiclesReportPage() {
       );
       setReport(response.data.data);
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export default function DistributedVehiclesReportPage() {
       const response = await api.get<ApiResponse<PartnerListResponse>>("/partners");
       setPartners(response.data.data.partners);
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     }
   };
 
@@ -92,7 +92,7 @@ export default function DistributedVehiclesReportPage() {
         const brands = await fetchBrands();
         setBrandOptions(brands);
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadBrands();
@@ -112,7 +112,7 @@ export default function DistributedVehiclesReportPage() {
           setFilters((prev) => ({ ...prev, model: "" }));
         }
       } catch (error) {
-        showToast(extractErrorMessage(error));
+        showToast(extractErrorMessage(error), "error");
       }
     };
     loadModels();

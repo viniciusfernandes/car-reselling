@@ -42,7 +42,7 @@ export default function VehicleListPage() {
       );
       setData(response.data.data);
     } catch (error) {
-      showToast(extractErrorMessage(error));
+      showToast(extractErrorMessage(error), "error");
     } finally {
       setLoading(false);
     }
