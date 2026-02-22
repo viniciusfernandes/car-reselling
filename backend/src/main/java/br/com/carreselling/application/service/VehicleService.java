@@ -292,7 +292,8 @@ public class VehicleService implements IVehicleService {
                               UUID invoiceDocumentId,
                               UUID paymentReceiptDocumentId) {
         validateRequiredMoney(purchasePrice, "purchasePrice");
-        validateRequiredMoney(freightCost, "freightCost");
+        BigDecimal normalizedFreight = freightCost == null ? BigDecimal.ZERO : freightCost;
+        validateOptionalMoney(normalizedFreight, "freightCost");
         validateOptionalMoney(purchaseCommission, "purchaseCommission");
         Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
@@ -312,7 +313,7 @@ public class VehicleService implements IVehicleService {
                 normalizedBrand,
                 supplierSource,
                 purchasePrice,
-                freightCost,
+                normalizedFreight,
                 purchaseCommission
         );
         vehicle.updateLinkedDocuments(invoiceDocumentId, paymentReceiptDocumentId);

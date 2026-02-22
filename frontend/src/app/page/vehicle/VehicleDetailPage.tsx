@@ -327,7 +327,7 @@ export default function VehicleDetailPage() {
     if (purchaseError) {
       nextErrors.purchasePrice = purchaseError;
     }
-    const freightError = getMoneyError(updateForm.freightCost, true);
+    const freightError = getMoneyError(updateForm.freightCost);
     if (freightError) {
       nextErrors.freightCost = freightError;
     }
@@ -378,7 +378,7 @@ export default function VehicleDetailPage() {
       }
     }
     if (field === "freightCost") {
-      const error = getMoneyError(value ?? updateForm.freightCost, true);
+      const error = getMoneyError(value ?? updateForm.freightCost);
       if (error) {
         nextErrors.freightCost = error;
       } else {
@@ -789,7 +789,6 @@ export default function VehicleDetailPage() {
             <MoneyInput
               label={t("vehicleDetail.freightCost")}
               value={updateForm.freightCost}
-              required
               onValueChange={(value) =>
                 setUpdateForm((prev) => ({
                   ...prev,

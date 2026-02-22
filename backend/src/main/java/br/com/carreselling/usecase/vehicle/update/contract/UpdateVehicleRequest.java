@@ -14,7 +14,7 @@ public record UpdateVehicleRequest(
     @NotBlank String brand,
     @NotNull SupplierSource supplierSource,
     @NotNull @PositiveOrZero BigDecimal purchasePrice,
-    @NotNull @PositiveOrZero BigDecimal freightCost,
+    @PositiveOrZero BigDecimal freightCost,
     @NotNull @PositiveOrZero BigDecimal purchaseCommission,
     UUID purchaseInvoiceDocumentId,
     UUID purchasePaymentReceiptDocumentId
