@@ -1,5 +1,6 @@
 package br.com.carreselling.infrastructure.storage;
 
+import br.com.carreselling.domain.model.DocumentType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -21,9 +22,11 @@ public class LocalDocumentStorage implements DocumentStorage {
     }
 
     @Override
-    public String store(UUID vehicleId, UUID documentId, String originalFileName, InputStream inputStream) {
+    public String store(UUID vehicleId, DocumentType documentType, UUID documentId, String originalFileName, InputStream inputStream) {
         String sanitized = originalFileName.replaceAll("[\\\\/]", "_");
-        Path relativePath = Path.of(vehicleId.toString(), documentId.toString(), sanitized);
+        // Keep files grouped by vehicle and document type; avoid per-document folder.
+        String storedFileName = documentId + "_" + sanitized;
+        Path relativePath = Path.of(vehicleId.toString(), documentType.name(), storedFileName);
         Path targetPath = basePath.resolve(relativePath);
         try {
             Files.createDirectories(targetPath.getParent());

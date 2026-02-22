@@ -43,7 +43,13 @@ public class DocumentService implements IDocumentService {
         String originalFileName = file.getOriginalFilename() == null ? "document" : file.getOriginalFilename();
         String storageKey;
         try {
-            storageKey = documentStorage.store(vehicleId, documentId, originalFileName, file.getInputStream());
+            storageKey = documentStorage.store(
+                vehicleId,
+                documentType,
+                documentId,
+                originalFileName,
+                file.getInputStream()
+            );
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to store document");
         }
