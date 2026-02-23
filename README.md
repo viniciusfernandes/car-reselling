@@ -228,6 +228,12 @@ Stop:
 docker compose down
 ```
 
+List running containers with a clean summary:
+
+```
+docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}"
+```
+
 ### Option B — Local development
 
 #### 1) Start MySQL
@@ -282,6 +288,35 @@ Then attach your debugger to `localhost:5005`.
 Use your browser devtools with `npm run dev`.
 
 ## Common Troubleshooting
+
+### Stop a service running on a specific port
+
+Find the process ID (PID) and kill it:
+
+```bash
+# Find and kill in one command (replace 8080 with the port you need)
+kill $(lsof -ti :8080)
+
+# Or step by step:
+lsof -ti :8080          # prints the PID
+kill <PID>              # graceful stop (SIGTERM)
+kill -9 <PID>           # force kill if graceful stop does not work
+```
+
+Common ports used by this project:
+
+| Port | Service |
+|------|---------|
+| 8080 | Spring Boot backend |
+| 5173 | Vite frontend dev server |
+| 3306 | MySQL |
+| 3000 | Grafana |
+| 3100 | Loki |
+| 3200 | Tempo |
+| 4317 | OTel Collector gRPC |
+| 4318 | OTel Collector HTTP |
+| 9090 | Prometheus |
+| 8081 | Auth server |
 
 - **Port 8080 or 3306 already in use**: stop conflicting services or change ports in `application.yml` / `docker-compose.yml`.
 - **Liquibase errors on startup**: check database connection and ensure schema is clean; review `db.changelog-master.yaml`.
