@@ -6,6 +6,7 @@
     "vehicles": "Vehicles",
     "reports": "Distributed vehicles",
     "sales": "Sales",
+    "partners": "Partners",
     "logout": "Logout"
   },
   "language": {
@@ -273,8 +274,8 @@
         "subtitle": "Total selling price per month.",
         "show": "Show chart",
         "hide": "Hide chart",
-        "startMonth": "Start month/year",
-        "endMonth": "End month/year",
+        "startMonth": "Start",
+        "endMonth": "End",
         "empty": "Select a valid month range to see the histogram.",
         "maxMonth": "Max month: {{value}}"
       }
@@ -291,5 +292,39 @@
     "csll": "CSLL",
     "irpj": "IRPJ",
     "total": "Total taxes"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel"
+  },
+  "partners": {
+    "title": "Partners",
+    "list": "Partner list",
+    "editTitle": "Edit partner",
+    "empty": "No partners found.",
+    "selectHint": "Select a partner on the left to edit.",
+    "savedSuccess": "Partner updated successfully.",
+    "commissionRate": "Commission",
+    "showHistory": "View history",
+    "hideHistory": "Hide history",
+    "historyTitle": "Change history",
+    "historyEmpty": "No changes recorded yet.",
+    "fields": {
+      "name": "Name",
+      "city": "City",
+      "phone": "Phone",
+      "email": "Email",
+      "commissionRate": "Commission rate (%)"
+    },
+    "historyColumns": {
+      "changedAt": "Date/time",
+      "changedBy": "Changed by"
+    },
+    "errors": {
+      "nameRequired": "Name is required.",
+      "invalidRate": "Commission rate must be between 0 and 100."
+    }
   }
 }

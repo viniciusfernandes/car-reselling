@@ -9,6 +9,7 @@ public class PartnerListMapper {
     }
 
     public static PartnerItem toItem(PartnerSummary summary) {
-        return new PartnerItem(summary.id(), summary.name(), summary.city());
+        return new PartnerItem(summary.id(), summary.name(), summary.city(),
+            summary.phone(), summary.email(), summary.commissionRate());
     }
 }

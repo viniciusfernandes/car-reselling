@@ -184,3 +184,26 @@ databaseChangeLog:
               FROM (SELECT DISTINCT color FROM vehicles WHERE color IS NOT NULL AND TRIM(color) <> '') v
               LEFT JOIN colors c ON c.name = UPPER(TRIM(v.color))
               WHERE c.id IS NULL;
+  - changeSet:
+      id: vinicius-20260222-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE partners
+                ADD COLUMN phone VARCHAR(32) NULL AFTER city,
+                ADD COLUMN email VARCHAR(255) NULL AFTER phone;
+
+              CREATE TABLE IF NOT EXISTS partner_history (
+                id CHAR(36) PRIMARY KEY,
+                partner_id CHAR(36) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                city VARCHAR(255) NULL,
+                phone VARCHAR(32) NULL,
+                email VARCHAR(255) NULL,
+                commission_rate DECIMAL(6,2) NULL,
+                changed_at DATETIME NOT NULL,
+                changed_by VARCHAR(128) NULL,
+                KEY idx_partner_history_partner (partner_id),
+                CONSTRAINT fk_partner_history_partner FOREIGN KEY (partner_id) REFERENCES partners(id)
+              );

@@ -6,6 +6,7 @@
     "vehicles": "Veículos",
     "reports": "Veículos distribuídos",
     "sales": "Vendas",
+    "partners": "Parceiros",
     "logout": "Sair"
   },
   "language": {
@@ -273,8 +274,8 @@
         "subtitle": "Total de vendas por mês.",
         "show": "Mostrar gráfico",
         "hide": "Ocultar gráfico",
-        "startMonth": "Mês/ano inicial",
-        "endMonth": "Mês/ano final",
+        "startMonth": "Início",
+        "endMonth": "Fim",
         "empty": "Selecione um intervalo válido para ver o histograma.",
         "maxMonth": "Maior mês: {{value}}"
       }
@@ -291,5 +292,39 @@
     "csll": "CSLL",
     "irpj": "IRPJ",
     "total": "Total de impostos"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "cancel": "Cancelar"
+  },
+  "partners": {
+    "title": "Parceiros",
+    "list": "Lista de parceiros",
+    "editTitle": "Editar parceiro",
+    "empty": "Nenhum parceiro cadastrado.",
+    "selectHint": "Selecione um parceiro à esquerda para editar.",
+    "savedSuccess": "Parceiro atualizado com sucesso.",
+    "commissionRate": "Comissão",
+    "showHistory": "Ver histórico",
+    "hideHistory": "Ocultar histórico",
+    "historyTitle": "Histórico de alterações",
+    "historyEmpty": "Nenhuma alteração registrada.",
+    "fields": {
+      "name": "Nome",
+      "city": "Cidade",
+      "phone": "Telefone",
+      "email": "E-mail",
+      "commissionRate": "Taxa de comissão (%)"
+    },
+    "historyColumns": {
+      "changedAt": "Data/hora",
+      "changedBy": "Alterado por"
+    },
+    "errors": {
+      "nameRequired": "Nome é obrigatório.",
+      "invalidRate": "Taxa de comissão deve estar entre 0 e 100."
+    }
   }
 }

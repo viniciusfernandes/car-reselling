@@ -9,6 +9,8 @@ public interface PartnerRepository {
 
     Partner savePartner(Partner partner);
 
+    Partner updatePartner(Partner partner);
+
     List<Partner> findPartner();
 
     Optional<Partner> findPartnerById(UUID id);

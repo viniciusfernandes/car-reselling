@@ -27,15 +27,35 @@ public class PartnerJdbcRepository implements PartnerRepository {
     public Partner savePartner(Partner partner) {
         jdbcTemplate.update("""
                 INSERT INTO partners
-                (id, name, city, commission_rate, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (id, name, city, phone, email, commission_rate, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             partner.getId().toString(),
             partner.getName(),
             partner.getCity(),
+            partner.getPhone(),
+            partner.getEmail(),
             partner.getCommissionRate(),
             Timestamp.from(partner.getCreatedAt()),
             partner.getUpdatedAt() == null ? null : Timestamp.from(partner.getUpdatedAt())
+        );
+        return partner;
+    }
+
+    @Override
+    public Partner updatePartner(Partner partner) {
+        jdbcTemplate.update("""
+                UPDATE partners
+                SET name = ?, city = ?, phone = ?, email = ?, commission_rate = ?, updated_at = ?
+                WHERE id = ?
+                """,
+            partner.getName(),
+            partner.getCity(),
+            partner.getPhone(),
+            partner.getEmail(),
+            partner.getCommissionRate(),
+            Timestamp.from(partner.getUpdatedAt()),
+            partner.getId().toString()
         );
         return partner;
     }
@@ -75,6 +95,8 @@ public class PartnerJdbcRepository implements PartnerRepository {
             UUID id = UUID.fromString(rs.getString("id"));
             String name = rs.getString("name");
             String city = rs.getString("city");
+            String phone = rs.getString("phone");
+            String email = rs.getString("email");
             BigDecimal commissionRate = rs.getBigDecimal("commission_rate");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
@@ -82,6 +104,8 @@ public class PartnerJdbcRepository implements PartnerRepository {
                 id,
                 name,
                 city,
+                phone,
+                email,
                 commissionRate,
                 createdAt,
                 updatedAt == null ? null : updatedAt.toInstant()

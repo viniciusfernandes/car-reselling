@@ -9,6 +9,8 @@ public class Partner {
     private final UUID id;
     private final String name;
     private final String city;
+    private final String phone;
+    private final String email;
     private final BigDecimal commissionRate;
     private final Instant createdAt;
     private final Instant updatedAt;
@@ -16,12 +18,16 @@ public class Partner {
     public Partner(UUID id,
                    String name,
                    String city,
+                   String phone,
+                   String email,
                    BigDecimal commissionRate,
                    Instant createdAt,
                    Instant updatedAt) {
         this.id = id;
         this.name = name;
         this.city = city;
+        this.phone = phone;
+        this.email = email;
         this.commissionRate = commissionRate;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -37,6 +43,14 @@ public class Partner {
 
     public String getCity() {
         return city;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getEmail() {
+        return email;
     }
 
     public BigDecimal getCommissionRate() {

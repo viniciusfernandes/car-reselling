@@ -123,10 +123,37 @@ export type PartnerItem = {
   id: string;
   name: string;
   city?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  commissionRate?: number | null;
 };
 
 export type PartnerListResponse = {
   partners: PartnerItem[];
+};
+
+export type PartnerDetail = {
+  id: string;
+  name: string;
+  city?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  commissionRate?: number | null;
+};
+
+export type PartnerHistoryItem = {
+  id: string;
+  name: string;
+  city?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  commissionRate?: number | null;
+  changedAt: string;
+  changedBy?: string | null;
+};
+
+export type PartnerHistoryResponse = {
+  history: PartnerHistoryItem[];
 };
 
 export type BrandItem = {
