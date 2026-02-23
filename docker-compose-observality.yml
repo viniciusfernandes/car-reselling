@@ -17,8 +17,10 @@ services:
     ports:
       - "3100:3100"
     command: ["-config.file=/etc/loki/local-config.yaml"]
+    user: "0"  # run as root so bind-mount dirs are writable
     volumes:
       - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+      - /tmp/observability/loki:/loki
 
   tempo:
     container_name: tempo
@@ -28,8 +30,10 @@ services:
       - "4319:4317"   # OTLP gRPC exposed to host (optional, for direct pushes)
       - "4320:4318"   # OTLP HTTP exposed to host (optional)
     command: ["-config.file=/etc/tempo/config.yml"]
+    user: "0"  # run as root so bind-mount dirs are writable
     volumes:
       - ./tempo-config.yml:/etc/tempo/config.yml:ro
+      - /tmp/observability/tempo:/tmp/tempo
 
   prometheus:
     container_name: prometheus
@@ -40,16 +44,21 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.enable-remote-write-receiver"
+      - "--storage.tsdb.path=/prometheus"
+    user: "0"  # run as root so bind-mount dirs are writable
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /tmp/observability/prometheus:/prometheus
 
   otel-collector:
     container_name: otel-collector
     image: otel/opentelemetry-collector-contrib:0.96.0
     command: ["--config=/etc/otelcol/config.yml"]
     ports:
-      - "4317:4317"  # OTLP gRPC (what your app is trying to use)
-      - "4318:4318"  # OTLP HTTP (optional)
+      - "4317:4317"  # OTLP gRPC receiver (backend app pushes here)
+      - "4318:4318"  # OTLP HTTP receiver
+      - "8888:8888"  # Collector self-telemetry (scraped by Prometheus)
+      - "8889:8889"  # Prometheus exporter for app metrics (scraped by Prometheus)
     volumes:
       - ./otel-collector-config.yml:/etc/otelcol/config.yml:ro
     depends_on:

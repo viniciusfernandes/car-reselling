@@ -1,0 +1,14 @@
+apiVersion: 1
+
+apps:
+  # Loki Explore App - pre-configure the default Loki datasource
+  - type: grafana-lokiexplore-app
+    disabled: false
+    jsonData:
+      lokiDatasourceUid: loki
+
+  # Traces Explore App - pre-configure the default Tempo datasource
+  - type: grafana-exploretraces-app
+    disabled: false
+    jsonData:
+      tempoDatasourceUid: tempo

@@ -10,6 +10,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: car
       SPRING_DATASOURCE_PASSWORD: car
+      # Observability – set OTLP_METRICS_ENABLED=true to push metrics to the OTel Collector.
+      # Requires the observability stack (docker-compose-observality.yml) to be running.
+      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
+      OTLP_METRICS_URL: ${OTLP_METRICS_URL:-http://otel-collector:4318/v1/metrics}
+      OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-false}
+      OBSERVABILITY_OTLP_ENDPOINT: ${OBSERVABILITY_OTLP_ENDPOINT:-http://otel-collector:4317}
     volumes:
       - ./storage:/storage
     depends_on:

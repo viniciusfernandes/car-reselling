@@ -44,6 +44,10 @@ dependencies {
     implementation 'io.opentelemetry:opentelemetry-sdk-metrics'
     implementation 'io.opentelemetry:opentelemetry-sdk-logs'
 
+    // Micrometer OTLP registry – pushes all Actuator metrics (JVM, HTTP, HikariCP…)
+    // to the OTel Collector via OTLP/HTTP independently of the tracing toggle
+    implementation 'io.micrometer:micrometer-registry-otlp'
+
     // Logs → Loki via loki4j (stable, no alpha dependencies)
     implementation 'com.github.loki4j:loki-logback-appender:1.5.2'
 
