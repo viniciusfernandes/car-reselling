@@ -24,13 +24,17 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    networks:
+      - default
+      - car-reselling-net
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: car
       SPRING_DATASOURCE_PASSWORD: car
-      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
+      # Observability – enabled by default in Docker; all targets resolve via container name
+      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-true}
       OTLP_METRICS_URL: ${OTLP_METRICS_URL:-http://otel-collector:4318/v1/metrics}
-      OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-false}
+      OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-true}
       OBSERVABILITY_OTLP_ENDPOINT: ${OBSERVABILITY_OTLP_ENDPOINT:-http://otel-collector:4317}
       LOKI_URL: ${LOKI_URL:-http://loki:3100}
       AUTH_BASE_URL: http://authentication-api:8081
@@ -78,3 +82,7 @@ services:
 
 volumes:
   mysql-data:
+
+networks:
+  car-reselling-net:
+    external: true   # shared with docker-compose-observality.yml so the API can reach otel-collector / loki / tempo

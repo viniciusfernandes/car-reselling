@@ -73,7 +73,7 @@ management:
     metrics:
       export:
         enabled: ${OTLP_METRICS_ENABLED:false}
-        url: ${OTLP_METRICS_URL:http://open-collector:4318/v1/metrics}
+        url: ${OTLP_METRICS_URL:http://otel-collector:4318/v1/metrics}
         step: ${OTLP_METRICS_STEP:30s}
         resource-attributes:
           service.name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}
