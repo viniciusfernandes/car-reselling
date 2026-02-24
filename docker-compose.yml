@@ -1,34 +1,4 @@
 services:
-  car-reselling-api:
-    container_name: car-reselling-api
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: car
-      SPRING_DATASOURCE_PASSWORD: car
-      # Observability – set OTLP_METRICS_ENABLED=true to push metrics to the OTel Collector.
-      # Requires the observability stack (docker-compose-observality.yml) to be running.
-      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
-      OTLP_METRICS_URL: ${OTLP_METRICS_URL:-http://otel-collector:4318/v1/metrics}
-      OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-false}
-      OBSERVABILITY_OTLP_ENDPOINT: ${OBSERVABILITY_OTLP_ENDPOINT:-http://otel-collector:4317}
-    volumes:
-      - ./storage:/storage
-    depends_on:
-      - mysql
-  car-reselling-ui:
-    container_name: car-reselling-ui
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "5173:80"
-    depends_on:
-      - car-reselling-api
   mysql:
     container_name: mysql
     image: mysql:8.0
@@ -41,6 +11,70 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pcar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  car-reselling-api:
+    container_name: car-reselling-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: car
+      SPRING_DATASOURCE_PASSWORD: car
+      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
+      OTLP_METRICS_URL: ${OTLP_METRICS_URL:-http://otel-collector:4318/v1/metrics}
+      OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-false}
+      OBSERVABILITY_OTLP_ENDPOINT: ${OBSERVABILITY_OTLP_ENDPOINT:-http://otel-collector:4317}
+      LOKI_URL: ${LOKI_URL:-http://loki:3100}
+      AUTH_BASE_URL: http://authentication-api:8081
+    volumes:
+      - ./storage:/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  car-reselling-ui:
+    container_name: car-reselling-ui
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - car-reselling-api
+
+  authentication-api:
+    container_name: authentication-api
+    build:
+      context: ../authentication-api
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: car
+      JWT_SECRET: f9ad16a56686595ccc5fea1da8b233688ee129cf64f2544cd10ce816e04087d0
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      GOOGLE_CLIENT_ID: ""
+      GOOGLE_CLIENT_SECRET: ""
+      FACEBOOK_CLIENT_ID: ""
+      FACEBOOK_CLIENT_SECRET: ""
+      FRONTEND_URL: http://localhost:3000
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000"
 
 volumes:
   mysql-data:
