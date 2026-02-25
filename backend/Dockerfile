@@ -5,8 +5,8 @@ FROM gradle:8.7-jdk21 AS backend-build
 
 WORKDIR /app/backend
 
-# Copy only backend project
-COPY backend/ .
+# Copy the backend project (context is already backend/)
+COPY . .
 
 # Build the Spring Boot executable jar
 RUN gradle bootJar --no-daemon
