@@ -1,0 +1,172 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(
+            name: 'VERSION',
+            description: 'Version tag for the Docker image (e.g., 1.0.0)',
+            defaultValue: ''
+        )
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/viniciusfernandes/car-reselling.git'
+            }
+        }
+
+        stage('Install') {
+            steps {
+                echo "Installing dependencies..."
+                dir('frontend') {
+                    // Run inside a temporary Node container – npm is not required on the Jenkins agent
+                    sh '''
+                        docker run --rm \
+                            -v "$PWD:/app" -w /app \
+                            node:20-alpine \
+                            npm ci
+                    '''
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building version: ${params.VERSION}"
+                dir('frontend') {
+                    sh '''
+                        docker run --rm \
+                            -v "$PWD:/app" -w /app \
+                            node:20-alpine \
+                            npm run build
+                    '''
+                }
+            }
+        }
+
+        /* -----------------------------------------------------------
+           Dependency Validation using Trivy (via Docker container - no installation needed!)
+           Scans package-lock.json / node_modules for known CVEs.
+           ----------------------------------------------------------- */
+        stage('Dependency Validation') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    echo "Running Trivy dependency scan using Docker container..."
+
+                    dir('frontend') {
+                        sh '''
+                            mkdir -p dist/reports/trivy
+
+                            docker run --rm -v "$PWD:/workspace" -w /workspace \
+                                aquasec/trivy:latest fs \
+                                --format json --output dist/reports/trivy/scan.json \
+                                . || true
+
+                            docker run --rm -v "$PWD:/workspace" -w /workspace \
+                                aquasec/trivy:latest fs \
+                                --format table --output dist/reports/trivy/scan.txt \
+                                . || true
+                        '''
+
+                        script {
+                            def trivyReports = sh(
+                                script: 'ls -1 dist/reports/trivy/* 2>/dev/null || echo ""',
+                                returnStdout: true
+                            ).trim()
+
+                            if (trivyReports) {
+                                archiveArtifacts artifacts: 'frontend/dist/reports/trivy/*', fingerprint: true
+                            } else {
+                                echo "Warning: No Trivy reports generated, skipping artifact archival"
+                            }
+                        }
+
+                        sh 'cat dist/reports/trivy/scan.txt || echo "No vulnerabilities found or scan completed"'
+                    }
+
+                    echo "Dependency security analysis completed."
+                }
+            }
+        }
+        /* ----------------------------------------------------------- */
+
+        stage('Type Check') {
+            steps {
+                // Vite uses esbuild which strips types without checking them.
+                // tsc --noEmit performs the full type-safety validation.
+                dir('frontend') {
+                    sh '''
+                        docker run --rm \
+                            -v "$PWD:/app" -w /app \
+                            node:20-alpine \
+                            npx tsc --noEmit
+                    '''
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true
+            }
+        }
+
+        stage('Docker Build & Tag') {
+            steps {
+                script {
+                    def version = (params.VERSION ?: '').trim()
+                    if (!version) {
+                        def gitSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        version = "${env.BUILD_NUMBER}-${gitSha}"
+                        echo "VERSION not provided. Auto-generated version: ${version}"
+                    }
+
+                    env.IMAGE_TAG = "car-reselling-ui:${version}"
+                    echo "Building Docker image: ${env.IMAGE_TAG}"
+
+                    // Dockerfile is inside frontend/ — the build context must include nginx.conf and dist/
+                    sh "docker build -t ${env.IMAGE_TAG} -f frontend/Dockerfile frontend"
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    def version = (params.VERSION ?: '').trim()
+                    if (!version) {
+                        def gitSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        version = "${env.BUILD_NUMBER}-${gitSha}"
+                    }
+
+                    def sourceImage = "car-reselling-ui:${version}"
+
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )]) {
+
+                        def dockerhubUsername = env.DOCKERHUB_USERNAME?.trim()
+
+                        if (!dockerhubUsername || dockerhubUsername.contains('@')) {
+                            error "DockerHub username is invalid ('${dockerhubUsername}'). Use your Docker Hub USERNAME (not email) in Jenkins credentials."
+                        }
+
+                        def targetImage = "${dockerhubUsername}/car-reselling-ui:${version}"
+
+                        sh "docker tag ${sourceImage} ${targetImage}"
+
+                        sh """
+                            echo "\$DOCKERHUB_TOKEN" | docker login -u "\$DOCKERHUB_USERNAME" --password-stdin
+                            docker push ${targetImage}
+                            docker logout
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
