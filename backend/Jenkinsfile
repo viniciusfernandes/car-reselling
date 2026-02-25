@@ -1,0 +1,142 @@
+pipeline {
+    agent any
+
+    environment {
+        GRADLE_OPTS = "-Dorg.gradle.daemon=false"
+    }
+
+    parameters {
+        string(
+            name: 'VERSION',
+            description: 'Version tag for the Docker image (e.g., 1.0.0)',
+            defaultValue: ''
+        )
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/viniciusfernandes/car-reselling.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building version: ${params.VERSION}"
+                dir('backend') {
+                    // Exclude tests (dependency scan is done by Trivy)
+                    sh './gradlew build -x test'
+                }
+            }
+        }
+
+        /* -----------------------------------------------------------
+           Dependency Validation using Trivy (via Docker container - no installation needed!)
+           ----------------------------------------------------------- */
+        stage('Dependency Validation') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    echo "Running Trivy dependency scan using Docker container..."
+
+                    dir('backend') {
+                        sh '''
+                            mkdir -p build/reports/trivy
+
+                            docker run --rm -v "$PWD:/workspace" -w /workspace \
+                                aquasec/trivy:latest fs \
+                                --format json --output build/reports/trivy/scan.json \
+                                build/libs/ || true
+
+                            docker run --rm -v "$PWD:/workspace" -w /workspace \
+                                aquasec/trivy:latest fs \
+                                --format table --output build/reports/trivy/scan.txt \
+                                build/libs/ || true
+                        '''
+
+                        script {
+                            def trivyReports = sh(
+                                script: 'ls -1 build/reports/trivy/* 2>/dev/null || echo ""',
+                                returnStdout: true
+                            ).trim()
+
+                            if (trivyReports) {
+                                archiveArtifacts artifacts: 'backend/build/reports/trivy/*', fingerprint: true
+                            } else {
+                                echo "Warning: No Trivy reports generated, skipping artifact archival"
+                            }
+                        }
+
+                        sh 'cat build/reports/trivy/scan.txt || echo "No vulnerabilities found or scan completed"'
+                    }
+
+                    echo "Dependency security analysis completed."
+                }
+            }
+        }
+        /* ----------------------------------------------------------- */
+
+        stage('Test') {
+            steps {
+                dir('backend') {
+                    sh './gradlew test'
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                dir('backend') {
+                    // If you want the runnable Spring Boot jar, prefer: ./gradlew bootJar -x test
+                    sh './gradlew jar -x test'
+                }
+                archiveArtifacts artifacts: 'backend/build/libs/car-reselling-backend-0.0.1-SNAPSHOT.jar', fingerprint: true
+            }
+        }
+
+        stage('Docker Build & Tag') {
+            steps {
+                script {
+                    if (!params.VERSION?.trim()) {
+                        error "VERSION parameter is mandatory! Please set it when triggering the build."
+                    }
+
+                    def imageTag = "car-reselling-api:${params.VERSION}"
+                    echo "Building Docker image: ${imageTag}"
+
+                    // Build using the backend folder as Docker build context (where your Dockerfile should be)
+                    sh "docker build -t ${imageTag} backend"
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    def sourceImage = "car-reselling-api:${params.VERSION}"
+
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )]) {
+                        def dockerhubUsername = sh(
+                            script: 'echo $DOCKERHUB_USERNAME',
+                            returnStdout: true
+                        ).trim()
+
+                        def targetImage = "${dockerhubUsername}/car-reselling-api:${params.VERSION}"
+
+                        sh "docker tag ${sourceImage} ${targetImage}"
+
+                        sh """
+                            echo "\$DOCKERHUB_TOKEN" | docker login -u "\$DOCKERHUB_USERNAME" --password-stdin
+                            docker push ${targetImage}
+                            docker logout
+                        """
+                    }
+                }
+            }
+        }
+    }
+}

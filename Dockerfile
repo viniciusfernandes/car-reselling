@@ -1,18 +1,27 @@
-FROM node:20-alpine AS frontend-build
-WORKDIR /app/frontend
-COPY frontend/package.json ./
-RUN npm install
-COPY frontend/ .
-RUN npm run build
-
+# -------------------------
+# Stage 1: Build backend jar
+# -------------------------
 FROM gradle:8.7-jdk21 AS backend-build
+
 WORKDIR /app/backend
+
+# Copy only backend project
 COPY backend/ .
-COPY --from=frontend-build /app/frontend/dist /app/backend/src/main/resources/static
+
+# Build the Spring Boot executable jar
 RUN gradle bootJar --no-daemon
 
+
+# -------------------------
+# Stage 2: Runtime image
+# -------------------------
 FROM eclipse-temurin:21-jre
+
 WORKDIR /app
-COPY --from=backend-build /app/backend/build/libs/*.jar app.jar
+
+# Copy the built jar from the build stage
+COPY --from=backend-build /app/backend/build/libs/*-SNAPSHOT.jar app.jar
+
 EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
