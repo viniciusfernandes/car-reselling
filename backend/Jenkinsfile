@@ -95,48 +95,54 @@ pipeline {
         }
 
         stage('Docker Build & Tag') {
-            steps {
-                script {
-                    if (!params.VERSION?.trim()) {
-                        error "VERSION parameter is mandatory! Please set it when triggering the build."
-                    }
+          steps {
+            script {
+              // Use provided VERSION or generate one automatically
+              def version = (params.VERSION ?: '').trim()
+              if (!version) {
+                def gitSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                version = "${env.BUILD_NUMBER}-${gitSha}"
+                echo "VERSION not provided. Auto-generated version: ${version}"
+              }
 
-                    def imageTag = "car-reselling-api:${params.VERSION}"
-                    echo "Building Docker image: ${imageTag}"
+              env.IMAGE_TAG = "car-reselling-api:${version}"
+              echo "Building Docker image: ${env.IMAGE_TAG}"
 
-                    // Build using the backend folder as Docker build context (where your Dockerfile should be)
-                    sh "docker build -t ${imageTag} backend"
-                }
+              // Dockerfile is inside backend/
+              sh "docker build -t ${env.IMAGE_TAG} -f backend/Dockerfile backend"
             }
+          }
         }
 
         stage('Docker Push') {
-            steps {
-                script {
-                    def sourceImage = "car-reselling-api:${params.VERSION}"
+          steps {
+            script {
+              def sourceImage = "car-reselling-api:${params.VERSION}"
 
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DOCKERHUB_USERNAME',
-                        passwordVariable: 'DOCKERHUB_TOKEN'
-                    )]) {
-                        def dockerhubUsername = sh(
-                            script: 'echo $DOCKERHUB_USERNAME',
-                            returnStdout: true
-                        ).trim()
+              withCredentials([usernamePassword(
+                credentialsId: 'dockerhub-creds',
+                usernameVariable: 'DOCKERHUB_USERNAME',
+                passwordVariable: 'DOCKERHUB_TOKEN'
+              )]) {
 
-                        def targetImage = "${dockerhubUsername}/car-reselling-api:${params.VERSION}"
+                def dockerhubUsername = env.DOCKERHUB_USERNAME?.trim()
 
-                        sh "docker tag ${sourceImage} ${targetImage}"
-
-                        sh """
-                            echo "\$DOCKERHUB_TOKEN" | docker login -u "\$DOCKERHUB_USERNAME" --password-stdin
-                            docker push ${targetImage}
-                            docker logout
-                        """
-                    }
+                if (!dockerhubUsername || dockerhubUsername.contains('@')) {
+                  error "DockerHub username is invalid ('${dockerhubUsername}'). Use your Docker Hub USERNAME (not email) in Jenkins credentials."
                 }
+
+                def targetImage = "${dockerhubUsername}/car-reselling-api:${params.VERSION}"
+
+                sh "docker tag ${sourceImage} ${targetImage}"
+
+                sh """
+                  echo "\$DOCKERHUB_TOKEN" | docker login -u "\$DOCKERHUB_USERNAME" --password-stdin
+                  docker push ${targetImage}
+                  docker logout
+                """
+              }
             }
+          }
         }
     }
 }
