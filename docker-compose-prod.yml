@@ -1,0 +1,68 @@
+# Production stack – all app images are pulled from DockerHub.
+# Images are built and pushed by Jenkins (see backend/Jenkinsfile and frontend/Jenkinsfile).
+#
+# All environment variables are loaded from the .env file in this directory via env_file.
+# Copy .env.example to .env and fill in your values before running.
+#
+# Usage:
+#   docker compose -f docker-compose-prod.yml up -d
+#
+# With the observability stack alongside:
+#   docker compose -f docker-compose-prod.yml -f docker-compose-observality.yml up -d
+
+services:
+
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file: ./.env
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  car-reselling-api:
+    container_name: car-reselling-api
+    image: ${DOCKERHUB_USERNAME}/car-reselling-api:${API_VERSION}
+    restart: unless-stopped
+    env_file: ./.env
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    volumes:
+      - vehicle-storage:/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  car-reselling-ui:
+    container_name: car-reselling-ui
+    image: ${DOCKERHUB_USERNAME}/car-reselling-ui:${UI_VERSION}
+    pull_policy: never   # always use the locally built image; push to DockerHub when ready
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "5173:5173"
+    depends_on:
+      - car-reselling-api
+
+  authentication-api:
+    container_name: authentication-api
+    image: ${DOCKERHUB_USERNAME}/authentication-api:${AUTH_VERSION}
+    pull_policy: never   # Jenkins-built image is broken (missing app.jar); use local until fixed
+    restart: unless-stopped
+    env_file: ./.env
+    ports:
+      - "8081:8080"   # app listens on container port 8080; exposed as 8081 on the host
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  vehicle-storage:

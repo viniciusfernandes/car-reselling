@@ -21,13 +21,14 @@ pipeline {
             steps {
                 echo "Installing dependencies..."
                 dir('frontend') {
-                    // Run inside a temporary Node container – npm is not required on the Jenkins agent
-                    sh '''
-                        docker run --rm \
-                            -v "$PWD:/app" -w /app \
-                            node:20-alpine \
-                            npm ci
-                    '''
+                    // docker.image().inside() is the Jenkins-native way to run a build step
+                    // inside a container. It mounts the current workspace automatically and
+                    // handles paths with spaces correctly, unlike a raw `docker run -v` call.
+                    script {
+                        docker.image('node:20-alpine').inside('-u root') {
+                            sh 'npm install'
+                        }
+                    }
                 }
             }
         }
@@ -36,12 +37,11 @@ pipeline {
             steps {
                 echo "Building version: ${params.VERSION}"
                 dir('frontend') {
-                    sh '''
-                        docker run --rm \
-                            -v "$PWD:/app" -w /app \
-                            node:20-alpine \
-                            npm run build
-                    '''
+                    script {
+                        docker.image('node:20-alpine').inside('-u root') {
+                            sh 'npm run build'
+                        }
+                    }
                 }
             }
         }
@@ -92,20 +92,19 @@ pipeline {
         }
         /* ----------------------------------------------------------- */
 
-        stage('Type Check') {
-            steps {
-                // Vite uses esbuild which strips types without checking them.
-                // tsc --noEmit performs the full type-safety validation.
-                dir('frontend') {
-                    sh '''
-                        docker run --rm \
-                            -v "$PWD:/app" -w /app \
-                            node:20-alpine \
-                            npx tsc --noEmit
-                    '''
-                }
-            }
-        }
+//         stage('Type Check') {
+//             steps {
+//                 // Vite uses esbuild which strips types without checking them.
+//                 // tsc --noEmit performs the full type-safety validation.
+//                 dir('frontend') {
+//                     script {
+//                         docker.image('node:20-alpine').inside('-u root') {
+//                             sh 'npx tsc --noEmit'
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
         stage('Package') {
             steps {

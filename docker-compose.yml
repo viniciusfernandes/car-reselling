@@ -37,7 +37,7 @@ services:
       OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-true}
       OBSERVABILITY_OTLP_ENDPOINT: ${OBSERVABILITY_OTLP_ENDPOINT:-http://otel-collector:4317}
       LOKI_URL: ${LOKI_URL:-http://loki:3100}
-      AUTH_BASE_URL: http://authentication-api:8081
+      AUTH_BASE_URL: http://authentication-api:8080
     volumes:
       - ./storage:/storage
     depends_on:
@@ -60,7 +60,7 @@ services:
       context: ../authentication-api
       dockerfile: Dockerfile
     ports:
-      - "8081:8081"
+      - "8081:8080"   # app listens on container port 8080; exposed as 8081 on the host
       - "8000:8000"
     depends_on:
       mysql:
