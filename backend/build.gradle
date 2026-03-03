@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'br.com.carreselling'
-version = '0.0.1-SNAPSHOT'
+version = '1.0'
 
 java {
     toolchain {
@@ -61,4 +61,39 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+/**
+ * Spring Boot executable jar customization
+ * Output: build/libs/car-reselling-api-1.0.jar
+ */
+tasks.named('bootJar') {
+    archiveBaseName.set('car-reselling-api')
+    archiveVersion.set(project.version.toString())
+    archiveClassifier.set('') // no "-plain" or "-all" suffix
+
+    // Optional: if you have multiple main classes, uncomment and set explicitly:
+    // mainClass.set('br.com.carreselling.CarResellingApplication')
+
+    manifest {
+        attributes(
+                'Implementation-Title': 'Car Reselling API',
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': project.group
+        )
+    }
+
+    // Optional: include extra files inside the jar under META-INF/
+    // from('LICENSE') { into('META-INF') }
+}
+
+/**
+ * Disable the plain jar (non-boot) by default to avoid generating two artifacts.
+ * If you WANT the plain jar too, change enabled = true.
+ */
+tasks.named('jar') {
+    enabled = false
+    archiveBaseName.set('car-reselling-api')
+    archiveVersion.set(project.version.toString())
+    archiveClassifier.set('plain')
 }
