@@ -13,7 +13,7 @@
         Uses the Protobuf format (more efficient than JSON).
         The endpoint is read from the LOKI_URL env-var; defaults to localhost for local dev.
         Labels are indexed by Loki; the message body carries the full formatted line.
-    -->
+-->
     <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
         <http>
             <url>${LOKI_URL:-http://localhost:3100}/loki/api/v1/push</url>
@@ -29,8 +29,9 @@
         </format>
     </appender>
 
+
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="LOKI"/>
+        <!--<appender-ref ref="LOKI"/>-->
     </root>
 </configuration>
