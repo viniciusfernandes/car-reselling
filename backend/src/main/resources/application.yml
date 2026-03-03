@@ -3,7 +3,7 @@ server:
   ssl:
     enabled: false
     key-store: ${SERVER_SSL_KEY_STORE:classpath:keystore.p12}
-    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:@Mudar15}
+    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:}
     key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:PKCS12}
     key-alias: ${SERVER_SSL_KEY_ALIAS:carreselling}
 
@@ -21,9 +21,9 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: jdbc:mysql://localhost:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: car
-    password: car
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
