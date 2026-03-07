@@ -4,8 +4,13 @@ import i18n from "../i18n";
 const AUTH_TOKEN_KEY = "auth_token";
 const AUTH_TOKEN_EVENT = "auth-token-changed";
 
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL != null && import.meta.env.VITE_API_BASE_URL !== ""
+    ? `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, "")}/api/v1`
+    : "/api/v1";
+
 export const api = axios.create({
-  baseURL: "/api/v1",
+  baseURL: apiBaseUrl,
 });
 
 export type ApiError = {
