@@ -15,8 +15,8 @@ spring:
       enabled: true
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-    username: ${SPRING_DATASOURCE_USERNAME:}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    username: car
+    password: car
     driver-class-name: com.mysql.cj.jdbc.Driver
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -34,6 +34,11 @@ logging:
 
 auth:
   base-url: ${AUTH_BASE_URL:http://localhost:8081}
+
+# CORS: comma-separated origin patterns; default * allows all (set in production for security).
+app:
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:*}
 
 tax:
   icms-rate: 0.12
