@@ -12,6 +12,7 @@ public class Partner {
     private final String phone;
     private final String email;
     private final BigDecimal commissionRate;
+    private final boolean enabled;
     private final Instant createdAt;
     private final Instant updatedAt;
 
@@ -21,6 +22,7 @@ public class Partner {
                    String phone,
                    String email,
                    BigDecimal commissionRate,
+                   boolean enabled,
                    Instant createdAt,
                    Instant updatedAt) {
         this.id = id;
@@ -29,6 +31,7 @@ public class Partner {
         this.phone = phone;
         this.email = email;
         this.commissionRate = commissionRate;
+        this.enabled = enabled;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -55,6 +58,10 @@ public class Partner {
 
     public BigDecimal getCommissionRate() {
         return commissionRate;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     public Instant getCreatedAt() {

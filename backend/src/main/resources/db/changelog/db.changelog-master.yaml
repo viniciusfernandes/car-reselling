@@ -207,3 +207,11 @@ databaseChangeLog:
                 KEY idx_partner_history_partner (partner_id),
                 CONSTRAINT fk_partner_history_partner FOREIGN KEY (partner_id) REFERENCES partners(id)
               );
+  - changeSet:
+      id: vinicius-20260309-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE partners
+                ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE AFTER email;

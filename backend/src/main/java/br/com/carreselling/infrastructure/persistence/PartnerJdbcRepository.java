@@ -27,8 +27,8 @@ public class PartnerJdbcRepository implements PartnerRepository {
     public Partner savePartner(Partner partner) {
         jdbcTemplate.update("""
                 INSERT INTO partners
-                (id, name, city, phone, email, commission_rate, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (id, name, city, phone, email, commission_rate, enabled, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             partner.getId().toString(),
             partner.getName(),
@@ -36,6 +36,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
             partner.getPhone(),
             partner.getEmail(),
             partner.getCommissionRate(),
+            partner.isEnabled(),
             Timestamp.from(partner.getCreatedAt()),
             partner.getUpdatedAt() == null ? null : Timestamp.from(partner.getUpdatedAt())
         );
@@ -46,7 +47,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
     public Partner updatePartner(Partner partner) {
         jdbcTemplate.update("""
                 UPDATE partners
-                SET name = ?, city = ?, phone = ?, email = ?, commission_rate = ?, updated_at = ?
+                SET name = ?, city = ?, phone = ?, email = ?, commission_rate = ?, enabled = ?, updated_at = ?
                 WHERE id = ?
                 """,
             partner.getName(),
@@ -54,6 +55,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
             partner.getPhone(),
             partner.getEmail(),
             partner.getCommissionRate(),
+            partner.isEnabled(),
             Timestamp.from(partner.getUpdatedAt()),
             partner.getId().toString()
         );
@@ -61,11 +63,17 @@ public class PartnerJdbcRepository implements PartnerRepository {
     }
 
     @Override
-    public List<Partner> findPartner() {
+    public List<Partner> findEnabledPartners() {
         return jdbcTemplate.query("""
-                SELECT * FROM partners ORDER BY name ASC
+                SELECT * FROM partners WHERE enabled = TRUE ORDER BY name ASC
                 """,
             new PartnerRowMapper());
+    }
+
+    @Override
+    public void setEnabled(UUID id, boolean enabled) {
+        jdbcTemplate.update("UPDATE partners SET enabled = ?, updated_at = ? WHERE id = ?",
+            enabled, Timestamp.from(Instant.now()), id.toString());
     }
 
     @Override
@@ -100,13 +108,20 @@ public class PartnerJdbcRepository implements PartnerRepository {
             BigDecimal commissionRate = rs.getBigDecimal("commission_rate");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
-            return new Partner(
+            boolean enabled = true;
+        try {
+            enabled = rs.getBoolean("enabled");
+        } catch (SQLException ignored) {
+            // column may not exist on old DB
+        }
+        return new Partner(
                 id,
                 name,
                 city,
                 phone,
                 email,
                 commissionRate,
+                enabled,
                 createdAt,
                 updatedAt == null ? null : updatedAt.toInstant()
             );

@@ -27,7 +27,13 @@ public class CreatePartnerEndpoint {
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreatePartnerResponse>> create(@Valid @RequestBody CreatePartnerRequest request) {
-        UUID partnerId = partnerService.createPartner(request.name(), request.city());
+        UUID partnerId = partnerService.createPartner(
+            request.name(),
+            request.city(),
+            request.phone(),
+            request.email(),
+            request.commissionRate()
+        );
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(new CreatePartnerResponse(partnerId)));
     }

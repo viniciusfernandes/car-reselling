@@ -27,7 +27,7 @@ public class PartnerService implements IPartnerService {
     }
 
     @Override
-    public UUID createPartner(String name, String city) {
+    public UUID createPartner(String name, String city, String phone, String email, BigDecimal commissionRate) {
         partnerRepository.findPartnerByName(name)
             .ifPresent(existing -> {
                 throw new ConflictException("Partner name already exists");
@@ -37,9 +37,10 @@ public class PartnerService implements IPartnerService {
             UUID.randomUUID(),
             name,
             city,
-            null,
-            null,
-            null,
+            phone,
+            email,
+            commissionRate,
+            true,
             now,
             now
         );
@@ -50,7 +51,7 @@ public class PartnerService implements IPartnerService {
 
     @Override
     public List<PartnerSummary> listPartners() {
-        return partnerRepository.findPartner()
+        return partnerRepository.findEnabledPartners()
             .stream()
             .map(this::toSummary)
             .toList();
@@ -82,6 +83,7 @@ public class PartnerService implements IPartnerService {
             phone,
             email,
             commissionRate,
+            existing.isEnabled(),
             existing.getCreatedAt(),
             Instant.now()
         );
@@ -112,6 +114,19 @@ public class PartnerService implements IPartnerService {
     private PartnerSummary toSummary(Partner p) {
         return new PartnerSummary(p.getId(), p.getName(), p.getCity(),
             p.getPhone(), p.getEmail(), p.getCommissionRate());
+    }
+
+    @Override
+    public void disablePartner(UUID id) {
+        Partner existing = partnerRepository.findPartnerById(id)
+            .orElseThrow(() -> new NotFoundException("Partner not found"));
+        partnerRepository.setEnabled(id, false);
+        partnerHistoryRepository.saveHistory(snapshotOf(
+            new Partner(existing.getId(), existing.getName(), existing.getCity(),
+                existing.getPhone(), existing.getEmail(), existing.getCommissionRate(),
+                false, existing.getCreatedAt(), Instant.now()),
+            "system"
+        ));
     }
 
     private PartnerHistory snapshotOf(Partner partner, String changedBy) {

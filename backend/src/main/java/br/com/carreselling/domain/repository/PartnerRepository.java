@@ -11,9 +11,12 @@ public interface PartnerRepository {
 
     Partner updatePartner(Partner partner);
 
-    List<Partner> findPartner();
+    /** Returns only partners with enabled = true. */
+    List<Partner> findEnabledPartners();
 
     Optional<Partner> findPartnerById(UUID id);
 
     Optional<Partner> findPartnerByName(String name);
+
+    void setEnabled(UUID id, boolean enabled);
 }

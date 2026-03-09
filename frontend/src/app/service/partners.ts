@@ -39,3 +39,29 @@ export async function fetchPartnerHistory(
   );
   return response.data.data;
 }
+
+export type CreatePartnerPayload = {
+  name: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  commissionRate?: number | null;
+};
+
+export type CreatePartnerResponse = {
+  partnerId: string;
+};
+
+export async function createPartner(
+  payload: CreatePartnerPayload
+): Promise<CreatePartnerResponse> {
+  const response = await api.post<ApiResponse<CreatePartnerResponse>>(
+    "/partners",
+    payload
+  );
+  return response.data.data;
+}
+
+export async function disablePartner(id: string): Promise<void> {
+  await api.delete(`/partners/${id}`);
+}
