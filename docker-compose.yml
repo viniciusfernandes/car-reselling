@@ -24,6 +24,10 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "8080:8080"
+    # So the container can reach the host (e.g. auth API running in IntelliJ on port 8081).
+    # Required on Linux; harmless on Docker Desktop (Mac/Windows).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - default
       - car-reselling-net
@@ -32,12 +36,12 @@ services:
       SPRING_DATASOURCE_USERNAME: car
       SPRING_DATASOURCE_PASSWORD: car
       # Observability – enabled by default in Docker; all targets resolve via container name
-      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-true}
+      OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
       OTLP_METRICS_URL: ${OTLP_METRICS_URL:-http://otel-collector:4318/v1/metrics}
-      OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-true}
+      OBSERVABILITY_TRACING_ENABLED: ${OBSERVABILITY_TRACING_ENABLED:-false}
       OBSERVABILITY_OTLP_ENDPOINT: ${OBSERVABILITY_OTLP_ENDPOINT:-http://otel-collector:4317}
       LOKI_URL: ${LOKI_URL:-http://loki:3100}
-      AUTH_BASE_URL: http://authentication-api:8081
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-change-me}
     volumes:
       - ./storage:/storage
     depends_on:
@@ -67,10 +71,10 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-change-me}
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: car
-      JWT_SECRET: f9ad16a56686595ccc5fea1da8b233688ee129cf64f2544cd10ce816e04087d0
+      JWT_SECRET: ${JWT_SECRET:-change-me}
       MAIL_USERNAME: ""
       MAIL_PASSWORD: ""
       GOOGLE_CLIENT_ID: ""

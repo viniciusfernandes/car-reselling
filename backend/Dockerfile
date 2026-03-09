@@ -5,8 +5,8 @@ FROM gradle:8.7-jdk21 AS backend-build
 
 WORKDIR /app/backend
 
-# Copy the backend project (context is already backend/)
-COPY . .
+# Copy only backend project
+COPY backend/ .
 
 # Build the Spring Boot executable jar
 RUN gradle bootJar --no-daemon
@@ -20,7 +20,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # Copy the built jar from the build stage
-COPY --from=backend-build /app/backend/build/libs/*-SNAPSHOT.jar app.jar
+COPY --from=backend-build /app/backend/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
