@@ -208,6 +208,12 @@ docker compose exec mysql mysql -u car -p car_reselling
 UPDATE vehicles SET status = 'SOLD' WHERE license_plate = 'ABC1234';
 ```
 
+Show all database users:
+
+```
+SELECT user, host FROM mysql.user;
+```
+
 Show all tables:
 
 ```
