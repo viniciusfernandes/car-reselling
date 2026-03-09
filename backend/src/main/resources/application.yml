@@ -1,20 +1,13 @@
 server:
   port: ${SERVER_PORT:8080}
-  ssl:
-    enabled: false
-    key-store: ${SERVER_SSL_KEY_STORE:classpath:keystore.p12}
-    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:}
-    key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:PKCS12}
-    key-alias: ${SERVER_SSL_KEY_ALIAS:carreselling}
-
-observability:
-  tracing:
-    enabled: ${OBSERVABILITY_TRACING_ENABLED:false}
-    service-name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}
-    otlp:
-      endpoint: ${OBSERVABILITY_OTLP_ENDPOINT:http://localhost:4317}
-      headers: ${OBSERVABILITY_OTLP_HEADERS:}
-    metrics-export-interval: ${OBSERVABILITY_METRICS_INTERVAL:30s}
+  # When behind a reverse proxy (e.g. Nginx with HTTPS), use X-Forwarded-Proto so Swagger UI and the app see the correct scheme.
+  forward-headers-strategy: framework
+#  ssl:
+#    enabled: false
+#    key-store: ${SERVER_SSL_KEY_STORE:classpath:keystore.p12}
+#    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:}
+#    key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:PKCS12}
+#    key-alias: ${SERVER_SSL_KEY_ALIAS:carreselling}
 
 spring:
   threads:
@@ -56,7 +49,7 @@ management:
     web:
       base-path: /actuator
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info
   endpoint:
     health:
       probes:
@@ -69,11 +62,11 @@ management:
           include: readinessState,db,diskSpace
   # Micrometer OTLP push – sends JVM, HTTP, HikariCP and all other Actuator metrics
   # to the OTel Collector regardless of whether tracing is enabled.
-  otlp:
-    metrics:
-      export:
-        enabled: ${OTLP_METRICS_ENABLED:false}
-        url: ${OTLP_METRICS_URL:http://otel-collector:4318/v1/metrics}
-        step: ${OTLP_METRICS_STEP:30s}
-        resource-attributes:
-          service.name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}
+#  otlp:
+#    metrics:
+#      export:
+#        enabled: ${OTLP_METRICS_ENABLED:false}
+#        url: ${OTLP_METRICS_URL:http://otel-collector:4318/v1/metrics}
+#        step: ${OTLP_METRICS_STEP:30s}
+#        resource-attributes:
+#          service.name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}
