@@ -4,5 +4,6 @@ backend/build/
 backend/.gradle/
 frontend/node_modules/
 frontend/dist/
-storage/
+# Root-level document storage only (do not ignore backend/.../storage/ test packages)
+/storage/
 *.class

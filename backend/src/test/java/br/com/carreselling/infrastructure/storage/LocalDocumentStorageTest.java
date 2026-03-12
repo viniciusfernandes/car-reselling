@@ -4,6 +4,8 @@ import br.com.carreselling.domain.model.DocumentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -108,6 +110,55 @@ class LocalDocumentStorageTest {
         Path storedFile = tempDir.resolve(key);
         assertThat(storedFile).exists();
         assertThat(storedFile.getFileName().toString()).isEqualTo(DOCUMENT_ID + "_sub_doc.pdf");
+    }
+
+    // -------------------------------------------------------------------------
+    // All document types
+    // -------------------------------------------------------------------------
+
+    @ParameterizedTest(name = "testStoresFileForDocumentType [{0}]")
+    @EnumSource(DocumentType.class)
+    void testStoresFileForEachDocumentType(DocumentType documentType) throws IOException {
+        String content = "content for " + documentType.name();
+
+        String key = storage.store(VEHICLE_ID, documentType, DOCUMENT_ID, "doc.pdf", streamOf(content));
+
+        Path expectedDir = tempDir.resolve(VEHICLE_ID.toString()).resolve(documentType.name());
+        Path storedFile = tempDir.resolve(key);
+
+        assertThat(expectedDir).isDirectory();
+        assertThat(storedFile).exists();
+        assertThat(key).isEqualTo(
+            Path.of(VEHICLE_ID.toString(), documentType.name(), DOCUMENT_ID + "_doc.pdf").toString()
+        );
+        assertThat(Files.readString(storedFile, StandardCharsets.UTF_8)).isEqualTo(content);
+    }
+
+    @ParameterizedTest(name = "testKeyContainsDocumentTypeName [{0}]")
+    @EnumSource(DocumentType.class)
+    void testKeyContainsDocumentTypeName(DocumentType documentType) {
+        String key = storage.store(VEHICLE_ID, documentType, DOCUMENT_ID, "file.pdf", streamOf("data"));
+
+        assertThat(key).contains(documentType.name());
+    }
+
+    @ParameterizedTest(name = "testCreatesDirectoryNamedAfterDocumentType [{0}]")
+    @EnumSource(DocumentType.class)
+    void testCreatesDirectoryNamedAfterDocumentType(DocumentType documentType) {
+        storage.store(VEHICLE_ID, documentType, DOCUMENT_ID, "file.pdf", streamOf("data"));
+
+        Path typeDir = tempDir.resolve(VEHICLE_ID.toString()).resolve(documentType.name());
+        assertThat(typeDir).isDirectory();
+    }
+
+    @ParameterizedTest(name = "testDifferentDocumentTypesAreStoredInSeparateDirectories [{0}]")
+    @EnumSource(DocumentType.class)
+    void testDifferentDocumentTypesAreStoredInSeparateDirectories(DocumentType documentType) {
+        UUID docId = UUID.randomUUID();
+
+        String key = storage.store(VEHICLE_ID, documentType, docId, "file.pdf", streamOf("data"));
+
+        assertThat(key).startsWith(VEHICLE_ID + "/" + documentType.name() + "/");
     }
 
     // -------------------------------------------------------------------------
