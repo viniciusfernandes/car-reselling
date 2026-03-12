@@ -9,6 +9,7 @@ End-to-end MVP for a used car reseller in Brazil. The application includes a Jav
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
+- [Environment Variables](#environment-variables)
 - [Database](#database)
 - [Build & Run](#build--run)
 - [Production Stack](#production-stack)
@@ -320,6 +321,203 @@ npm run dev
 ```
 
 Frontend runs at `http://localhost:5173` (proxying `/api` to the backend).
+
+---
+
+## Environment Variables
+
+All runtime configuration lives in a single `.env` file at the project root.  
+`.env` is git-ignored; use `.env.example` as the starting template.
+
+### Creating the `.env` file
+
+```bash
+cp .env.example .env
+# Edit .env and replace every "change-me" value with real credentials
+```
+
+### Managing environment variables — `load-env.sh`
+
+`load-env.sh` exports variables from a `.env` file (or any env file) in three
+different scopes. The script auto-detects your shell (`$SHELL`) and operates on
+the correct RC file (`~/.bashrc`, `~/.zshrc`, etc.).
+
+| Command | Scope | Persists? |
+|---|---|---|
+| `source ./load-env.sh` | Current terminal only | Until terminal closes |
+| `source ./load-env.sh --global` | All new terminals | Yes — written to RC file |
+| `./load-env.sh --remove-global` | Removes from RC file | — |
+| `./load-env.sh --status` | Diagnostic info | — |
+| `source ./load-env.sh --unset-session` | Unset from current terminal | — |
+
+---
+
+#### Session scope — current terminal only
+
+> **Must be `source`d** so variables live in the current shell, not a child process.
+
+```bash
+# Load .env (default)
+source ./load-env.sh
+
+# Shorter dot syntax
+. ./load-env.sh
+
+# Load a different file
+source ./load-env.sh .env.development
+```
+
+Output:
+
+```
+load-env [session]: exported 30 variable(s) from .env
+```
+
+---
+
+#### Global scope — persist across all terminals
+
+Adds a single `source` line to your RC file so every new terminal automatically
+loads the variables on startup.
+
+> `--global` can be **sourced or executed** — it also exports into the current session immediately.
+
+```bash
+# Persist .env globally
+source ./load-env.sh --global
+
+# Persist a different file
+source ./load-env.sh --global .env.development
+```
+
+Output:
+
+```
+load-env [global]: added source line to /home/you/.bashrc
+load-env [global]: exported 30 variable(s) to current session
+
+  New terminals will load variables automatically.
+  To apply in existing open terminals run:
+    source /home/you/.bashrc
+```
+
+The line written to the RC file looks like:
+
+```bash
+source "/abs/path/to/load-env.sh" "/abs/path/to/.env"  # car-reselling:/abs/path/.env
+```
+
+This is one clean line per env file. Running `--global` again safely **replaces** that line instead of duplicating it. Because the RC file just delegates to `load-env.sh`, any future edits to `.env` are automatically picked up in new terminals — no need to re-run `--global`.
+
+---
+
+#### Remove global variables from the RC file
+
+```bash
+# Remove .env entry
+./load-env.sh --remove-global
+
+# Remove a specific file's entry
+./load-env.sh --remove-global .env.development
+```
+
+Output:
+
+```
+load-env [remove-global]: removed entry for '.env' from /home/you/.bashrc
+
+  Variables are still active in open terminals.
+  To unset them in the current session:
+    source ./load-env.sh --unset-session
+```
+
+---
+
+#### Unset variables from the current session
+
+```bash
+source ./load-env.sh --unset-session
+
+# Unset from a specific file
+source ./load-env.sh --unset-session .env.development
+```
+
+---
+
+#### Status — inspect what is set where
+
+```bash
+./load-env.sh --status
+```
+
+Output:
+
+```
+load-env [status]
+  env file : /home/you/projects/car-reselling/.env
+  RC file  : /home/you/.bashrc
+  global   : ✓ entry is present in /home/you/.bashrc
+  source line:
+    source "/home/you/projects/car-reselling/load-env.sh" ".../.env"  # car-reselling:...
+
+  VARIABLE                                 IN SESSION
+  --------                                 ----------
+  DOCKERHUB_USERNAME                       yes
+  AUTH_BASE_URL                            yes
+  SPRING_DATASOURCE_URL                    no
+  ...
+```
+
+---
+
+#### Verify a specific variable
+
+```bash
+echo $AUTH_BASE_URL
+printenv SPRING_DATASOURCE_URL
+```
+
+---
+
+#### Typical workflows
+
+**Option A — session only (no permanent changes)**
+
+```bash
+# 1. Start MySQL in Docker
+docker compose up -d mysql
+
+# 2. Load vars into this terminal only
+source ./load-env.sh
+
+# 3. Run the backend in the same terminal
+cd backend && ./gradlew bootRun
+```
+
+**Option B — global (set once, works in every new terminal)**
+
+```bash
+# Run once — variables will be available in all future terminals
+source ./load-env.sh --global
+
+# Any new terminal: variables are already loaded
+cd backend && ./gradlew bootRun
+```
+
+**Cleaning up**
+
+```bash
+# 1. Remove from RC file (stops loading in new terminals)
+./load-env.sh --remove-global
+
+# 2. Also unset from the current session
+source ./load-env.sh --unset-session
+```
+
+---
+
+> **Shell compatibility**: requires **Bash 4+** or **Zsh**.  
+> On macOS the system `/bin/bash` is 3.x — install a newer Bash (`brew install bash`) or use Zsh (`zsh`), both are supported.
 
 ---
 
@@ -815,25 +1013,48 @@ Common ports used by this project:
 ## Commands Summary
 
 ```bash
-# Development stack
+# ── Environment variables ────────────────────────────────────────────────────
+
+# Load .env into the current terminal only (lost when terminal closes)
+source ./load-env.sh
+
+# Load into the current terminal AND persist for all future terminals
+source ./load-env.sh --global
+
+# Remove from RC file (stops loading in new terminals)
+./load-env.sh --remove-global
+
+# Unset variables from the current session
+source ./load-env.sh --unset-session
+
+# Check status (is it in the RC file? set in current session?)
+./load-env.sh --status
+
+# ── Development stack ────────────────────────────────────────────────────────
+
 docker compose up --build
 
 # Development stack + observability (create network first)
 docker network create car-reselling-net
 docker compose -f docker-compose.yml -f docker-compose-observality.yml up -d
 
-# Production stack
+# ── Production stack ─────────────────────────────────────────────────────────
+
 docker compose -f docker-compose-prod.yml up -d
 
 # Production stack + observability
 docker network create car-reselling-net
 docker compose -f docker-compose-prod.yml -f docker-compose-observality.yml up -d
 
-# Backend (local)
+# ── Local development ────────────────────────────────────────────────────────
+
+# Backend
 cd backend && ./gradlew bootRun
 
-# Frontend (local)
+# Frontend
 cd frontend && npm install && npm run dev
+
+# ── Logs & cleanup ───────────────────────────────────────────────────────────
 
 # View logs for a service
 docker logs -f car-reselling-api
