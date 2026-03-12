@@ -88,6 +88,7 @@ export default function VehicleDetailPage() {
   const [isAddingService, setIsAddingService] = useState(false);
   const [isUpdatingService, setIsUpdatingService] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [isDownloadingDocumentId, setIsDownloadingDocumentId] = useState<string | null>(null);
   const [isAssigningPartner, setIsAssigningPartner] = useState(false);
   const [serviceForm, setServiceForm] = useState({
     serviceType: "MECHANICAL" as ServiceType,
@@ -508,6 +509,31 @@ export default function VehicleDetailPage() {
       showToast(extractErrorMessage(error), "error");
     } finally {
       setIsUploadingDocument(false);
+    }
+  };
+
+  const handleDownloadDocument = async (doc: DocumentItem) => {
+    if (!vehicleId) return;
+    try {
+      setIsDownloadingDocumentId(doc.id);
+      const response = await api.get(
+        `/vehicles/${vehicleId}/documents/${doc.id}/download`,
+        { responseType: "blob" }
+      );
+      const url = URL.createObjectURL(
+        new Blob([response.data], { type: doc.contentType })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.originalFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      showToast(extractErrorMessage(error), "error");
+    } finally {
+      setIsDownloadingDocumentId(null);
     }
   };
 
@@ -1178,12 +1204,16 @@ export default function VehicleDetailPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 text-xs">
-                          <a
-                            href={`/api/v1/vehicles/${vehicleId}/documents/${doc.id}/download`}
-                            className="text-slate-900"
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadDocument(doc)}
+                            disabled={isDownloadingDocumentId === doc.id}
+                            className="text-slate-900 disabled:opacity-50"
                           >
-                            {t("actions.download")}
-                          </a>
+                            {isDownloadingDocumentId === doc.id
+                              ? t("actions.downloading")
+                              : t("actions.download")}
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteDocument(doc.id)}
