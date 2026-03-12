@@ -6,37 +6,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Service;
 
 @Service
 public class VehicleSalesCalculator {
-
-    private final BigDecimal icmsRate;
-    private final BigDecimal icmsBaseRate;
-    private final BigDecimal pisRate;
-    private final BigDecimal cofinsRate;
-    private final BigDecimal csllRate;
-    private final BigDecimal irpjRate;
-    private final BigDecimal irCommissionRate;
-
-    public VehicleSalesCalculator(
-        @Value("${tax.icms-rate:0.12}") BigDecimal icmsRate,
-        @Value("${tax.icms-base-rate:0.05}") BigDecimal icmsBaseRate,
-        @Value("${tax.pis-rate:0.0065}") BigDecimal pisRate,
-        @Value("${tax.cofins-rate:0.03}") BigDecimal cofinsRate,
-        @Value("${tax.csll-rate:0.0288}") BigDecimal csllRate,
-        @Value("${tax.irpj-rate:0.048}") BigDecimal irpjRate,
-        @Value("${tax.ir-commission-rate:0.15}") BigDecimal irCommissionRate
-    ) {
-        this.icmsRate = icmsRate;
-        this.icmsBaseRate = icmsBaseRate;
-        this.pisRate = pisRate;
-        this.cofinsRate = cofinsRate;
-        this.csllRate = csllRate;
-        this.irpjRate = irpjRate;
-        this.irCommissionRate = irCommissionRate;
-    }
 
     public SoldVehiclesReport buildReport(List<SoldVehicleRaw> vehicles) {
         List<SoldVehicleItem> items = new ArrayList<>();
@@ -58,8 +32,8 @@ public class VehicleSalesCalculator {
 
             TaxBreakdown taxes = calculateTaxes(sellingPrice, taxableMargin);
             BigDecimal commissionIr = purchaseCommission
-                .multiply(irCommissionRate)
-                .setScale(2, RoundingMode.HALF_UP);
+                    .multiply(TaxRate.IR_COMMISSION.value())
+                    .setScale(2, RoundingMode.HALF_UP);
             BigDecimal vehicleProfit = baseProfit
                 .subtract(taxes.totalTaxes())
                 .subtract(vehicle.freightCost())
@@ -108,12 +82,12 @@ public class VehicleSalesCalculator {
             );
         }
         BigDecimal icms = sellingPrice
-            .multiply(icmsBaseRate)
-            .multiply(icmsRate);
-        BigDecimal pis = taxableMargin.multiply(pisRate);
-        BigDecimal cofins = taxableMargin.multiply(cofinsRate);
-        BigDecimal csll = taxableMargin.multiply(csllRate);
-        BigDecimal irpj = taxableMargin.multiply(irpjRate);
+                .multiply(TaxRate.ICMS_BASE.value())
+                .multiply(TaxRate.ICMS.value());
+        BigDecimal pis = taxableMargin.multiply(TaxRate.PIS.value());
+        BigDecimal cofins = taxableMargin.multiply(TaxRate.COFINS.value());
+        BigDecimal csll = taxableMargin.multiply(TaxRate.CSLL.value());
+        BigDecimal irpj = taxableMargin.multiply(TaxRate.IRPJ.value());
         BigDecimal total = icms
             .add(pis)
             .add(cofins)
