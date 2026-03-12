@@ -24,7 +24,6 @@ public class LocalDocumentStorage implements DocumentStorage {
     @Override
     public String store(UUID vehicleId, DocumentType documentType, UUID documentId, String originalFileName, InputStream inputStream) {
         String sanitized = originalFileName.replaceAll("[\\\\/]", "_");
-        // Keep files grouped by vehicle and document type; avoid per-document folder.
         String storedFileName = documentId + "_" + sanitized;
         Path relativePath = Path.of(vehicleId.toString(), documentType.name(), storedFileName);
         Path targetPath = basePath.resolve(relativePath);
@@ -33,13 +32,20 @@ public class LocalDocumentStorage implements DocumentStorage {
             Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
             return relativePath.toString();
         } catch (IOException ex) {
-            throw new IllegalStateException("Failed to store document");
+            throw new DocumentStorageException(
+                    "Failed to store document: vehicleId=%s, documentType=%s, documentId=%s, originalFileName='%s', targetPath=%s"
+                            .formatted(vehicleId, documentType, documentId, originalFileName, targetPath),
+                    ex);
         }
     }
 
     @Override
     public Resource load(String storageKey) {
         Path targetPath = basePath.resolve(storageKey);
+        if (!Files.exists(targetPath)) {
+            throw new DocumentStorageException(
+                    "Document not found: storageKey='%s', resolvedPath=%s".formatted(storageKey, targetPath));
+        }
         return new FileSystemResource(targetPath);
     }
 
@@ -49,7 +55,9 @@ public class LocalDocumentStorage implements DocumentStorage {
         try {
             Files.deleteIfExists(targetPath);
         } catch (IOException ex) {
-            throw new IllegalStateException("Failed to delete document");
+            throw new DocumentStorageException(
+                    "Failed to delete document: storageKey='%s', resolvedPath=%s".formatted(storageKey, targetPath),
+                    ex);
         }
     }
 }
