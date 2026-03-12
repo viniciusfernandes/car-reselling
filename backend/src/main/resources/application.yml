@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${CAR_RESELLING_SERVER_PORT:8080}
   # When behind a reverse proxy (e.g. Nginx with HTTPS), use X-Forwarded-Proto so Swagger UI and the app see the correct scheme.
   forward-headers-strategy: framework
 #  ssl:
@@ -14,9 +14,9 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-    username: car
-    password: car
+    url: ${CAR_RESELLING_DB_URL}
+    username: ${CAR_RESELLING_DB_USERNAME}
+    password: ${CAR_RESELLING_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -33,7 +33,7 @@ logging:
     root: INFO
 
 auth:
-  base-url: ${AUTH_BASE_URL:http://localhost:8081}
+  base-url: ${AUTH_BASE_URL}
 
 # CORS: comma-separated origin patterns; default * allows all (set in production for security).
 app:
@@ -65,13 +65,20 @@ management:
           include: livenessState,ping
         readiness:
           include: readinessState,db,diskSpace
+
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED}
+  api-docs:
+    enabled: ${SWAGGER_ENABLED}
+
   # Micrometer OTLP push – sends JVM, HTTP, HikariCP and all other Actuator metrics
   # to the OTel Collector regardless of whether tracing is enabled.
-#  otlp:
-#    metrics:
-#      export:
-#        enabled: ${OTLP_METRICS_ENABLED:false}
-#        url: ${OTLP_METRICS_URL:http://otel-collector:4318/v1/metrics}
-#        step: ${OTLP_METRICS_STEP:30s}
-#        resource-attributes:
-#          service.name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTLP_METRICS_ENABLED:false}
+        url: ${OTLP_METRICS_URL:http://otel-collector:4318/v1/metrics}
+        step: ${OTLP_METRICS_STEP:30s}
+        resource-attributes:
+          service.name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}

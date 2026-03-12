@@ -3,10 +3,10 @@ services:
     container_name: mysql
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: car_reselling
-      MYSQL_USER: car
-      MYSQL_PASSWORD: car
-      MYSQL_ROOT_PASSWORD: car
+      MYSQL_DATABASE: ${CAR_RESELLING_DB}
+      MYSQL_USER: ${CAR_RESELLING_DB_USERNAME}
+      MYSQL_PASSWORD: ${CAR_RESELLING_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${CAR_RESELLING_DB_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -19,6 +19,7 @@ services:
 
   car-reselling-api:
     container_name: car-reselling-api
+    image: viniciussf/car-reselling-api:latest
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -32,9 +33,9 @@ services:
       - default
       - car-reselling-net
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: car
-      SPRING_DATASOURCE_PASSWORD: car
+      CAR_RESELLING_DB_URL: ${CAR_RESELLING_DB_URL}
+      CAR_RESELLING_DB_USERNAME: ${CAR_RESELLING_DB_USERNAME}
+      CAR_RESELLING_DB_PASSWORD: ${CAR_RESELLING_DB_PASSWORD}
       # Observability – enabled by default in Docker; all targets resolve via container name
       OTLP_METRICS_ENABLED: ${OTLP_METRICS_ENABLED:-false}
       OTLP_METRICS_URL: ${OTLP_METRICS_URL:-http://otel-collector:4318/v1/metrics}
@@ -50,6 +51,7 @@ services:
 
   car-reselling-ui:
     container_name: car-reselling-ui
+    image: viniciussf/car-reselling-ui:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -60,6 +62,7 @@ services:
 
   authentication-api:
     container_name: authentication-api
+    image: viniciussf/authentication-api:latest
     build:
       context: ../authentication-api
       dockerfile: Dockerfile
