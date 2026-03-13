@@ -1,20 +1,25 @@
 package br.com.carreselling.infrastructure.persistence;
 
+import br.com.carreselling.application.service.model.DistributedVehiclesFilter;
+import br.com.carreselling.application.service.model.DistribuitedVehicle;
+import br.com.carreselling.application.service.model.SoldVehicle;
 import br.com.carreselling.domain.model.SupplierSource;
 import br.com.carreselling.domain.model.Vehicle;
 import br.com.carreselling.domain.model.VehicleStatus;
 import br.com.carreselling.domain.repository.VehicleRepository;
+
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDate;
+import java.util.*;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -29,34 +34,37 @@ public class VehicleJdbcRepository implements VehicleRepository {
     @Override
     public Vehicle saveVehicle(Vehicle vehicle) {
         jdbcTemplate.update("""
-                INSERT INTO vehicles
-                (id, license_plate, renavam, vin, year, color, model, brand, brand_id, model_id, supplier_source,
-                 purchase_price, freight_cost, purchase_commission, selling_price, purchase_payment_receipt_document_id,
-                 purchase_invoice_document_id, status, assigned_partner_id, distributed_at, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-            vehicle.getId().toString(),
-            vehicle.getLicensePlate(),
-            vehicle.getRenavam(),
-            vehicle.getVin(),
-            vehicle.getYear(),
-            vehicle.getColor(),
-            vehicle.getModel(),
-            vehicle.getBrand(),
-            optionalUuid(vehicle.getBrandId()),
-            optionalUuid(vehicle.getModelId()),
-            vehicle.getSupplierSource().name(),
-            vehicle.getPurchasePrice(),
-            vehicle.getFreightCost(),
-            vehicle.getPurchaseCommission(),
-            vehicle.getSellingPrice(),
-            optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
-            optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
-            vehicle.getStatus().name(),
-            optionalUuid(vehicle.getAssignedPartnerId()),
-            vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
-            Timestamp.from(vehicle.getCreatedAt()),
-            vehicle.getUpdatedAt() == null ? null : Timestamp.from(vehicle.getUpdatedAt())
+                        INSERT INTO vehicles
+                        (id, license_plate, renavam, vin, year, color, model, brand, brand_id, model_id, supplier_source,
+                         purchase_price, freight_cost, purchase_commission, selling_price, purchase_payment_receipt_document_id,
+                         purchase_invoice_document_id, status, assigned_partner_id, distributed_at, sold_at,
+                         sale_commission_rate, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                vehicle.getId().toString(),
+                vehicle.getLicensePlate(),
+                vehicle.getRenavam(),
+                vehicle.getVin(),
+                vehicle.getYear(),
+                vehicle.getColor(),
+                vehicle.getModel(),
+                vehicle.getBrand(),
+                optionalUuid(vehicle.getBrandId()),
+                optionalUuid(vehicle.getModelId()),
+                vehicle.getSupplierSource().name(),
+                vehicle.getPurchasePrice(),
+                vehicle.getFreightCost(),
+                vehicle.getPurchaseCommission(),
+                vehicle.getSellingPrice(),
+                optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
+                optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
+                vehicle.getStatus().name(),
+                optionalUuid(vehicle.getAssignedPartnerId()),
+                vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
+                vehicle.getSoldAt(),
+                vehicle.getSaleCommissionRate(),
+                Timestamp.from(vehicle.getCreatedAt()),
+                vehicle.getUpdatedAt() == null ? null : Timestamp.from(vehicle.getUpdatedAt())
         );
         return vehicle;
     }
@@ -64,40 +72,40 @@ public class VehicleJdbcRepository implements VehicleRepository {
     @Override
     public Optional<Vehicle> findVehicleById(UUID id) {
         List<Vehicle> result = jdbcTemplate.query("""
-                SELECT * FROM vehicles WHERE id = ?
-                """,
-            new VehicleRowMapper(),
-            id.toString());
+                        SELECT * FROM vehicles WHERE id = ?
+                        """,
+                new VehicleRowMapper(),
+                id.toString());
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<Vehicle> findVehicleByLicensePlate(String licensePlate) {
         List<Vehicle> result = jdbcTemplate.query("""
-                SELECT * FROM vehicles WHERE license_plate = ?
-                """,
-            new VehicleRowMapper(),
-            licensePlate);
+                        SELECT * FROM vehicles WHERE license_plate = ?
+                        """,
+                new VehicleRowMapper(),
+                licensePlate);
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<Vehicle> findVehicleByRenavam(String renavam) {
         List<Vehicle> result = jdbcTemplate.query("""
-                SELECT * FROM vehicles WHERE renavam = ?
-                """,
-            new VehicleRowMapper(),
-            renavam);
+                        SELECT * FROM vehicles WHERE renavam = ?
+                        """,
+                new VehicleRowMapper(),
+                renavam);
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<Vehicle> findVehicleByVin(String vin) {
         List<Vehicle> result = jdbcTemplate.query("""
-                SELECT * FROM vehicles WHERE vin = ?
-                """,
-            new VehicleRowMapper(),
-            vin);
+                        SELECT * FROM vehicles WHERE vin = ?
+                        """,
+                new VehicleRowMapper(),
+                vin);
         return result.stream().findFirst();
     }
 
@@ -120,8 +128,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
         params.add(size);
         params.add(offset);
         return jdbcTemplate.query(java.util.Objects.requireNonNull(sql.toString()),
-            new VehicleRowMapper(),
-            params.toArray(new Object[0]));
+                new VehicleRowMapper(),
+                params.toArray(new Object[0]));
     }
 
     @Override
@@ -140,9 +148,9 @@ public class VehicleJdbcRepository implements VehicleRepository {
             params.add(q);
         }
         Long count = jdbcTemplate.queryForObject(
-            java.util.Objects.requireNonNull(sql.toString()),
-            Long.class,
-            params.toArray(new Object[0])
+                java.util.Objects.requireNonNull(sql.toString()),
+                Long.class,
+                params.toArray(new Object[0])
         );
         return count == null ? 0L : count;
     }
@@ -150,33 +158,36 @@ public class VehicleJdbcRepository implements VehicleRepository {
     @Override
     public Vehicle updateVehicle(Vehicle vehicle) {
         jdbcTemplate.update("""
-                UPDATE vehicles
-                SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, brand_id = ?, model_id = ?, supplier_source = ?,
-                    purchase_price = ?, freight_cost = ?, purchase_commission = ?, selling_price = ?,
-                    purchase_payment_receipt_document_id = ?, purchase_invoice_document_id = ?,
-                    status = ?, assigned_partner_id = ?, distributed_at = ?, updated_at = ?
-                WHERE id = ?
-                """,
-            vehicle.getRenavam(),
-            vehicle.getVin(),
-            vehicle.getYear(),
-            vehicle.getColor(),
-            vehicle.getModel(),
-            vehicle.getBrand(),
-            optionalUuid(vehicle.getBrandId()),
-            optionalUuid(vehicle.getModelId()),
-            vehicle.getSupplierSource().name(),
-            vehicle.getPurchasePrice(),
-            vehicle.getFreightCost(),
-            vehicle.getPurchaseCommission(),
-            vehicle.getSellingPrice(),
-            optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
-            optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
-            vehicle.getStatus().name(),
-            optionalUuid(vehicle.getAssignedPartnerId()),
-            vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
-            vehicle.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(vehicle.getUpdatedAt()),
-            vehicle.getId().toString()
+                        UPDATE vehicles
+                        SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, brand_id = ?, model_id = ?, supplier_source = ?,
+                            purchase_price = ?, freight_cost = ?, purchase_commission = ?, selling_price = ?,
+                            purchase_payment_receipt_document_id = ?, purchase_invoice_document_id = ?,
+                            status = ?, assigned_partner_id = ?, distributed_at = ?, sold_at = ?,
+                            sale_commission_rate = ?, updated_at = ?
+                        WHERE id = ?
+                        """,
+                vehicle.getRenavam(),
+                vehicle.getVin(),
+                vehicle.getYear(),
+                vehicle.getColor(),
+                vehicle.getModel(),
+                vehicle.getBrand(),
+                optionalUuid(vehicle.getBrandId()),
+                optionalUuid(vehicle.getModelId()),
+                vehicle.getSupplierSource().name(),
+                vehicle.getPurchasePrice(),
+                vehicle.getFreightCost(),
+                vehicle.getPurchaseCommission(),
+                vehicle.getSellingPrice(),
+                optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
+                optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
+                vehicle.getStatus().name(),
+                optionalUuid(vehicle.getAssignedPartnerId()),
+                vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
+                vehicle.getSoldAt(),
+                vehicle.getSaleCommissionRate(),
+                vehicle.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(vehicle.getUpdatedAt()),
+                vehicle.getId().toString()
         );
         return vehicle;
     }
@@ -189,25 +200,191 @@ public class VehicleJdbcRepository implements VehicleRepository {
     @Override
     public BigDecimal findVehicleServicesTotalByVehicleId(UUID vehicleId) {
         BigDecimal total = jdbcTemplate.queryForObject("""
-                SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ?
-                """,
-            BigDecimal.class,
-            vehicleId.toString());
+                        SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ?
+                        """,
+                BigDecimal.class,
+                vehicleId.toString());
         return total == null ? BigDecimal.ZERO : total;
     }
 
     @Override
     public int countVehicleDocumentsByVehicleId(UUID vehicleId) {
         Integer count = jdbcTemplate.queryForObject("""
-                SELECT COUNT(*) FROM documents WHERE vehicle_id = ?
-                """,
-            Integer.class,
-            vehicleId.toString());
+                        SELECT COUNT(*) FROM documents WHERE vehicle_id = ?
+                        """,
+                Integer.class,
+                vehicleId.toString());
         return count == null ? 0 : count;
+    }
+
+    @Override
+    public List<DistribuitedVehicle> distributedVehiclesReport(DistributedVehiclesFilter filter) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT p.id AS partner_id,
+                       p.name AS partner_name,
+                       v.id AS vehicle_id,
+                       v.license_plate,
+                       v.brand,
+                       v.model,
+                       v.year,
+                       DATE(COALESCE(v.distributed_at, v.updated_at)) AS distributed_at,
+                       v.purchase_price,
+                       COALESCE(v.purchase_commission, 0) AS purchase_commission,
+                       v.freight_cost,
+                       COALESCE(s.services_total, 0) AS services_total
+                FROM vehicles v
+                INNER JOIN partners p ON p.id = v.assigned_partner_id
+                LEFT JOIN (
+                    SELECT vehicle_id, SUM(service_value) AS services_total
+                    FROM services
+                    GROUP BY vehicle_id
+                ) s ON s.vehicle_id = v.id
+                WHERE v.status = 'DISTRIBUTED'
+                """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (filter != null) {
+            LocalDate startDate = filter.startDate();
+            LocalDate endDate = filter.endDate();
+            String brand = normalizeText(filter.brand());
+            String model = normalizeText(filter.model());
+            if (startDate != null) {
+                sql.append(" AND DATE(v.updated_at) >= ?");
+                params.add(Date.valueOf(startDate));
+            }
+            if (endDate != null) {
+                sql.append(" AND DATE(v.updated_at) <= ?");
+                params.add(Date.valueOf(endDate));
+            }
+            if (brand != null) {
+                sql.append(" AND UPPER(v.brand) LIKE ?");
+                params.add("%" + brand + "%");
+            }
+            if (model != null) {
+                sql.append(" AND UPPER(v.model) LIKE ?");
+                params.add("%" + model + "%");
+            }
+            if (filter.partnerId() != null) {
+                sql.append(" AND v.assigned_partner_id = ?");
+                params.add(filter.partnerId().toString());
+            }
+        }
+
+        sql.append(" ORDER BY p.name, v.license_plate");
+
+        return jdbcTemplate.query(
+                Objects.requireNonNull(sql.toString()),
+                new ReportRowMapper(),
+                params.toArray(new Object[0])
+        );
+    }
+
+    @Override
+    public List<SoldVehicle> soldVehiclesReport(DistributedVehiclesFilter filter) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT v.id AS vehicle_id,
+                       v.license_plate,
+                       v.brand,
+                       v.model,
+                       v.year,
+                       v.sold_at,
+                       v.purchase_price,
+                       COALESCE(v.purchase_commission, 0) AS purchase_commission,
+                       v.freight_cost,
+                       v.selling_price,
+                       COALESCE(s.services_total, 0) AS services_total,
+                       v.sale_commission_rate
+                FROM vehicles v
+                LEFT JOIN (
+                    SELECT vehicle_id, SUM(service_value) AS services_total
+                    FROM services
+                    GROUP BY vehicle_id
+                ) s ON s.vehicle_id = v.id
+                WHERE v.status = 'SOLD' AND v.selling_price IS NOT NULL
+                """);
+
+        List<Object> params = new ArrayList<>();
+        if (filter != null) {
+            LocalDate startDate = filter.startDate();
+            LocalDate endDate = filter.endDate();
+            String brand = normalizeText(filter.brand());
+            String model = normalizeText(filter.model());
+            if (startDate != null) {
+                sql.append(" AND v.sold_at >= ?");
+                params.add(Date.valueOf(startDate));
+            }
+            if (endDate != null) {
+                sql.append(" AND v.sold_at <= ?");
+                params.add(Date.valueOf(endDate));
+            }
+            if (brand != null) {
+                sql.append(" AND UPPER(v.brand) LIKE ?");
+                params.add("%" + brand + "%");
+            }
+            if (model != null) {
+                sql.append(" AND UPPER(v.model) LIKE ?");
+                params.add("%" + model + "%");
+            }
+            if (filter.partnerId() != null) {
+                sql.append(" AND v.assigned_partner_id = ?");
+                params.add(filter.partnerId().toString());
+            }
+        }
+        sql.append(" ORDER BY v.sold_at DESC, v.license_plate");
+
+        return jdbcTemplate.query(
+                java.util.Objects.requireNonNull(sql.toString()),
+                new SoldVehicleMapper(),
+                params.toArray(new Object[0])
+        );
     }
 
     private static String optionalUuid(UUID id) {
         return id == null ? null : id.toString();
+    }
+
+    private static class SoldVehicleMapper implements RowMapper<SoldVehicle> {
+
+        @Override
+        public SoldVehicle mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
+            Date soldAtDate = rs.getDate("sold_at");
+            return new SoldVehicle(
+                    UUID.fromString(rs.getString("vehicle_id")),
+                    rs.getString("license_plate"),
+                    rs.getString("brand"),
+                    rs.getString("model"),
+                    rs.getInt("year"),
+                    soldAtDate != null ? soldAtDate.toLocalDate() : null,
+                    rs.getBigDecimal("purchase_price"),
+                    rs.getBigDecimal("purchase_commission"),
+                    rs.getBigDecimal("freight_cost"),
+                    rs.getBigDecimal("selling_price"),
+                    rs.getBigDecimal("services_total"),
+                    rs.getBigDecimal("sale_commission_rate")
+            );
+        }
+    }
+
+    private static class ReportRowMapper implements RowMapper<DistribuitedVehicle> {
+
+        @Override
+        public DistribuitedVehicle mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
+            return new DistribuitedVehicle(
+                    UUID.fromString(rs.getString("partner_id")),
+                    rs.getString("partner_name"),
+                    UUID.fromString(rs.getString("vehicle_id")),
+                    rs.getString("license_plate"),
+                    rs.getString("brand"),
+                    rs.getString("model"),
+                    rs.getInt("year"),
+                    rs.getDate("distributed_at") == null ? null : rs.getDate("distributed_at").toLocalDate(),
+                    rs.getBigDecimal("purchase_price"),
+                    rs.getBigDecimal("purchase_commission"),
+                    rs.getBigDecimal("freight_cost"),
+                    rs.getBigDecimal("services_total")
+            );
+        }
     }
 
     private static class VehicleRowMapper implements RowMapper<Vehicle> {
@@ -234,36 +411,51 @@ public class VehicleJdbcRepository implements VehicleRepository {
             VehicleStatus status = VehicleStatus.valueOf(rs.getString("status"));
             UUID assignedPartnerId = optionalUuid(rs.getString("assigned_partner_id"));
             Timestamp distributedAt = rs.getTimestamp("distributed_at");
+            java.sql.Date soldAtDate = rs.getDate("sold_at");
+            BigDecimal saleCommissionRate = rs.getBigDecimal("sale_commission_rate");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
             return new Vehicle(
-                id,
-                licensePlate,
-                renavam,
-                vin,
-                year,
-                color,
-                model,
-                brand,
-                brandId,
-                modelId,
-                supplierSource,
-                purchasePrice,
-                freightCost == null ? BigDecimal.ZERO : freightCost,
-                purchaseCommission == null ? BigDecimal.ZERO : purchaseCommission,
-                sellingPrice,
-                paymentReceiptId,
-                invoiceId,
-                status,
-                assignedPartnerId,
-                distributedAt == null ? null : distributedAt.toInstant(),
-                createdAt,
-                updatedAt == null ? null : updatedAt.toInstant()
+                    id,
+                    licensePlate,
+                    renavam,
+                    vin,
+                    year,
+                    color,
+                    model,
+                    brand,
+                    brandId,
+                    modelId,
+                    supplierSource,
+                    purchasePrice,
+                    freightCost == null ? BigDecimal.ZERO : freightCost,
+                    purchaseCommission == null ? BigDecimal.ZERO : purchaseCommission,
+                    sellingPrice,
+                    paymentReceiptId,
+                    invoiceId,
+                    status,
+                    assignedPartnerId,
+                    distributedAt == null ? null : distributedAt.toInstant(),
+                    soldAtDate == null ? null : soldAtDate.toLocalDate(),
+                    saleCommissionRate,
+                    createdAt,
+                    updatedAt == null ? null : updatedAt.toInstant()
             );
         }
 
         private static UUID optionalUuid(String value) {
             return value == null ? null : UUID.fromString(value);
         }
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.toUpperCase();
     }
 }

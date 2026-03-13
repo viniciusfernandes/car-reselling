@@ -491,6 +491,9 @@ export default function SoldVehiclesReportPage() {
               <th className="px-6 py-3">{t("reports.sales.table.plate")}</th>
               <th className="px-6 py-3">{t("reports.sales.table.model")}</th>
               <th className="px-6 py-3 text-right">
+                {t("reports.sales.table.soldAt")}
+              </th>
+              <th className="px-6 py-3 text-right">
                 {t("reports.sales.table.sellingPrice")}
               </th>
               <th className="px-6 py-3 text-right">
@@ -501,6 +504,9 @@ export default function SoldVehiclesReportPage() {
               </th>
               <th className="px-6 py-3 text-right">
                 {t("reports.sales.table.commission")}
+              </th>
+              <th className="px-6 py-3 text-right">
+                {t("reports.sales.table.commissionRate")}
               </th>
               <th className="px-10 py-3 text-right">
                 {t("reports.sales.table.profit")}
@@ -514,6 +520,9 @@ export default function SoldVehiclesReportPage() {
                   <td className="px-6 py-3">{vehicle.licensePlate}</td>
                   <td className="px-6 py-3">{vehicle.model}</td>
                   <td className="px-6 py-3 text-right">
+                    {vehicle.soldAt ?? "—"}
+                  </td>
+                  <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.sellingPrice)}
                   </td>
                   <td className="px-6 py-3 text-right">
@@ -525,6 +534,11 @@ export default function SoldVehiclesReportPage() {
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.purchaseCommission)}
                   </td>
+                  <td className="px-6 py-3 text-right">
+                    {vehicle.commissionRate != null
+                      ? `${vehicle.commissionRate.toFixed(2)}%`
+                      : "—"}
+                  </td>
                   <td className={`px-10 py-3 text-right font-medium ${vehicle.profit < 0 ? "text-red-600" : "text-green-700"}`}>
                     {formatMoney(vehicle.profit)}
                   </td>
@@ -532,7 +546,7 @@ export default function SoldVehiclesReportPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={9} className="px-6 py-6 text-center text-slate-500">
+                <td colSpan={11} className="px-6 py-6 text-center text-slate-500">
                   {t("reports.sales.empty")}
                 </td>
               </tr>

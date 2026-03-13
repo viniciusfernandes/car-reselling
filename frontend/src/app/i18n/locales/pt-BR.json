@@ -265,10 +265,12 @@
         "brand": "Marca",
         "model": "Modelo",
         "year": "Ano",
+        "soldAt": "Data de venda",
         "sellingPrice": "Preço de venda",
         "totalTaxes": "Total de impostos",
         "servicesTotal": "Total de serviços",
         "commission": "Comissão",
+        "commissionRate": "Taxa de comissão",
         "profit": "Lucro"
       },
       "histogram": {

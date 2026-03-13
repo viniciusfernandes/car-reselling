@@ -94,7 +94,8 @@ class VehicleSalesCalculatorTest {
             BigDecimal.ZERO,            // purchaseCommission
             BigDecimal.ZERO,            // freightCost
             new BigDecimal("120000"),   // sellingPrice
-            BigDecimal.ZERO             // servicesTotal
+            BigDecimal.ZERO,            // servicesTotal
+            new BigDecimal("0.05")      // saleCommissionRate
         );
 
         SoldVehiclesReport report = calculator.buildReport(List.of(vehicle));
@@ -124,7 +125,8 @@ class VehicleSalesCalculatorTest {
             BigDecimal.ZERO,            // purchaseCommission
             BigDecimal.ZERO,            // freightCost
             new BigDecimal("100000"),   // sellingPrice
-            BigDecimal.ZERO             // servicesTotal
+            BigDecimal.ZERO,            // servicesTotal
+            null                        // saleCommissionRate
         );
 
         SoldVehiclesReport report = calculator.buildReport(List.of(vehicle));

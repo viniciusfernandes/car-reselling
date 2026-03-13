@@ -265,10 +265,12 @@
         "brand": "Brand",
         "model": "Model",
         "year": "Year",
+        "soldAt": "Sold date",
         "sellingPrice": "Selling price",
         "totalTaxes": "Total taxes",
         "servicesTotal": "Services total",
         "commission": "Commission",
+        "commissionRate": "Commission rate",
         "profit": "Profit"
       },
       "histogram": {

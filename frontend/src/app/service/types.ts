@@ -80,6 +80,7 @@ export type SoldVehicleItem = {
   servicesTotal: number;
   purchaseCommission: number;
   profit: number;
+  commissionRate: number | null;
 };
 
 export type SoldVehiclesReport = {

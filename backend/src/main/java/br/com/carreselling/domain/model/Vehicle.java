@@ -4,6 +4,7 @@ import br.com.carreselling.domain.exception.InvalidStateException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -29,6 +30,8 @@ public class Vehicle {
     private VehicleStatus status;
     private UUID assignedPartnerId;
     private Instant distributedAt;
+    private LocalDate soldAt;
+    private BigDecimal saleCommissionRate;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -52,6 +55,8 @@ public class Vehicle {
                    VehicleStatus status,
                    UUID assignedPartnerId,
                    Instant distributedAt,
+                   LocalDate soldAt,
+                   BigDecimal saleCommissionRate,
                    Instant createdAt,
                    Instant updatedAt) {
         this.id = id;
@@ -74,6 +79,8 @@ public class Vehicle {
         this.status = status;
         this.assignedPartnerId = assignedPartnerId;
         this.distributedAt = distributedAt;
+        this.soldAt = soldAt;
+        this.saleCommissionRate = saleCommissionRate;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -113,10 +120,11 @@ public class Vehicle {
         if (targetStatus == VehicleStatus.DISTRIBUTED && partnerId == null) {
             throw new InvalidStateException("Assigned partner is required when distributing a vehicle.");
         }
-        if (targetStatus == VehicleStatus.DISTRIBUTED) {
-            this.assignedPartnerId = partnerId;
-        }
-        if (targetStatus != VehicleStatus.DISTRIBUTED && targetStatus != VehicleStatus.SOLD) {
+        if (targetStatus == VehicleStatus.DISTRIBUTED || targetStatus == VehicleStatus.SOLD) {
+            if (partnerId != null) {
+                this.assignedPartnerId = partnerId;
+            }
+        } else {
             this.assignedPartnerId = null;
         }
         this.status = targetStatus;
@@ -265,8 +273,28 @@ public class Vehicle {
         this.distributedAt = distributedAt;
     }
 
+    public LocalDate getSoldAt() {
+        return soldAt;
+    }
+
+    public void setSoldAt(LocalDate soldAt) {
+        this.soldAt = soldAt;
+    }
+
+    public BigDecimal getSaleCommissionRate() {
+        return saleCommissionRate;
+    }
+
+    public void setSaleCommissionRate(BigDecimal saleCommissionRate) {
+        this.saleCommissionRate = saleCommissionRate;
+    }
+
     public boolean isStatusTransitionAllowed(VehicleStatus target) {
         return status == null || status.isTransitionAllowed(target);
+    }
+
+    public boolean isSold() {
+        return status == VehicleStatus.SOLD;
     }
 
     public int calculateTotalYardDays() {

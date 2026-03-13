@@ -1,11 +1,13 @@
 package br.com.carreselling.domain.repository;
 
+import br.com.carreselling.application.service.model.DistributedVehiclesFilter;
+import br.com.carreselling.application.service.model.DistribuitedVehicle;
+import br.com.carreselling.application.service.model.SoldVehicle;
 import br.com.carreselling.domain.model.Vehicle;
 import br.com.carreselling.domain.model.VehicleStatus;
+
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public interface VehicleRepository {
 
@@ -30,4 +32,8 @@ public interface VehicleRepository {
     BigDecimal findVehicleServicesTotalByVehicleId(UUID vehicleId);
 
     int countVehicleDocumentsByVehicleId(UUID vehicleId);
+
+    List<DistribuitedVehicle> distributedVehiclesReport(DistributedVehiclesFilter filter);
+
+    List<SoldVehicle> soldVehiclesReport(DistributedVehiclesFilter filter);
 }

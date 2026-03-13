@@ -23,6 +23,7 @@ import br.com.carreselling.domain.repository.VehicleRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -132,6 +133,8 @@ public class VehicleService implements IVehicleService {
                 VehicleStatus.IN_LOT,
                 null,
                 null,
+                null,
+                null,
                 now,
                 now
         );
@@ -208,6 +211,8 @@ public class VehicleService implements IVehicleService {
 
         vehicle.transitionStatus(VehicleStatus.SOLD);
         vehicle.updateSellingPrice(sellingPrice);
+        stampSoldAt(vehicle);
+        stampCommissionRate(vehicle);
         vehicle.setUpdatedAt(Instant.now());
         vehicleRepository.updateVehicle(vehicle);
     }
@@ -322,6 +327,10 @@ public class VehicleService implements IVehicleService {
         vehicle.setModelId(modelEntity.getId());
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
+        stampCommissionRate(vehicle);
+        if (vehicle.isSold()) {
+            stampSoldAt(vehicle);
+        }
         vehicleRepository.updateVehicle(vehicle);
     }
 
@@ -338,14 +347,30 @@ public class VehicleService implements IVehicleService {
         if (targetStatus == VehicleStatus.SOLD && vehicle.getSellingPrice() == null) {
             throw new InvalidStateException("Selling price is required before marking as sold.");
         }
-        if (targetStatus == VehicleStatus.DISTRIBUTED && assignedPartnerId != null) {
+        if ((targetStatus == VehicleStatus.DISTRIBUTED || targetStatus == VehicleStatus.SOLD)
+                && assignedPartnerId != null) {
             partnerRepository.findPartnerById(assignedPartnerId)
                     .orElseThrow(() -> new NotFoundException("Partner not found"));
         }
         UUID partner = assignedPartnerId != null ? assignedPartnerId : vehicle.getAssignedPartnerId();
         vehicle.transitionStatus(targetStatus, partner);
-        if (targetStatus == VehicleStatus.DISTRIBUTED && vehicle.getDistributedAt() == null) {
-            vehicle.setDistributedAt(Instant.now());
+        if (targetStatus == VehicleStatus.DISTRIBUTED) {
+            if (vehicle.getDistributedAt() == null) {
+                vehicle.setDistributedAt(Instant.now());
+            }
+            if (partner != null) {
+                partnerRepository.findPartnerById(partner)
+                        .ifPresent(p -> vehicle.setSaleCommissionRate(p.getCommissionRate()));
+            }
+        }
+        if (targetStatus == VehicleStatus.SOLD) {
+            stampSoldAt(vehicle);
+            if (partner != null) {
+                partnerRepository.findPartnerById(partner)
+                        .ifPresent(p -> vehicle.setSaleCommissionRate(p.getCommissionRate()));
+            } else {
+                stampCommissionRate(vehicle);
+            }
         }
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
@@ -362,6 +387,7 @@ public class VehicleService implements IVehicleService {
         if (vehicle.getDistributedAt() == null) {
             vehicle.setDistributedAt(Instant.now());
         }
+        vehicle.setSaleCommissionRate(partner.getCommissionRate());
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
         vehicleRepository.updateVehicle(vehicle);
@@ -373,12 +399,12 @@ public class VehicleService implements IVehicleService {
             throw new IllegalArgumentException("brand: required.");
         }
         return brandRepository.findBrandByName(normalized)
-            .orElseGet(() -> brandRepository.saveBrand(new Brand(
-                UuidGenerator.generate(),
-                normalized,
-                now,
-                now
-            )));
+                .orElseGet(() -> brandRepository.saveBrand(new Brand(
+                        UuidGenerator.generate(),
+                        normalized,
+                        now,
+                        now
+                )));
     }
 
     private void resolveColor(String color, Instant now) {
@@ -386,12 +412,12 @@ public class VehicleService implements IVehicleService {
             throw new IllegalArgumentException("color: required.");
         }
         colorRepository.findColorByName(color)
-            .orElseGet(() -> colorRepository.saveColor(new Color(
-                UuidGenerator.generate(),
-                color,
-                now,
-                now
-            )));
+                .orElseGet(() -> colorRepository.saveColor(new Color(
+                        UuidGenerator.generate(),
+                        color,
+                        now,
+                        now
+                )));
     }
 
     private VehicleModel resolveModel(UUID brandId, String model, Instant now) {
@@ -400,13 +426,13 @@ public class VehicleService implements IVehicleService {
             throw new IllegalArgumentException("model: required.");
         }
         return vehicleModelRepository.findModelByBrandIdAndName(brandId, normalized)
-            .orElseGet(() -> vehicleModelRepository.saveModel(new VehicleModel(
-                UuidGenerator.generate(),
-                brandId,
-                normalized,
-                now,
-                now
-            )));
+                .orElseGet(() -> vehicleModelRepository.saveModel(new VehicleModel(
+                        UuidGenerator.generate(),
+                        brandId,
+                        normalized,
+                        now,
+                        now
+                )));
     }
 
     private void validatePlate(String plate) {
@@ -461,6 +487,20 @@ public class VehicleService implements IVehicleService {
         }
         Optional<Partner> partner = partnerRepository.findPartnerById(partnerId);
         return partner.map(Partner::getName).orElse(null);
+    }
+
+    private void stampSoldAt(Vehicle vehicle) {
+        if (vehicle.getSoldAt() == null) {
+            vehicle.setSoldAt(LocalDate.now());
+        }
+    }
+
+    private void stampCommissionRate(Vehicle vehicle) {
+        UUID partnerId = vehicle.getAssignedPartnerId();
+        if (partnerId != null) {
+            partnerRepository.findPartnerById(partnerId)
+                    .ifPresent(p -> vehicle.setSaleCommissionRate(p.getCommissionRate()));
+        }
     }
 
 }

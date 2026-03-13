@@ -215,3 +215,16 @@ databaseChangeLog:
             sql: |
               ALTER TABLE partners
                 ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE AFTER email;
+  - changeSet:
+      id: vinicius-20260313-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE vehicles
+                ADD COLUMN sold_at DATE NULL AFTER distributed_at,
+                ADD COLUMN sale_commission_rate DECIMAL(6,2) NULL AFTER sold_at;
+
+              UPDATE vehicles
+              SET sold_at = DATE(COALESCE(updated_at, created_at))
+              WHERE status = 'SOLD' AND sold_at IS NULL;

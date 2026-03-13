@@ -598,12 +598,13 @@ export default function VehicleDetailPage() {
           sellingPrice: parseMoney(sellingPrice),
         });
       }
-      if (statusTarget !== vehicle.status) {
         await api.post(`/vehicles/${vehicleId}/status`, {
           status: statusTarget,
-          assignedPartnerId: statusTarget === "DISTRIBUTED" ? partnerId : null,
+          assignedPartnerId:
+            (statusTarget === "DISTRIBUTED" || statusTarget === "SOLD") && partnerId
+              ? partnerId
+              : null,
         });
-      }
       showToast(t("vehicleDetail.updated"), "success");
       setUpdateErrors({});
       await fetchAll();

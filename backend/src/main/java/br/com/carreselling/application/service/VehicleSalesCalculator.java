@@ -1,6 +1,7 @@
 package br.com.carreselling.application.service;
 
 import br.com.carreselling.application.service.model.SoldVehicleItem;
+import br.com.carreselling.application.service.model.SoldVehicle;
 import br.com.carreselling.application.service.model.SoldVehiclesReport;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class VehicleSalesCalculator {
 
-    public SoldVehiclesReport buildReport(List<SoldVehicleRaw> vehicles) {
+    public SoldVehiclesReport buildReport(List<SoldVehicle> vehicles) {
         List<SoldVehicleItem> items = new ArrayList<>();
         BigDecimal totalSold = BigDecimal.ZERO;
         BigDecimal totalTaxes = BigDecimal.ZERO;
@@ -21,7 +22,7 @@ public class VehicleSalesCalculator {
         BigDecimal totalCommissionIr = BigDecimal.ZERO;
         BigDecimal totalProfit = BigDecimal.ZERO;
 
-        for (SoldVehicleRaw vehicle : vehicles) {
+        for (SoldVehicle vehicle : vehicles) {
             BigDecimal sellingPrice = vehicle.sellingPrice();
             BigDecimal servicesTotal = vehicle.servicesTotal();
             BigDecimal purchaseCommission = vehicle.purchaseCommission() == null
@@ -50,7 +51,8 @@ public class VehicleSalesCalculator {
                 taxes.totalTaxes(),
                 servicesTotal,
                 purchaseCommission,
-                vehicleProfit
+                vehicleProfit,
+                vehicle.saleCommissionRate()
             ));
             totalSold = totalSold.add(sellingPrice);
             totalTaxes = totalTaxes.add(taxes.totalTaxes());
@@ -113,16 +115,4 @@ public class VehicleSalesCalculator {
                                BigDecimal totalTaxes) {
     }
 
-    public record SoldVehicleRaw(java.util.UUID vehicleId,
-                                 String licensePlate,
-                                 String brand,
-                                 String model,
-                                 int year,
-                                 java.time.LocalDate soldAt,
-                                 BigDecimal purchasePrice,
-                                 BigDecimal purchaseCommission,
-                                 BigDecimal freightCost,
-                                 BigDecimal sellingPrice,
-                                 BigDecimal servicesTotal) {
-    }
 }
