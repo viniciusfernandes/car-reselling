@@ -1,5 +1,8 @@
 package br.com.carreselling.security;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Base64;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 public class AuthTokenValidator {
 
     private static final Logger log = LoggerFactory.getLogger(AuthTokenValidator.class);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final RestTemplate restTemplate;
     private final String authBaseUrl;
@@ -55,5 +59,30 @@ public class AuthTokenValidator {
             log.warn("Token validation error: {}", ex.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Decodes the JWT payload (without re-verifying the signature — the auth service already
+     * did that in {@link #isValid}) and returns the {@code email} claim, falling back to
+     * {@code sub}, then to {@code "unknown"} if neither claim is present.
+     */
+    public String extractUsername(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return "unknown";
+            }
+            byte[] decoded = Base64.getUrlDecoder().decode(parts[1]);
+            JsonNode payload = MAPPER.readTree(decoded);
+            if (payload.has("email") && !payload.get("email").isNull()) {
+                return payload.get("email").asText();
+            }
+            if (payload.has("sub") && !payload.get("sub").isNull()) {
+                return payload.get("sub").asText();
+            }
+        } catch (Exception ex) {
+            log.warn("Could not extract username from JWT payload: {}", ex.getMessage());
+        }
+        return "unknown";
     }
 }

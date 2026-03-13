@@ -48,8 +48,9 @@ public class BearerTokenAuthFilter extends OncePerRequestFilter {
         }
 
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            String username = tokenValidator.extractUsername(token);
             UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken("auth-user", null, java.util.List.of());
+                new UsernamePasswordAuthenticationToken(username, null, java.util.List.of());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
