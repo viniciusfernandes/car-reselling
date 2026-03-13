@@ -7,12 +7,13 @@ import {
   fetchPartners,
   fetchPartner,
   updatePartner,
+  fetchPartnerHistory,
   createPartner,
   disablePartner,
 } from "../../service/partners";
 import { extractErrorMessage } from "../../service/api";
 import { formatNumber, parseMoney } from "../../service/formatters";
-import type { PartnerItem } from "../../service/types";
+import type { PartnerItem, PartnerHistoryItem } from "../../service/types";
 
 type EditFormState = {
   name: string;
@@ -42,6 +43,10 @@ export default function PartnerManagementPage() {
   const [form, setForm] = useState<EditFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
+  const [history, setHistory] = useState<PartnerHistoryItem[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   useEffect(() => {
     setLoading(true);
     fetchPartners()
@@ -53,6 +58,8 @@ export default function PartnerManagementPage() {
   function handleSelect(partner: PartnerItem) {
     setSelectedId(partner.id);
     setCreateMode(false);
+    setHistoryOpen(false);
+    setHistory([]);
     setLoading(true);
     fetchPartner(partner.id)
       .then((detail) => {
@@ -74,6 +81,8 @@ export default function PartnerManagementPage() {
     setSelectedId(null);
     setCreateMode(false);
     setForm(EMPTY_FORM);
+    setHistory([]);
+    setHistoryOpen(false);
   }
 
   async function handleSave() {
@@ -108,12 +117,39 @@ export default function PartnerManagementPage() {
         )
       );
       showToast(t("partners.savedSuccess"), "success");
+      if (historyOpen) {
+        loadHistory(selectedId);
+      }
     } catch (err) {
       showToast(extractErrorMessage(err), "error");
     } finally {
       setSaving(false);
     }
   }
+
+  function loadHistory(id: string) {
+    setHistoryLoading(true);
+    fetchPartnerHistory(id)
+      .then((res) => setHistory(res.history))
+      .catch((err) => showToast(extractErrorMessage(err), "error"))
+      .finally(() => setHistoryLoading(false));
+  }
+
+  function handleToggleHistory() {
+    if (!selectedId) return;
+    if (!historyOpen) {
+      setHistoryOpen(true);
+      loadHistory(selectedId);
+    } else {
+      setHistoryOpen(false);
+    }
+  }
+
+  const formatDate = (value: string) => {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleString(i18n.language);
+  };
 
   async function handleCreate() {
     if (!form.name.trim()) {
@@ -322,9 +358,86 @@ export default function PartnerManagementPage() {
                     >
                       {t("partners.disable")}
                     </button>
+                    <button
+                      type="button"
+                      onClick={handleToggleHistory}
+                      className="ml-auto rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      {historyOpen
+                        ? t("partners.hideHistory")
+                        : t("partners.showHistory")}
+                    </button>
                   </>
                 )}
               </div>
+
+              {/* Change history — only for existing partners */}
+              {!createMode && historyOpen ? (
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <h4 className="mb-3 text-sm font-semibold text-slate-700">
+                    {t("partners.historyTitle")}
+                  </h4>
+                  {historyLoading ? (
+                    <p className="text-sm text-slate-400">{t("common.loading")}</p>
+                  ) : history.length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      {t("partners.historyEmpty")}
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-slate-700">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-left text-slate-500">
+                            <th className="pb-2 pr-3 font-medium">
+                              {t("partners.historyColumns.changedAt")}
+                            </th>
+                            <th className="pb-2 pr-3 font-medium">
+                              {t("partners.historyColumns.changedBy")}
+                            </th>
+                            <th className="pb-2 pr-3 font-medium">
+                              {t("partners.fields.name")}
+                            </th>
+                            <th className="pb-2 pr-3 font-medium">
+                              {t("partners.fields.city")}
+                            </th>
+                            <th className="pb-2 pr-3 font-medium">
+                              {t("partners.fields.phone")}
+                            </th>
+                            <th className="pb-2 pr-3 font-medium">
+                              {t("partners.fields.email")}
+                            </th>
+                            <th className="pb-2 font-medium">
+                              {t("partners.fields.commissionRate")}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((h) => (
+                            <tr
+                              key={h.id}
+                              className="border-b border-slate-50 hover:bg-slate-50"
+                            >
+                              <td className="py-2 pr-3 whitespace-nowrap">
+                                {formatDate(h.changedAt)}
+                              </td>
+                              <td className="py-2 pr-3">{h.changedBy ?? "-"}</td>
+                              <td className="py-2 pr-3">{h.name}</td>
+                              <td className="py-2 pr-3">{h.city ?? "-"}</td>
+                              <td className="py-2 pr-3">{h.phone ?? "-"}</td>
+                              <td className="py-2 pr-3">{h.email ?? "-"}</td>
+                              <td className="py-2">
+                                {h.commissionRate != null
+                                  ? `${formatNumber(h.commissionRate)}`
+                                  : "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-12 text-center">
