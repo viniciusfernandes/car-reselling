@@ -1,5 +1,6 @@
 package br.com.carreselling.application.service;
 
+import br.com.carreselling.common.UuidGenerator;
 import br.com.carreselling.application.service.model.VehicleDetail;
 import br.com.carreselling.application.service.model.VehicleSummary;
 import br.com.carreselling.application.service.model.VehicleTaxes;
@@ -111,7 +112,7 @@ public class VehicleService implements IVehicleService {
             return existingVehicle.getId();
         }
         Vehicle vehicle = new Vehicle(
-                UUID.randomUUID(),
+                UuidGenerator.generate(),
                 normalizedPlate,
                 normalizedRenavam,
                 normalizedVin,
@@ -373,7 +374,7 @@ public class VehicleService implements IVehicleService {
         }
         return brandRepository.findBrandByName(normalized)
             .orElseGet(() -> brandRepository.saveBrand(new Brand(
-                UUID.randomUUID(),
+                UuidGenerator.generate(),
                 normalized,
                 now,
                 now
@@ -386,7 +387,7 @@ public class VehicleService implements IVehicleService {
         }
         colorRepository.findColorByName(color)
             .orElseGet(() -> colorRepository.saveColor(new Color(
-                UUID.randomUUID(),
+                UuidGenerator.generate(),
                 color,
                 now,
                 now
@@ -400,7 +401,7 @@ public class VehicleService implements IVehicleService {
         }
         return vehicleModelRepository.findModelByBrandIdAndName(brandId, normalized)
             .orElseGet(() -> vehicleModelRepository.saveModel(new VehicleModel(
-                UUID.randomUUID(),
+                UuidGenerator.generate(),
                 brandId,
                 normalized,
                 now,

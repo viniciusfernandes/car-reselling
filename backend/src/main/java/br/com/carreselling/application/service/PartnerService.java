@@ -1,5 +1,6 @@
 package br.com.carreselling.application.service;
 
+import br.com.carreselling.common.UuidGenerator;
 import br.com.carreselling.application.service.model.PartnerHistorySummary;
 import br.com.carreselling.application.service.model.PartnerSummary;
 import br.com.carreselling.domain.exception.ConflictException;
@@ -34,7 +35,7 @@ public class PartnerService implements IPartnerService {
             });
         Instant now = Instant.now();
         Partner partner = new Partner(
-            UUID.randomUUID(),
+            UuidGenerator.generate(),
             name,
             city,
             phone,
@@ -131,7 +132,7 @@ public class PartnerService implements IPartnerService {
 
     private PartnerHistory snapshotOf(Partner partner, String changedBy) {
         return new PartnerHistory(
-            UUID.randomUUID(),
+            UuidGenerator.generate(),
             partner.getId(),
             partner.getName(),
             partner.getCity(),

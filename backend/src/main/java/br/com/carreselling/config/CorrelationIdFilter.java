@@ -1,5 +1,6 @@
 package br.com.carreselling.config;
 
+import br.com.carreselling.common.UuidGenerator;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
@@ -47,7 +48,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         }
         String traceId = Optional.ofNullable(request.getHeader(TRACE_ID_HEADER))
             .filter(value -> !value.isBlank())
-            .orElse(UUID.randomUUID().toString());
+            .orElse(UuidGenerator.generate().toString());
         request.setAttribute("traceId", traceId);
         MDC.put("traceId", traceId);
         response.setHeader(TRACE_ID_HEADER, traceId);

@@ -1,5 +1,6 @@
 package br.com.carreselling.application.service;
 
+import br.com.carreselling.common.UuidGenerator;
 import br.com.carreselling.application.service.model.ServiceSummary;
 import br.com.carreselling.domain.exception.NotFoundException;
 import br.com.carreselling.domain.model.ServiceEntry;
@@ -38,7 +39,7 @@ public class ServiceEntryService implements IServiceEntryService {
             throw new IllegalArgumentException("serviceValue: cannot be negative.");
         }
         ServiceEntry entry = new ServiceEntry(
-            UUID.randomUUID(),
+            UuidGenerator.generate(),
             vehicleId,
             serviceType,
             description,

@@ -1,5 +1,6 @@
 package br.com.carreselling.application.service;
 
+import br.com.carreselling.common.UuidGenerator;
 import br.com.carreselling.application.service.model.DocumentSummary;
 import br.com.carreselling.domain.exception.NotFoundException;
 import br.com.carreselling.domain.model.Document;
@@ -39,7 +40,7 @@ public class DocumentService implements IDocumentService {
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
             throw new IllegalArgumentException("File exceeds maximum size.");
         }
-        UUID documentId = UUID.randomUUID();
+        UUID documentId = UuidGenerator.generate();
         String originalFileName = file.getOriginalFilename() == null ? "document" : file.getOriginalFilename();
         String storageKey;
         try {
