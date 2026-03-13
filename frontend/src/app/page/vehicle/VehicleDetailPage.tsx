@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -227,6 +227,9 @@ export default function VehicleDetailPage() {
     loadLookupData();
   }, [showToast]);
 
+  const updateFormModelRef = useRef(updateForm.model);
+  updateFormModelRef.current = updateForm.model;
+
   useEffect(() => {
     const selectedBrand = brandOptions.find((brand) => brand.name === updateForm.brand);
     if (!selectedBrand) {
@@ -238,8 +241,8 @@ export default function VehicleDetailPage() {
         const models = await fetchModelsByBrand(selectedBrand.id);
         setModelOptions(models);
         if (
-          updateForm.model &&
-          !models.some((model) => model.name === updateForm.model)
+          updateFormModelRef.current &&
+          !models.some((model) => model.name === updateFormModelRef.current)
         ) {
           setUpdateForm((prev) => ({ ...prev, model: "" }));
         }
@@ -248,7 +251,7 @@ export default function VehicleDetailPage() {
       }
     };
     loadModels();
-  }, [brandOptions, updateForm.brand, updateForm.model, showToast]);
+  }, [brandOptions, updateForm.brand, showToast]);
 
   useEffect(() => {
     if (!vehicle) {

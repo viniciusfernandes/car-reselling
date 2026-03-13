@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import TextInput from "../../component/input/TextInput";
@@ -53,6 +53,11 @@ export default function NewVehiclePage() {
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Ref so the model effect can read the current typed value without
+  // being listed as a dependency (avoids re-fetching on every keystroke).
+  const formModelRef = useRef(form.model);
+  formModelRef.current = form.model;
 
   const getMoneyError = (value: string, required = false) => {
     if (!value && required) {
@@ -194,7 +199,11 @@ export default function NewVehiclePage() {
       try {
         const models = await fetchModelsByBrand(selectedBrand.id);
         setModelOptions(models);
-        if (form.model && !models.some((model) => model.name === form.model)) {
+        // Clear the model only when the brand changes and the previously
+        // selected model no longer belongs to the new brand. Reading the
+        // value through a ref avoids adding form.model to the deps array,
+        // which would re-trigger this effect on every keystroke.
+        if (formModelRef.current && !models.some((m) => m.name === formModelRef.current)) {
           handleChange("model", "");
         }
       } catch (error) {
@@ -202,7 +211,7 @@ export default function NewVehiclePage() {
       }
     };
     loadModels();
-  }, [brandOptions, form.brand, form.model, showToast]);
+  }, [brandOptions, form.brand, showToast]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
