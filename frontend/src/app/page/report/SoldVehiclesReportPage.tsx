@@ -489,9 +489,7 @@ export default function SoldVehiclesReportPage() {
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
               <th className="px-6 py-3">{t("reports.sales.table.plate")}</th>
-              <th className="px-6 py-3">{t("reports.sales.table.brand")}</th>
               <th className="px-6 py-3">{t("reports.sales.table.model")}</th>
-              <th className="px-6 py-3">{t("reports.sales.table.year")}</th>
               <th className="px-6 py-3 text-right">
                 {t("reports.sales.table.sellingPrice")}
               </th>
@@ -504,6 +502,9 @@ export default function SoldVehiclesReportPage() {
               <th className="px-6 py-3 text-right">
                 {t("reports.sales.table.commission")}
               </th>
+              <th className="px-10 py-3 text-right">
+                {t("reports.sales.table.profit")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -511,9 +512,7 @@ export default function SoldVehiclesReportPage() {
               report.vehicles.map((vehicle) => (
                 <tr key={vehicle.vehicleId} className="border-t">
                   <td className="px-6 py-3">{vehicle.licensePlate}</td>
-                  <td className="px-6 py-3">{vehicle.brand}</td>
                   <td className="px-6 py-3">{vehicle.model}</td>
-                  <td className="px-6 py-3">{vehicle.year}</td>
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.sellingPrice)}
                   </td>
@@ -526,11 +525,14 @@ export default function SoldVehiclesReportPage() {
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.purchaseCommission)}
                   </td>
+                  <td className={`px-10 py-3 text-right font-medium ${vehicle.profit < 0 ? "text-red-600" : "text-green-700"}`}>
+                    {formatMoney(vehicle.profit)}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="px-6 py-6 text-center text-slate-500">
+                <td colSpan={9} className="px-6 py-6 text-center text-slate-500">
                   {t("reports.sales.empty")}
                 </td>
               </tr>

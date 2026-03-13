@@ -79,6 +79,7 @@ export type SoldVehicleItem = {
   totalTaxes: number;
   servicesTotal: number;
   purchaseCommission: number;
+  profit: number;
 };
 
 export type SoldVehiclesReport = {

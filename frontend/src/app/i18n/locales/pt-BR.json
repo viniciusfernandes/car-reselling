@@ -268,7 +268,8 @@
         "sellingPrice": "Preço de venda",
         "totalTaxes": "Total de impostos",
         "servicesTotal": "Total de serviços",
-        "commission": "Comissão"
+        "commission": "Comissão",
+        "profit": "Lucro"
       },
       "histogram": {
         "title": "Evolução mensal das vendas",

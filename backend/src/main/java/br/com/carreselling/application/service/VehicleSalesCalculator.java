@@ -49,7 +49,8 @@ public class VehicleSalesCalculator {
                 sellingPrice,
                 taxes.totalTaxes(),
                 servicesTotal,
-                purchaseCommission
+                purchaseCommission,
+                vehicleProfit
             ));
             totalSold = totalSold.add(sellingPrice);
             totalTaxes = totalTaxes.add(taxes.totalTaxes());

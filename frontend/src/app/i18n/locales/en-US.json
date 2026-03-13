@@ -268,7 +268,8 @@
         "sellingPrice": "Selling price",
         "totalTaxes": "Total taxes",
         "servicesTotal": "Services total",
-        "commission": "Commission"
+        "commission": "Commission",
+        "profit": "Profit"
       },
       "histogram": {
         "title": "Monthly selling progress",
