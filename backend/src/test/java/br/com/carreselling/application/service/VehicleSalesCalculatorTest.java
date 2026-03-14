@@ -1,7 +1,7 @@
 package br.com.carreselling.application.service;
 
-import br.com.carreselling.application.service.VehicleSalesCalculator.SoldVehicleRaw;
 import br.com.carreselling.application.service.VehicleSalesCalculator.TaxBreakdown;
+import br.com.carreselling.application.service.model.SoldVehicle;
 import br.com.carreselling.application.service.model.SoldVehiclesReport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +83,7 @@ class VehicleSalesCalculatorTest {
 
     @Test
     void testBuildReport_standardProfitScenario() {
-        SoldVehicleRaw vehicle = new SoldVehicleRaw(
+        SoldVehicle vehicle = new SoldVehicle(
             UUID.randomUUID(),
             "ABC1234",
             "Toyota",
@@ -114,7 +114,7 @@ class VehicleSalesCalculatorTest {
     void testBuildReport_sellingBelowPurchase_negativeProfitNoMarginTaxes() {
         // When selling price is below purchase price the taxable margin is clamped
         // to zero, so only ICMS is charged.
-        SoldVehicleRaw vehicle = new SoldVehicleRaw(
+        SoldVehicle vehicle = new SoldVehicle(
             UUID.randomUUID(),
             "XYZ9999",
             "Honda",
