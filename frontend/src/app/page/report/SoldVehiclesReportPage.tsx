@@ -508,7 +508,7 @@ export default function SoldVehiclesReportPage() {
               <th className="px-6 py-3 text-right">
                 {t("reports.sales.table.commissionRate")}
               </th>
-              <th className="px-10 py-3 text-right">
+              <th className="px-6 py-3 text-right whitespace-nowrap">
                 {t("reports.sales.table.profit")}
               </th>
             </tr>
@@ -534,12 +534,12 @@ export default function SoldVehiclesReportPage() {
                   <td className="px-6 py-3 text-right">
                     {formatMoney(vehicle.purchaseCommission)}
                   </td>
-                  <td className="px-6 py-3 text-right">
+                  <td className="px-6 py-3 text-center">
                     {vehicle.commissionRate != null
                       ? `${vehicle.commissionRate.toFixed(2)}%`
                       : "—"}
                   </td>
-                  <td className={`px-10 py-3 text-right font-medium ${vehicle.profit < 0 ? "text-red-600" : "text-green-700"}`}>
+                  <td className={`px-6 py-3 text-right font-medium whitespace-nowrap ${vehicle.profit < 0 ? "text-red-600" : "text-green-700"}`}>
                     {formatMoney(vehicle.profit)}
                   </td>
                 </tr>
