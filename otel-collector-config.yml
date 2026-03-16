@@ -9,6 +9,15 @@ receivers:
 processors:
   batch:
 
+  # Copy the service.name resource attribute down to every datapoint as a
+  # service_name label so Prometheus queries like {service_name="car-reselling-api"}
+  # work consistently with the same label used in Loki.
+  transform/resource_to_labels:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["service_name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
+
 exporters:
   debug:
     verbosity: detailed
@@ -41,5 +50,5 @@ service:
 
     metrics:
       receivers: [otlp]
-      processors: [batch]
+      processors: [batch, transform/resource_to_labels]
       exporters: [prometheus]

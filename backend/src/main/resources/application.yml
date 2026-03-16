@@ -2,12 +2,6 @@ server:
   port: ${CAR_RESELLING_SERVER_PORT:8080}
   # When behind a reverse proxy (e.g. Nginx with HTTPS), use X-Forwarded-Proto so Swagger UI and the app see the correct scheme.
   forward-headers-strategy: framework
-#  ssl:
-#    enabled: false
-#    key-store: ${SERVER_SSL_KEY_STORE:classpath:keystore.p12}
-#    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:}
-#    key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:PKCS12}
-#    key-alias: ${SERVER_SSL_KEY_ALIAS:carreselling}
 
 spring:
   threads:
@@ -49,12 +43,17 @@ tax:
   irpj-rate: 0.048
   ir-commission-rate: 0.15
 
+# Loki push URL used by the logback loki4j appender.
+# Docker Compose sets LOKI_URL=http://loki:3100; the local profile overrides this to localhost.
+loki:
+  url: ${LOKI_URL}
+
 management:
   endpoints:
     web:
       base-path: /actuator
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       probes:
@@ -66,19 +65,19 @@ management:
         readiness:
           include: readinessState,db,diskSpace
 
-springdoc:
-  swagger-ui:
-    enabled: ${SWAGGER_ENABLED}
-  api-docs:
-    enabled: ${SWAGGER_ENABLED}
-
   # Micrometer OTLP push – sends JVM, HTTP, HikariCP and all other Actuator metrics
   # to the OTel Collector regardless of whether tracing is enabled.
   otlp:
     metrics:
       export:
         enabled: ${OTLP_METRICS_ENABLED:false}
-        url: ${OTLP_METRICS_URL:http://otel-collector:4318/v1/metrics}
+        url: ${OTLP_METRICS_URL}
         step: ${OTLP_METRICS_STEP:30s}
         resource-attributes:
           service.name: ${OBSERVABILITY_SERVICE_NAME:car-reselling-api}
+
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
