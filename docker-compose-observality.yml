@@ -5,8 +5,7 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - default
-      - car-reselling-net
+      - icontainer-network
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
@@ -20,8 +19,7 @@ services:
     ports:
       - "3100:3100"
     networks:
-      - default
-      - car-reselling-net
+      - icontainer-network
     command: ["-config.file=/etc/loki/local-config.yaml"]
     user: "0"  # run as root so bind-mount dirs are writable
     volumes:
@@ -36,8 +34,7 @@ services:
       - "4319:4317"   # OTLP gRPC exposed to host (optional, for direct pushes)
       - "4320:4318"   # OTLP HTTP exposed to host (optional)
     networks:
-      - default
-      - car-reselling-net
+      - icontainer-network
     command: ["-config.file=/etc/tempo/config.yml"]
     user: "0"  # run as root so bind-mount dirs are writable
     volumes:
@@ -50,8 +47,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - default
-      - car-reselling-net
+      - icontainer-network
     # --web.enable-remote-write-receiver lets Tempo's metrics-generator push span-metrics
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -73,8 +69,7 @@ services:
       - "8888:8888"  # Collector self-telemetry (scraped by Prometheus)
       - "8889:8889"  # Prometheus exporter for app metrics (scraped by Prometheus)
     networks:
-      - default
-      - car-reselling-net
+      - icontainer-network
     volumes:
       - ./otel-collector-config.yml:/etc/otelcol/config.yml:ro
     depends_on:
@@ -85,5 +80,5 @@ volumes:
   grafana-data:
 
 networks:
-  car-reselling-net:
+  icontainer-network:
     external: true   # shared with docker-compose.yml so the API can reach otel-collector / loki / tempo

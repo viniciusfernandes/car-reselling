@@ -11,6 +11,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      - car_reselling_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pcar"]
       interval: 10s
@@ -25,13 +27,10 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "8080:8080"
-    # So the container can reach the host (e.g. auth API running in IntelliJ on port 8081).
-    # Required on Linux; harmless on Docker Desktop (Mac/Windows).
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - default
-      - car-reselling-net
+      - car_reselling_network
     environment:
       CAR_RESELLING_DB_URL: ${CAR_RESELLING_DB_URL}
       CAR_RESELLING_DB_USERNAME: ${CAR_RESELLING_DB_USERNAME}
@@ -57,6 +56,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:80"
+    networks:
+      - car_reselling_network
     depends_on:
       - car-reselling-api
 
@@ -69,6 +70,8 @@ services:
     ports:
       - "8081:8080"   # app listens on container port 8080; exposed as 8081 on the host
       - "8000:8000"
+    networks:
+      - car_reselling_network
     depends_on:
       mysql:
         condition: service_healthy
@@ -91,5 +94,5 @@ volumes:
   mysql-data:
 
 networks:
-  car-reselling-net:
-    external: true   # shared with docker-compose-observality.yml so the API can reach otel-collector / loki / tempo
+  car_reselling_network:
+    name: icontainer-network
