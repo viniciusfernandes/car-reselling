@@ -53,6 +53,10 @@ dependencies {
     implementation 'com.github.loki4j:loki-logback-appender:1.5.2'
 
 
+    // Lombok – compile-time code generation (@Slf4j, @Data, etc.)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
     // MySQL driver
     runtimeOnly 'com.mysql:mysql-connector-j'
 
