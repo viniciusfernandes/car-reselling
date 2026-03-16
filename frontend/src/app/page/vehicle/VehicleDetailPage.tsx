@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   api,
@@ -72,6 +72,7 @@ const formatMoneyValue = (value: string) => {
 export default function VehicleDetailPage() {
   const { t, i18n } = useTranslation();
   const { vehicleId } = useParams();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [vehicle, setVehicle] = useState<VehicleDetail | null>(null);
@@ -125,6 +126,8 @@ export default function VehicleDetailPage() {
   const [partnerId, setPartnerId] = useState("");
   const [statusTarget, setStatusTarget] = useState<VehicleStatus>("IN_LOT");
   const [sellingPrice, setSellingPrice] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isDistributed = vehicle?.status === "DISTRIBUTED";
   const tabLabels: Record<TabKey, string> = {
@@ -652,6 +655,20 @@ export default function VehicleDetailPage() {
     );
   }
 
+  const handleDeleteConfirm = async () => {
+    if (!vehicleId) return;
+    try {
+      setDeleting(true);
+      await api.delete(`/vehicles/${vehicleId}`);
+      showToast(t("vehicles.delete.success"), "success");
+      navigate("/vehicles");
+    } catch (error) {
+      showToast(extractErrorMessage(error), "error");
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -665,17 +682,66 @@ export default function VehicleDetailPage() {
             })}
           </p>
         </div>
-        <div className="text-right text-sm text-slate-500">
-          <div>
-            {t("vehicleDetail.servicesTotal", {
-              value: formatMoney(servicesTotal),
-            })}
+        <div className="flex items-center gap-4">
+          <div className="text-right text-sm text-slate-500">
+            <div>
+              {t("vehicleDetail.servicesTotal", {
+                value: formatMoney(servicesTotal),
+              })}
+            </div>
+            <div>
+              {t("vehicleDetail.totalCost", { value: formatMoney(vehicle.totalCost) })}
+            </div>
           </div>
-          <div>
-            {t("vehicleDetail.totalCost", { value: formatMoney(vehicle.totalCost) })}
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+          >
+            {t("vehicles.delete.button")}
+          </button>
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => !deleting && setShowDeleteModal(false)}
+          />
+          <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-800">
+              {t("vehicles.delete.confirmTitle")}
+            </h3>
+            <p className="mt-3 text-sm text-slate-600">
+              {t("vehicles.delete.confirmMessage", {
+                plate: vehicle.licensePlate,
+              })}
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setShowDeleteModal(false)}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {t("actions.cancel")}
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleDeleteConfirm}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting
+                  ? t("vehicles.delete.deleting")
+                  : t("vehicles.delete.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex gap-2 border-b border-slate-200">
         {(["overview", "services", "documents", "distribution", "taxes"] as TabKey[]).map(

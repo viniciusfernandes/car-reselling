@@ -89,7 +89,16 @@
       "servicesTotal": "Total de serviços",
       "totalCost": "Custo total",
       "partner": "Parceiro",
-      "yardTime": "Tempo pátio"
+      "yardTime": "Tempo pátio",
+      "actions": "Ações"
+    },
+    "delete": {
+      "button": "Excluir",
+      "confirmTitle": "Excluir veículo",
+      "confirmMessage": "Tem certeza que deseja excluir permanentemente o veículo {{plate}}? Todos os documentos e registros de serviço associados também serão removidos. Esta ação não pode ser desfeita.",
+      "confirm": "Sim, excluir",
+      "deleting": "Excluindo...",
+      "success": "Veículo excluído com sucesso."
     }
   },
   "newVehicle": {

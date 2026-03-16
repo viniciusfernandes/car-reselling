@@ -89,7 +89,16 @@
       "servicesTotal": "Services total",
       "totalCost": "Total cost",
       "partner": "Assigned partner",
-      "yardTime": "Yard time"
+      "yardTime": "Yard time",
+      "actions": "Actions"
+    },
+    "delete": {
+      "button": "Delete",
+      "confirmTitle": "Delete vehicle",
+      "confirmMessage": "Are you sure you want to permanently delete vehicle {{plate}}? All associated documents and service records will also be removed. This action cannot be undone.",
+      "confirm": "Yes, delete",
+      "deleting": "Deleting...",
+      "success": "Vehicle deleted successfully."
     }
   },
   "newVehicle": {

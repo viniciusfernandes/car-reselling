@@ -48,4 +48,6 @@ public interface IVehicleService {
     void transitionStatus(UUID vehicleId, VehicleStatus targetStatus, UUID assignedPartnerId);
 
     void assignPartner(UUID vehicleId, UUID partnerId);
+
+    void deleteVehicle(UUID vehicleId);
 }

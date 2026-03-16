@@ -7,19 +7,15 @@ import br.com.carreselling.application.service.model.VehicleTaxes;
 import br.com.carreselling.domain.exception.ConflictException;
 import br.com.carreselling.domain.exception.InvalidStateException;
 import br.com.carreselling.domain.exception.NotFoundException;
-import br.com.carreselling.domain.model.Brand;
-import br.com.carreselling.domain.model.Color;
-import br.com.carreselling.domain.model.Partner;
-import br.com.carreselling.domain.model.SupplierSource;
-import br.com.carreselling.domain.model.Vehicle;
-import br.com.carreselling.domain.model.VehicleModel;
-import br.com.carreselling.domain.model.VehicleStatus;
+import br.com.carreselling.domain.model.*;
 import br.com.carreselling.domain.repository.BrandRepository;
 import br.com.carreselling.domain.repository.ColorRepository;
 import br.com.carreselling.domain.repository.DocumentRepository;
 import br.com.carreselling.domain.repository.PartnerRepository;
+import br.com.carreselling.domain.repository.ServiceRepository;
 import br.com.carreselling.domain.repository.VehicleModelRepository;
 import br.com.carreselling.domain.repository.VehicleRepository;
+import br.com.carreselling.infrastructure.storage.DocumentStorage;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -28,9 +24,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
 public class VehicleService implements IVehicleService {
 
@@ -38,6 +37,8 @@ public class VehicleService implements IVehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final DocumentRepository documentRepository;
+    private final DocumentStorage documentStorage;
+    private final ServiceRepository serviceRepository;
     private final PartnerRepository partnerRepository;
     private final BrandRepository brandRepository;
     private final ColorRepository colorRepository;
@@ -46,6 +47,8 @@ public class VehicleService implements IVehicleService {
 
     public VehicleService(VehicleRepository vehicleRepository,
                           DocumentRepository documentRepository,
+                          DocumentStorage documentStorage,
+                          ServiceRepository serviceRepository,
                           PartnerRepository partnerRepository,
                           BrandRepository brandRepository,
                           ColorRepository colorRepository,
@@ -53,6 +56,8 @@ public class VehicleService implements IVehicleService {
                           VehicleSalesCalculator salesCalculator) {
         this.vehicleRepository = vehicleRepository;
         this.documentRepository = documentRepository;
+        this.documentStorage = documentStorage;
+        this.serviceRepository = serviceRepository;
         this.partnerRepository = partnerRepository;
         this.brandRepository = brandRepository;
         this.colorRepository = colorRepository;
@@ -394,6 +399,34 @@ public class VehicleService implements IVehicleService {
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
         vehicleRepository.updateVehicle(vehicle);
+    }
+
+    @Override
+    @Transactional
+    public void deleteVehicle(UUID vehicleId) {
+        vehicleRepository.findVehicleById(vehicleId)
+                .orElseThrow(() -> new NotFoundException("Vehicle not found"));
+
+        var documents = documentRepository.findDocumentByVehicleId(vehicleId);
+
+        for (var doc : documents) {
+            deleteDocumentSafely(vehicleId, doc);
+            documentRepository.deleteDocument(doc.getId());
+        }
+
+        serviceRepository.findServiceByVehicleId(vehicleId)
+                .forEach(service -> serviceRepository.deleteService(service.getId()));
+
+        vehicleRepository.deleteVehicle(vehicleId);
+    }
+
+    private void deleteDocumentSafely(UUID vehicleId, Document doc) {
+        try {
+            documentStorage.delete(doc.getStorageKey());
+        } catch (Exception e) {
+            log.warn("Storage object not found while deleting document.vehicleId={} documentId={}, storageKey={}",
+                    vehicleId, doc.getId(), doc.getStorageKey());
+        }
     }
 
     private Brand resolveBrand(String brand, Instant now) {
