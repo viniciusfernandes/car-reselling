@@ -6,7 +6,8 @@ plugins {
 }
 
 group = 'br.com.carreselling'
-version = '1.5'
+// Version can be overridden from the command line: ./gradlew clean build -PprojectVersion=2.0
+version = findProperty('projectVersion') ?: 'change-me-to-new-version'
 
 java {
     toolchain {

@@ -12,6 +12,7 @@ End-to-end MVP for a used car reseller in Brazil. The application includes a Jav
 - [Environment Variables](#environment-variables)
 - [Database](#database)
 - [Build & Run](#build--run)
+- [Building the Backend JAR](#building-the-backend-jar)
 - [Production Stack](#production-stack)
 - [CI/CD with Jenkins](#cicd-with-jenkins)
 - [Observability](#observability)
@@ -518,6 +519,69 @@ source ./load-env.sh --unset-session
 
 > **Shell compatibility**: requires **Bash 4+** or **Zsh**.  
 > On macOS the system `/bin/bash` is 3.x — install a newer Bash (`brew install bash`) or use Zsh (`zsh`), both are supported.
+
+---
+
+## Building the Backend JAR
+
+The `build-api.sh` script wraps `./gradlew clean build` and lets you stamp a specific version onto the JAR from the command line without editing `build.gradle`.
+
+### Usage
+
+```bash
+./build-api.sh [OPTIONS] [VERSION]
+```
+
+| Argument / Option | Description |
+|---|---|
+| `VERSION` | Semantic version string (e.g. `1.8` or `2.0.1`). Omit to use the default declared in `build.gradle`. |
+| `-s`, `--skip-tests` | Skip the test phase (passes `-x test` to Gradle). |
+| `-h`, `--help` | Print usage information and exit. |
+
+### Examples
+
+```bash
+# Build with the default version defined in build.gradle
+./build-api.sh
+
+# Build and stamp the JAR as car-reselling-api-1.8.jar
+./build-api.sh 1.8
+
+# Build version 1.8 without running tests
+./build-api.sh --skip-tests 1.8
+./build-api.sh -s 1.8
+
+# Print help
+./build-api.sh --help
+```
+
+### Output
+
+A successful build prints:
+
+```
+==============================================
+  Build successful!
+  Artifact : backend/build/libs/car-reselling-api-1.8.jar
+  Size     : 69M
+==============================================
+```
+
+The JAR is placed at:
+
+```
+backend/build/libs/car-reselling-api-<VERSION>.jar
+```
+
+### How versioning works
+
+`build.gradle` reads the version from the Gradle property `projectVersion` when it is supplied, and falls back to its hardcoded default otherwise:
+
+```groovy
+version = findProperty('projectVersion') ?: '1.6'
+```
+
+The script passes `-PprojectVersion=<VERSION>` to Gradle when a version argument is given, so the JAR name, the `bootJar` manifest, and the Spring Boot `/actuator/info` endpoint all reflect the version you specified.
 
 ---
 
@@ -1053,6 +1117,20 @@ cd backend && ./gradlew bootRun
 
 # Frontend
 cd frontend && npm install && npm run dev
+
+# ── Build backend JAR ────────────────────────────────────────────────────────
+
+# Build with the default version from build.gradle
+./build-api.sh
+
+# Build and stamp a specific version
+./build-api.sh 1.8
+
+# Build a specific version, skipping tests
+./build-api.sh --skip-tests 1.8
+
+# Show all options
+./build-api.sh --help
 
 # ── Logs & cleanup ───────────────────────────────────────────────────────────
 
