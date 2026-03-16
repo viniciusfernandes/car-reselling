@@ -249,6 +249,9 @@ public class VehicleService implements IVehicleService {
 
     @Override
     public List<VehicleSummary> listVehicles(VehicleStatus status, String query, int page, int size) {
+        if (size > 20) {
+            size = 20;
+        }
         int offset = Math.max(page, 0) * Math.max(size, 1);
         List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(status, query, offset, size);
         return vehicles.stream()
