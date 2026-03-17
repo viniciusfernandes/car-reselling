@@ -16,6 +16,7 @@ End-to-end MVP for a used car reseller in Brazil. The application includes a Jav
 - [Production Stack](#production-stack)
 - [CI/CD with Jenkins](#cicd-with-jenkins)
 - [Observability](#observability)
+- [Kubernetes](#kubernetes)
 - [API Documentation](#api-documentation)
 - [Debugging](#debugging)
 - [Common Troubleshooting](#common-troubleshooting)
@@ -293,6 +294,14 @@ List running containers with a clean summary:
 ```
 docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}"
 ```
+
+Checking all docker image size:
+```
+docker images --format='{{.Repository}}:{{.Tag}}\t{{.Size}}'
+```
+
+# Replace <image_name> with the repository:tag or Image ID
+
 
 ### Option B — Local development
 
@@ -1005,6 +1014,246 @@ jvm_memory_used_bytes{area="heap", job="car-reselling-api"}
 
 ---
 
+## Kubernetes
+
+The `kubernetes/` folder contains everything needed to run the application on a Kubernetes cluster using **kind** (local) or any cloud-managed Kubernetes provider (EKS, GKE, AKS).
+
+```
+kubernetes/
+├── create-cluster.yml               # kind cluster definition (1 control-plane + 2 workers)
+├── car-reselling-api-deployment.yml # Full production manifest (Deployment, Service, Ingress, HPA, PDB)
+└── car-reselling-api.yml            # Minimal standalone Pod (quick testing only)
+```
+
+> For a full description of every resource in `car-reselling-api-deployment.yml` see the comments at the top of that file.
+
+---
+
+### Prerequisites
+
+| Tool | Purpose | Install |
+|---|---|---|
+| `kubectl` | Kubernetes CLI | [docs.kubernetes.io](https://kubernetes.io/docs/tasks/tools/) |
+| `kind` | Local cluster in Docker | `go install sigs.k8s.io/kind@latest` or [kind.sigs.k8s.io](https://kind.sigs.k8s.io/docs/user/quick-start/) |
+| `helm` | Package manager for k8s add-ons | [helm.sh](https://helm.sh/docs/intro/install/) |
+
+Verify your tools:
+
+```bash
+kubectl version --client
+kind version
+helm version
+```
+
+---
+
+### 1. Create the local cluster
+
+The cluster definition is in `kubernetes/create-cluster.yml`. It creates one control-plane node and two worker nodes (all as Docker containers via kind):
+
+```bash
+kind create cluster \
+  --config kubernetes/create-cluster.yml \
+  --name car-reselling
+```
+
+Verify the nodes are ready:
+
+```bash
+kubectl get nodes
+# NAME                          STATUS   ROLES           AGE
+# car-reselling-control-plane   Ready    control-plane   30s
+# car-reselling-worker          Ready    <none>          20s
+# car-reselling-worker2         Ready    <none>          20s
+```
+
+> **Node autoscaling (1 → 3 nodes)**  
+> kind does not autoscale nodes dynamically. To change the number of worker nodes, edit `kubernetes/create-cluster.yml`, delete the cluster, and re-create it.  
+> On cloud providers (EKS / GKE / AKS) configure Cluster Autoscaler with `minCount=1` and `maxCount=3` on your node pool — no YAML change is needed.
+
+---
+
+### 2. Load the local Docker image into the cluster
+
+kind runs its own internal registry. If you built the image locally (not pushed to DockerHub yet), load it so the cluster can pull it:
+
+```bash
+kind load docker-image viniciussf/car-reselling-api:latest \
+  --name car-reselling
+```
+
+> Skip this step if the image is already available on DockerHub and the cluster has internet access.
+
+---
+
+### 3. Install cluster add-ons (once per cluster)
+
+The deployment manifest requires two add-ons: **NGINX Ingress Controller** (for EWMA load balancing) and **Prometheus stack + Prometheus Adapter** (for the custom latency-based HPA metric).
+
+```bash
+# ── Add Helm repos ───────────────────────────────────────────────
+helm repo add ingress-nginx      https://kubernetes.github.io/ingress-nginx
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# ── NGINX Ingress Controller ─────────────────────────────────────
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace
+
+# ── Prometheus + Grafana + Alertmanager (kube-prometheus-stack) ──
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace
+
+# ── Prometheus Adapter (exposes custom metrics to HPA) ───────────
+helm install prometheus-adapter prometheus-community/prometheus-adapter \
+  --namespace monitoring \
+  --set prometheus.url=http://prometheus-operated.monitoring.svc
+```
+
+Wait for all pods to be running before proceeding:
+
+```bash
+kubectl get pods -n ingress-nginx
+kubectl get pods -n monitoring
+```
+
+---
+
+### 4. Apply the custom metric rule for the HPA
+
+The `car-reselling-api-deployment.yml` file includes a `ConfigMap` for Prometheus Adapter at the bottom. Apply it and restart the adapter so the `http_slow_request_ratio` metric becomes available to the HPA:
+
+```bash
+# Apply the rules ConfigMap (already included in the main manifest, but
+# it targets the "monitoring" namespace so apply the whole file once)
+kubectl apply -f kubernetes/car-reselling-api-deployment.yml
+
+# Restart Prometheus Adapter to load the new rule
+kubectl rollout restart deployment/prometheus-adapter -n monitoring
+
+# Verify the custom metric is registered
+kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1" | \
+  python3 -m json.tool | grep http_slow_request_ratio
+```
+
+---
+
+### 5. Deploy car-reselling-api
+
+```bash
+kubectl apply -f kubernetes/car-reselling-api-deployment.yml
+```
+
+This creates the following resources in the `development` namespace:
+
+| Resource | Name | Purpose |
+|---|---|---|
+| `Deployment` | `car-reselling-api` | Runs the API container |
+| `Service` | `car-reselling-api` | ClusterIP — internal routing |
+| `Ingress` | `car-reselling-api-ingress` | External entry-point (NGINX EWMA) |
+| `HorizontalPodAutoscaler` | `car-reselling-api-hpa` | Scales pods 1 → 3 on CPU or latency |
+| `PodDisruptionBudget` | `car-reselling-api-pdb` | Keeps ≥ 1 pod during disruptions |
+| `ConfigMap` | `prometheus-adapter-rules` | Custom metric rule for the HPA |
+
+---
+
+### 6. Verify the deployment
+
+```bash
+# Overall status
+kubectl get all -n development
+
+# Watch pods come up
+kubectl get pods -n development -w
+
+# Describe a pod (events, image pull status, probe results)
+kubectl describe pod -l app=car-reselling-api -n development
+
+# Check HPA targets (CPU % and custom metric value)
+kubectl get hpa -n development
+kubectl describe hpa car-reselling-api-hpa -n development
+```
+
+---
+
+### 7. Access the API locally (port-forward)
+
+kind does not provision a real LoadBalancer, so use port-forward to reach the service from your machine:
+
+```bash
+# Forward local port 8080 to the service
+kubectl port-forward svc/car-reselling-api 8080:80 -n development
+```
+
+Then open `http://localhost:8080/api/v1/vehicles` in your browser or via curl.
+
+---
+
+### Useful kubectl commands
+
+```bash
+# ── Cluster & nodes ──────────────────────────────────────────────
+kubectl cluster-info
+kubectl get nodes -o wide
+
+# ── Namespace overview ───────────────────────────────────────────
+kubectl get all -n development
+
+# ── Pods ─────────────────────────────────────────────────────────
+kubectl get pods -n development
+kubectl get pods -n development -o wide       # show which node each pod is on
+kubectl get pods -n development -w            # live watch
+kubectl describe pod <pod-name> -n development
+kubectl logs -f <pod-name> -n development     # stream logs
+kubectl logs <pod-name> -n development --previous  # logs from crashed pod
+kubectl exec -it <pod-name> -n development -- bash  # shell into a pod
+
+# ── Deployments ──────────────────────────────────────────────────
+kubectl get deployments -n development
+kubectl rollout status deployment/car-reselling-api -n development
+kubectl rollout history deployment/car-reselling-api -n development
+kubectl rollout undo deployment/car-reselling-api -n development   # rollback
+
+# ── Scaling (manual override — HPA will re-take control) ─────────
+kubectl scale deployment car-reselling-api --replicas=2 -n development
+
+# ── HPA ──────────────────────────────────────────────────────────
+kubectl get hpa -n development
+kubectl describe hpa car-reselling-api-hpa -n development
+
+# ── Services & Ingress ───────────────────────────────────────────
+kubectl get svc -n development
+kubectl get ingress -n development
+
+# ── Apply / delete the full manifest ────────────────────────────
+kubectl apply  -f kubernetes/car-reselling-api-deployment.yml
+kubectl delete -f kubernetes/car-reselling-api-deployment.yml
+
+# ── kind cluster management ──────────────────────────────────────
+kind create cluster --config kubernetes/create-cluster.yml --name car-reselling
+kind get clusters
+kind delete cluster --name car-reselling
+kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
+```
+
+> A full general-purpose cheatsheet is also available at `kubernetes/kubernetes-kind-cheatsheet.md`.
+
+---
+
+### Tear down
+
+```bash
+# Remove all car-reselling resources (keeps the cluster and add-ons)
+kubectl delete -f kubernetes/car-reselling-api-deployment.yml
+
+# Delete the entire local cluster
+kind delete cluster --name car-reselling
+```
+
+---
+
 ## API Documentation
 
 Springdoc OpenAPI UI:
@@ -1141,6 +1390,38 @@ docker logs -f otel-collector
 # Stop everything and remove containers
 docker compose down
 docker compose -f docker-compose-prod.yml down
+
+# ── Kubernetes ────────────────────────────────────────────────────────────────
+
+# Create local kind cluster (1 control-plane + 2 workers)
+kind create cluster --config kubernetes/create-cluster.yml --name car-reselling
+
+# Load a locally-built image into the kind cluster
+kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
+
+# Deploy all resources (Deployment, Service, Ingress, HPA, PDB)
+kubectl apply -f kubernetes/car-reselling-api-deployment.yml
+
+# Watch pods start
+kubectl get pods -n development -w
+
+# Check HPA scaling activity
+kubectl describe hpa car-reselling-api-hpa -n development
+
+# Access the API from your machine (kind has no real LoadBalancer)
+kubectl port-forward svc/car-reselling-api 8080:80 -n development
+
+# Stream pod logs
+kubectl logs -f -l app=car-reselling-api -n development
+
+# Rollback to the previous image version
+kubectl rollout undo deployment/car-reselling-api -n development
+
+# Remove all car-reselling resources (keeps cluster and add-ons)
+kubectl delete -f kubernetes/car-reselling-api-deployment.yml
+
+# Destroy the local cluster entirely
+kind delete cluster --name car-reselling
 ```
 
 ---

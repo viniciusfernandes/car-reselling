@@ -1,0 +1,57 @@
+# ============================================================
+# Kind single-node cluster for the observability stack
+# ============================================================
+# Cluster name: grafana  (one control-plane node only)
+#
+# extraPortMappings bind the NodePort services defined in
+# observality-deployment.yml directly to your localhost so
+# you can open Grafana, Prometheus, etc. in your browser
+# without any kubectl port-forward.
+#
+# Usage:
+#   kind create cluster \
+#     --config kubernetes/observality-cluster.yml \
+#     --name grafana
+#
+# Switch kubectl context after creation:
+#   kubectl config use-context kind-grafana
+# ============================================================
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # Grafana UI
+      - containerPort: 30000
+        hostPort: 3000
+        protocol: TCP
+      # Prometheus UI
+      - containerPort: 30090
+        hostPort: 9090
+        protocol: TCP
+      # Loki push / query API
+      - containerPort: 30100
+        hostPort: 3100
+        protocol: TCP
+      # Tempo query API
+      - containerPort: 30200
+        hostPort: 3200
+        protocol: TCP
+      # OTel Collector — OTLP gRPC (telemetry ingestion from apps)
+      - containerPort: 30317
+        hostPort: 4317
+        protocol: TCP
+      # OTel Collector — OTLP HTTP
+      - containerPort: 30318
+        hostPort: 4318
+        protocol: TCP
+      # OTel Collector — self-telemetry (Prometheus scrapes this)
+      - containerPort: 30888
+        hostPort: 8888
+        protocol: TCP
+      # OTel Collector — Prometheus app-metrics exporter
+      - containerPort: 30889
+        hostPort: 8889
+        protocol: TCP

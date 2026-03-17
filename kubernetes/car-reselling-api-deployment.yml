@@ -1,0 +1,465 @@
+# ============================================================
+# car-reselling-api — Kubernetes Deployment Manifests
+# ============================================================
+#
+# Resources defined here (in order):
+#   1.  Namespace
+#   2.  ConfigMap          – non-sensitive env vars for the API
+#   3.  Secret             – sensitive env vars for the API (DB creds)
+#   4.  MySQL PVC          – persistent storage for MySQL data
+#   5.  MySQL Secret       – MySQL root password and user credentials
+#   6.  MySQL Deployment   – runs the MySQL 8 container
+#   7.  MySQL Service      – ClusterIP so the API can reach MySQL by name
+#   8.  Deployment         – runs the API container
+#   9.  Service            – ClusterIP, internal routing
+#   10. Ingress            – external entry-point via NGINX
+#                            with EWMA load-balancing (most-available pod)
+#   11. HorizontalPodAutoscaler (HPA) – scales 1 → 3 pods on:
+#        • CPU utilisation  ≥ 3 %
+#        • Slow-request ratio > 11 % (requests taking > 300 ms)
+#   12. PodDisruptionBudget – at least 1 pod always available
+#   13. PrometheusAdapter ConfigMap – exposes the custom
+#        "http_slow_request_ratio" metric that HPA trigger #2 consumes
+#
+# ── Credentials ─────────────────────────────────────────────────
+#   The Secret below uses stringData with placeholder values.
+#   Before applying in production replace them or use:
+#     kubectl create secret generic car-reselling-api-secret \
+#       --from-literal=CAR_RESELLING_DB_PASSWORD=<real-pw> ...
+#     kubectl create secret generic mysql-secret \
+#       --from-literal=MYSQL_ROOT_PASSWORD=<real-pw> ...
+#
+# ── Node autoscaling (1 → 3 worker nodes) ───────────────────────
+#   Cloud (EKS / GKE / AKS):  enable Cluster Autoscaler on the node
+#     pool and set minCount=1, maxCount=3.
+#   Local (kind):  kind does not support node autoscaling; adjust
+#     the node list in create-cluster.yml and re-create the cluster:
+#       kind delete cluster && kind create cluster --config create-cluster.yml
+#
+# ── Prerequisites (install once per cluster) ────────────────────
+#   # NGINX Ingress Controller
+#   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+#   helm install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace
+#
+#   # Prometheus stack  (provides metrics scraping)
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace
+#
+#   # Prometheus Adapter  (bridges Prometheus metrics → k8s custom-metrics API)
+#   helm install prometheus-adapter prometheus-community/prometheus-adapter \
+#        -n monitoring \
+#        --set prometheus.url=http://prometheus-operated.monitoring.svc \
+#        -f <(kubectl get cm prometheus-adapter-rules -n monitoring -o jsonpath='{.data.config\.yaml}')
+#
+# ── Apply ────────────────────────────────────────────────────────
+#   kubectl apply -f car-reselling-api-deployment.yml
+# ============================================================
+
+---
+# ── 1. Namespace ──────────────────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+
+---
+# ── 2. ConfigMap — non-sensitive environment variables ────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: car-reselling-api-config
+  namespace: development
+data:
+  # Loki URL used by logback-spring.xml (loki4j appender)
+  LOKI_URL: "http://loki:3100"
+  # Auth service URL; change to the actual service name if auth-api runs in the cluster
+  AUTH_BASE_URL: "http://authentication-api:8081"
+  CORS_ALLOWED_ORIGIN_PATTERNS: "*"
+  STORAGE_BASE_PATH: "/storage/vehicles"
+  # Observability — keep metrics disabled until an OTel Collector runs in the cluster
+  OTLP_METRICS_ENABLED: "false"
+  OTLP_METRICS_URL: "http://otel-collector:4318/v1/metrics"
+  SWAGGER_ENABLED: "false"
+
+---
+# ── 3. Secret — sensitive environment variables ───────────────────
+# Replace the stringData values before applying in production,
+# or pre-create the secret with kubectl and remove this resource.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: car-reselling-api-secret
+  namespace: development
+type: Opaque
+stringData:
+  CAR_RESELLING_DB_URL: "jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+  CAR_RESELLING_DB_USERNAME: "car"
+  CAR_RESELLING_DB_PASSWORD: "car"
+
+---
+# ── 4. MySQL PersistentVolumeClaim ────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: development
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# ── 5. MySQL Secret ───────────────────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: development
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: "root"
+  MYSQL_DATABASE: "car_reselling"
+  MYSQL_USER: "car"
+  MYSQL_PASSWORD: "car"
+
+---
+# ── 6. MySQL Deployment ───────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: development
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          envFrom:
+            - secretRef:
+                name: mysql-secret
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+
+---
+# ── 7. MySQL Service ──────────────────────────────────────────────
+# The API connects to MySQL using the hostname "mysql" (this service name).
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: development
+  labels:
+    app: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - name: mysql
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+# ── 8. Deployment ─────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: car-reselling-api
+  namespace: development
+  labels:
+    app: car-reselling-api
+spec:
+  # The HPA below manages the replica count at runtime.
+  # This value is the initial replica count and is overridden by HPA.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: car-reselling-api
+  template:
+    metadata:
+      labels:
+        app: car-reselling-api
+      annotations:
+        # Prometheus scrape annotations — Micrometer exposes /actuator/prometheus
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8080"
+        prometheus.io/path:   "/actuator/prometheus"
+    spec:
+      # ── Spread pods evenly across nodes ──────────────────────────
+      # Ensures each worker node hosts at most one pod when cluster
+      # has 3 nodes. If fewer nodes are available the scheduler will
+      # still place pods (ScheduleAnyway prevents hard blocking).
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: car-reselling-api
+
+      containers:
+        - name: car-reselling-api
+          image: viniciussf/car-reselling-api:latest
+          # IfNotPresent: uses the image already loaded into the node
+          # (via `kind load docker-image`). Change to Always when
+          # deploying to a cloud cluster that pulls from DockerHub.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+
+          # ── Environment variables ─────────────────────────────────
+          # Non-sensitive values come from the ConfigMap; DB credentials
+          # come from the Secret. Both are defined earlier in this file.
+          envFrom:
+            - configMapRef:
+                name: car-reselling-api-config
+            - secretRef:
+                name: car-reselling-api-secret
+
+          # ── Resource quotas ──────────────────────────────────────
+          # CPU *request* is the denominator HPA uses to compute
+          # utilisation percentage. Without it, CPU-based HPA is disabled.
+          resources:
+            requests:
+              cpu: "250m"     # baseline: 0.25 vCPU
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"    # max: 1 vCPU
+              memory: "1Gi"
+
+          # ── Health probes ─────────────────────────────────────────
+          # Spring Boot Actuator exposes /actuator/health/readiness
+          # and /actuator/health/liveness out of the box.
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 5
+
+---
+# ── 9. Service (ClusterIP) ────────────────────────────────────────
+# Internal routing layer; the Ingress below is the external entry-point.
+apiVersion: v1
+kind: Service
+metadata:
+  name: car-reselling-api
+  namespace: development
+  labels:
+    app: car-reselling-api
+spec:
+  selector:
+    app: car-reselling-api
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+
+---
+# ── 10. Ingress — NGINX with EWMA load balancing ──────────────────
+# EWMA (Exponentially Weighted Moving Average) routes each new
+# request to the upstream with the lowest estimated response time,
+# effectively choosing the "most available" pod at that moment.
+# This is more sophisticated than round-robin because it
+# continuously adapts based on observed pod performance.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: car-reselling-api-ingress
+  namespace: development
+  annotations:
+    # EWMA load balancing — picks the pod with best recent response time
+    nginx.ingress.kubernetes.io/load-balance: "ewma"
+    # Connection and request timeouts aligned with the 300 ms SLO
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout:    "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout:    "60"
+    # Enable access logs for latency observability
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: car-reselling-api
+                port:
+                  number: 80
+
+---
+# ── 11. HorizontalPodAutoscaler ───────────────────────────────────
+# Keeps pod count between 1 and 3.
+# Scale-OUT triggers (either condition is sufficient):
+#   ① CPU utilisation across all pods reaches 3 %
+#   ② Average slow-request ratio across pods reaches 0.11 (11 %)
+#      where a "slow request" is one that took more than 300 ms
+#
+# The custom metric "http_slow_request_ratio" must be provided by
+# the Prometheus Adapter — see the ConfigMap at the bottom of this file.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: car-reselling-api-hpa
+  namespace: development
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: car-reselling-api
+
+  minReplicas: 1
+  maxReplicas: 3
+
+  metrics:
+    # ── Trigger 1: CPU utilisation ≥ 3 % ──────────────────────────
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 3   # % relative to resources.requests.cpu
+
+    # ── Trigger 2: >11 % of requests take longer than 300 ms ──────
+    # "110m" = 0.110 in Kubernetes milli-unit notation (ratio 0..1).
+    # HPA computes the average of http_slow_request_ratio across all
+    # pods; when it exceeds 0.11 a new pod is added.
+    - type: Pods
+      pods:
+        metric:
+          name: http_slow_request_ratio
+        target:
+          type: AverageValue
+          averageValue: "110m"   # 110m = 0.110 = 11 %
+
+  behavior:
+    scaleUp:
+      # React quickly: stabilise for 30 s before adding another pod
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 1            # add one pod at a time
+          periodSeconds: 60
+    scaleDown:
+      # Be conservative: wait 5 min of sustained low load before removing a pod
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1            # remove one pod at a time
+          periodSeconds: 120
+
+---
+# ── 12. PodDisruptionBudget ───────────────────────────────────────
+# Guarantees at least 1 pod stays Running during voluntary disruptions
+# (rolling updates, node drains, etc.).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: car-reselling-api-pdb
+  namespace: development
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: car-reselling-api
+
+---
+# ── 7. Prometheus Adapter — custom metric rule ─────────────────────
+# Instructs prometheus-adapter to expose "http_slow_request_ratio"
+# on the k8s custom-metrics API so the HPA above can read it.
+#
+# The PromQL query computes the per-pod fraction of HTTP requests
+# that took MORE than 300 ms:
+#
+#   slow_ratio = 1 - (requests_within_300ms / total_requests)
+#
+#   where requests_within_300ms = rate(http_server_requests_seconds_bucket{le="0.3"}[2m])
+#         total_requests         = rate(http_server_requests_seconds_count[2m])
+#
+# When slow_ratio > 0.11 (11 %), HPA trigger #2 fires.
+#
+# ── How to apply ─────────────────────────────────────────────────
+# 1. Deploy this ConfigMap to the namespace where prometheus-adapter
+#    is installed (typically "monitoring"):
+#      kubectl apply -f car-reselling-api-deployment.yml
+# 2. Restart the adapter to pick up the new rule:
+#      kubectl rollout restart deployment/prometheus-adapter -n monitoring
+# 3. Verify the metric is available:
+#      kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1" | jq '.resources[].name'
+
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+#  name: prometheus-adapter-rules
+#  namespace: monitoring
+#data:
+#  config.yaml: |
+#    rules:
+#      # ── http_slow_request_ratio ─────────────────────────────────
+#      # Series: http_server_requests_seconds_bucket (Micrometer / Spring Boot)
+#      # Exposed per pod via /actuator/prometheus
+#      - seriesQuery: 'http_server_requests_seconds_bucket{namespace!="",pod!=""}'
+#        resources:
+#          overrides:
+#            namespace: { resource: namespace }
+#            pod:       { resource: pod }
+#        name:
+#          matches: "http_server_requests_seconds_bucket"
+#          as:      "http_slow_request_ratio"
+#        metricsQuery: |
+#          1 - (
+#            sum by (namespace, pod) (
+#              rate(http_server_requests_seconds_bucket{le="0.3",<<.LabelMatchers>>}[2m])
+#            )
+#            /
+#            sum by (namespace, pod) (
+#              rate(http_server_requests_seconds_count{<<.LabelMatchers>>}[2m])
+#            )
+#          )
