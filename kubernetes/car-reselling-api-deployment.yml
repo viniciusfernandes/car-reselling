@@ -43,13 +43,13 @@
 #
 #   # Prometheus stack  (provides metrics scraping)
 #   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-#   helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace
+#   helm install prometheus prometheus-community/kube-prometheus-stack -n car-reselling --create-namespace
 #
 #   # Prometheus Adapter  (bridges Prometheus metrics → k8s custom-metrics API)
 #   helm install prometheus-adapter prometheus-community/prometheus-adapter \
-#        -n monitoring \
-#        --set prometheus.url=http://prometheus-operated.monitoring.svc \
-#        -f <(kubectl get cm prometheus-adapter-rules -n monitoring -o jsonpath='{.data.config\.yaml}')
+#        -n car-reselling \
+#        --set prometheus.url=http://prometheus-operated.car-reselling.svc \
+#        -f <(kubectl get cm prometheus-adapter-rules -n car-reselling -o jsonpath='{.data.config\.yaml}')
 #
 # ── Apply ────────────────────────────────────────────────────────
 #   kubectl apply -f car-reselling-api-deployment.yml
@@ -70,19 +70,22 @@ metadata:
   name: car-reselling-api-config
   namespace: car-reselling
 data:
-  # Loki URL used by logback-spring.xml (loki4j appender).
-  # Must use the fully-qualified cross-namespace DNS name because Loki
-  # runs in the "observability" namespace, not in "car-reselling".
-  # Format: <service>.<namespace>.svc.cluster.local
-  LOKI_URL: "http://loki.observability.svc.cluster.local:3100"
+  # Loki and OTel Collector run in a SEPARATE Kind cluster ("grafana").
+  # Cross-cluster DNS (*.svc.cluster.local) does not work across Kind clusters.
+  # Both clusters share the same Docker bridge network, so pods reach the
+  # other cluster's services via the host gateway IP (172.22.0.1) and the
+  # hostPort values defined in observability-cluster.yml extraPortMappings.
+  #
+  # If the host gateway IP ever changes, run:
+  #   docker network inspect kind --format='{{range .IPAM.Config}}{{.Gateway}}{{end}}'
+  LOKI_URL: "http://172.22.0.1:3100"
   # Auth service URL; change to the actual service name if auth-api runs in the cluster
   AUTH_BASE_URL: "http://authentication-api:8081"
   CORS_ALLOWED_ORIGIN_PATTERNS: "*"
   STORAGE_BASE_PATH: "/storage/vehicles"
-  # Observability — OTel Collector also lives in the "observability" namespace,
-  # so the full cross-namespace DNS name is required here too.
+  # OTel Collector hostPort 4318 (HTTP) is mapped in car-reselling-cluster.yml
   OTLP_METRICS_ENABLED: "true"
-  OTLP_METRICS_URL: "http://otel-collector.observability.svc.cluster.local:4318/v1/metrics"
+  OTLP_METRICS_URL: "http://172.22.0.1:4318/v1/metrics"
   SWAGGER_ENABLED: "true"
 
 ---
@@ -304,8 +307,8 @@ spec:
 
 ---
 # ── 9. Service (NodePort) ─────────────────────────────────────────
-# nodePort: 8080 matches the extraPortMappings entry in
-# car-reselling-api-cluster.yml (containerPort: 8080 → hostPort: 8080).
+# nodePort: 30808 matches the extraPortMappings entry in
+# car-reselling-api-cluster.yml (containerPort: 30808 → hostPort: 8080).
 # This is what makes http://localhost:8080 work in Kind.
 # On a cloud cluster (EKS/GKE/AKS) switch back to ClusterIP and
 # re-enable the Ingress below for external traffic.
@@ -324,7 +327,7 @@ spec:
       protocol: TCP
       port: 8080
       targetPort: 8080
-      nodePort: 8080
+      nodePort: 30808
   type: NodePort
 
 ---
@@ -454,39 +457,38 @@ spec:
 #
 # ── How to apply ─────────────────────────────────────────────────
 # 1. Deploy this ConfigMap to the namespace where prometheus-adapter
-#    is installed (typically "monitoring"):
+#    is installed (typically "car-reselling"):
 #      kubectl apply -f car-reselling-api-deployment.yml
 # 2. Restart the adapter to pick up the new rule:
-#      kubectl rollout restart deployment/prometheus-adapter -n monitoring
+#      kubectl rollout restart deployment/prometheus-adapter -n car-reselling
 # 3. Verify the metric is available:
 #      kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1" | jq '.resources[].name'
-
-#apiVersion: v1
-#kind: ConfigMap
-#metadata:
-#  name: prometheus-adapter-rules
-#  namespace: monitoring
-#data:
-#  config.yaml: |
-#    rules:
-#      # ── http_slow_request_ratio ─────────────────────────────────
-#      # Series: http_server_requests_seconds_bucket (Micrometer / Spring Boot)
-#      # Exposed per pod via /actuator/prometheus
-#      - seriesQuery: 'http_server_requests_seconds_bucket{namespace!="",pod!=""}'
-#        resources:
-#          overrides:
-#            namespace: { resource: namespace }
-#            pod:       { resource: pod }
-#        name:
-#          matches: "http_server_requests_seconds_bucket"
-#          as:      "http_slow_request_ratio"
-#        metricsQuery: |
-#          1 - (
-#            sum by (namespace, pod) (
-#              rate(http_server_requests_seconds_bucket{le="0.3",<<.LabelMatchers>>}[2m])
-#            )
-#            /
-#            sum by (namespace, pod) (
-#              rate(http_server_requests_seconds_count{<<.LabelMatchers>>}[2m])
-#            )
-#          )
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-adapter-rules
+  namespace: car-reselling
+data:
+  config.yaml: |
+    rules:
+      # ── http_slow_request_ratio ─────────────────────────────────
+      # Series: http_server_requests_seconds_bucket (Micrometer / Spring Boot)
+      # Exposed per pod via /actuator/prometheus
+      - seriesQuery: 'http_server_requests_seconds_bucket{namespace!="",pod!=""}'
+        resources:
+          overrides:
+            namespace: { resource: namespace }
+            pod:       { resource: pod }
+        name:
+          matches: "http_server_requests_seconds_bucket"
+          as:      "http_slow_request_ratio"
+        metricsQuery: |
+          1 - (
+            sum by (namespace, pod) (
+              rate(http_server_requests_seconds_bucket{le="0.3",<<.LabelMatchers>>}[2m])
+            )
+            /
+            sum by (namespace, pod) (
+              rate(http_server_requests_seconds_count{<<.LabelMatchers>>}[2m])
+            )
+          )
