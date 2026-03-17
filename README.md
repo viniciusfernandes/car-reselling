@@ -1409,23 +1409,23 @@ kubectl apply -f kubernetes/car-reselling-api-deployment.yml -n car-reselling
 
 # Watch pods start
 kubectl get pods -n observability -w
-kubectl get pods -n car-reselling -w
 
 # Check HPA scaling activity
-kubectl describe hpa car-reselling-api-hpa -n development
+kubectl describe hpa car-reselling-api-hpa -n car-reselling
 
 # Access the API from your machine (kind has no real LoadBalancer)
 kubectl port-forward svc/car-reselling-api 8080:80 -n development
 
 # Stream pod logs
 kubectl logs -f -l app=grafana -n observability
-kubectl logs -f -l app=car-reselling-api -n car-reselling
+kubectl logs -f -l app=car-reselling-api -n car-reselling --tail=-1
 
 # Rollback to the previous image version
 kubectl rollout undo deployment/car-reselling-api -n development
 
 # Remove all car-reselling resources (keeps cluster and add-ons)
-kubectl delete -f kubernetes/car-reselling-api-deployment.yml
+kubectl delete -f kubernetes/observability-deployment.yml -n observability
+kubectl delete -f kubernetes/car-reselling-api-deployment.yml -n car-reselling
 
 # Destroy the local cluster entirely
 kind delete cluster --name observability
