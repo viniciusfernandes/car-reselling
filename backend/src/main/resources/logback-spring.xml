@@ -21,7 +21,7 @@
     -->
     <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
         <http>
-            <url>${LOKI_URL}/loki/api/v1/push</url>
+            <url>${LOKI_PUSH_URL}/loki/api/v1/push</url>
         </http>
         <format>
             <label>
