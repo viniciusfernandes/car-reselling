@@ -1394,16 +1394,19 @@ docker compose -f docker-compose-prod.yml down
 # ── Kubernetes ────────────────────────────────────────────────────────────────
 
 # Create local kind cluster (1 control-plane + 2 workers)
-kind create cluster --config kubernetes/create-cluster.yml --name car-reselling
+kind create cluster --config kubernetes/observability-cluster.yml --name observability
 
 # Load a locally-built image into the kind cluster
 kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
 
+# To list all clusters
+kubectl config get-clusters
+
 # Deploy all resources (Deployment, Service, Ingress, HPA, PDB)
-kubectl apply -f kubernetes/car-reselling-api-deployment.yml
+kubectl apply -f kubernetes/observability-deployment.yml -n observability
 
 # Watch pods start
-kubectl get pods -n development -w
+kubectl get pods -n observability -w
 
 # Check HPA scaling activity
 kubectl describe hpa car-reselling-api-hpa -n development
@@ -1412,7 +1415,7 @@ kubectl describe hpa car-reselling-api-hpa -n development
 kubectl port-forward svc/car-reselling-api 8080:80 -n development
 
 # Stream pod logs
-kubectl logs -f -l app=car-reselling-api -n development
+kubectl logs -f -l app=grafana -n observability
 
 # Rollback to the previous image version
 kubectl rollout undo deployment/car-reselling-api -n development
@@ -1421,7 +1424,7 @@ kubectl rollout undo deployment/car-reselling-api -n development
 kubectl delete -f kubernetes/car-reselling-api-deployment.yml
 
 # Destroy the local cluster entirely
-kind delete cluster --name car-reselling
+kind delete cluster --name observability
 ```
 
 ---

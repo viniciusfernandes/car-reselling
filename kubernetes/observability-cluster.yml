@@ -1,20 +1,20 @@
 # ============================================================
 # Kind single-node cluster for the observability stack
 # ============================================================
-# Cluster name: grafana  (one control-plane node only)
+# Cluster name: observability  (one control-plane node only)
 #
 # extraPortMappings bind the NodePort services defined in
-# observality-deployment.yml directly to your localhost so
-# you can open Grafana, Prometheus, etc. in your browser
+# observability-deployment.yml directly to your localhost so
+# you can open observability, Prometheus, etc. in your browser
 # without any kubectl port-forward.
 #
 # Usage:
 #   kind create cluster \
-#     --config kubernetes/observality-cluster.yml \
-#     --name grafana
+#     --config kubernetes/observability-cluster.yml \
+#     --name observability
 #
 # Switch kubectl context after creation:
-#   kubectl config use-context kind-grafana
+#   kubectl config use-context kind-observability
 # ============================================================
 
 kind: Cluster

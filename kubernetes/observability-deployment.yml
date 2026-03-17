@@ -45,7 +45,7 @@
 #
 #  1. Create cluster:
 #       kind create cluster \
-#         --config kubernetes/observality-cluster.yml \
+#         --config kubernetes/observability-cluster.yml \
 #         --name grafana
 #
 #  2. Pre-load images into the cluster nodes (avoids Docker Hub
@@ -57,7 +57,7 @@
 #       kind load docker-image otel/opentelemetry-collector-contrib:0.96.0 --name grafana
 #
 #  3. Deploy:
-#       kubectl apply -f kubernetes/observality-deployment.yml \
+#       kubectl apply -f kubernetes/observability-deployment.yml \
 #         --context kind-grafana
 #
 #  4. Watch pods come up:
@@ -326,7 +326,7 @@ data:
         type: tempo
         access: proxy
         url: http://tempo:3200
-        isDefault: true
+        isDefault: false
         editable: true
 
       - name: Prometheus
@@ -334,7 +334,7 @@ data:
         type: prometheus
         access: proxy
         url: http://prometheus:9090
-        isDefault: false
+        isDefault: true
         editable: true
 
 ---
@@ -791,6 +791,11 @@ spec:
               value: "admin"
             - name: GF_SECURITY_ADMIN_PASSWORD
               value: "admin"
+            # Pre-install plugins synchronously before provisioning runs.
+            # Without this, the background installer races against the
+            # provisioning phase and "plugin not installed" errors occur.
+            - name: GF_INSTALL_PLUGINS
+              value: "grafana-lokiexplore-app,grafana-exploretraces-app"
           resources:
             requests:
               cpu: "100m"
