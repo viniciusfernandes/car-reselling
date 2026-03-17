@@ -83,7 +83,7 @@ data:
   # so the full cross-namespace DNS name is required here too.
   OTLP_METRICS_ENABLED: "true"
   OTLP_METRICS_URL: "http://otel-collector.observability.svc.cluster.local:4318/v1/metrics"
-  SWAGGER_ENABLED: "false"
+  SWAGGER_ENABLED: "true"
 
 ---
 # ── 3. Secret — sensitive environment variables ───────────────────
@@ -234,6 +234,24 @@ spec:
             matchLabels:
               app: car-reselling-api
 
+      # Wait for MySQL to accept TCP connections before the API container
+      # starts. Without this, Spring Boot (Liquibase) fails immediately
+      # because MySQL is still initializing when the pod comes up.
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MySQL at mysql:3306..."
+              until nc -z mysql 3306; do
+                echo "MySQL not ready yet — retrying in 3s"
+                sleep 3
+              done
+              echo "MySQL is ready."
+
       containers:
         - name: car-reselling-api
           image: viniciussf/car-reselling-api:latest
@@ -285,8 +303,12 @@ spec:
             failureThreshold: 5
 
 ---
-# ── 9. Service (ClusterIP) ────────────────────────────────────────
-# Internal routing layer; the Ingress below is the external entry-point.
+# ── 9. Service (NodePort) ─────────────────────────────────────────
+# nodePort: 8080 matches the extraPortMappings entry in
+# car-reselling-api-cluster.yml (containerPort: 8080 → hostPort: 8080).
+# This is what makes http://localhost:8080 work in Kind.
+# On a cloud cluster (EKS/GKE/AKS) switch back to ClusterIP and
+# re-enable the Ingress below for external traffic.
 apiVersion: v1
 kind: Service
 metadata:
@@ -300,9 +322,10 @@ spec:
   ports:
     - name: http
       protocol: TCP
-      port: 80
+      port: 8080
       targetPort: 8080
-  type: ClusterIP
+      nodePort: 8080
+  type: NodePort
 
 ---
 # ── 10. Ingress — NGINX with EWMA load balancing ──────────────────
