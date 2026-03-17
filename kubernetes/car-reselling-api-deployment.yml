@@ -60,7 +60,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: development
+  name: car-reselling
 
 ---
 # ── 2. ConfigMap — non-sensitive environment variables ────────────
@@ -68,17 +68,21 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: car-reselling-api-config
-  namespace: development
+  namespace: car-reselling
 data:
-  # Loki URL used by logback-spring.xml (loki4j appender)
-  LOKI_URL: "http://loki:3100"
+  # Loki URL used by logback-spring.xml (loki4j appender).
+  # Must use the fully-qualified cross-namespace DNS name because Loki
+  # runs in the "observability" namespace, not in "car-reselling".
+  # Format: <service>.<namespace>.svc.cluster.local
+  LOKI_URL: "http://loki.observability.svc.cluster.local:3100"
   # Auth service URL; change to the actual service name if auth-api runs in the cluster
   AUTH_BASE_URL: "http://authentication-api:8081"
   CORS_ALLOWED_ORIGIN_PATTERNS: "*"
   STORAGE_BASE_PATH: "/storage/vehicles"
-  # Observability — keep metrics disabled until an OTel Collector runs in the cluster
-  OTLP_METRICS_ENABLED: "false"
-  OTLP_METRICS_URL: "http://otel-collector:4318/v1/metrics"
+  # Observability — OTel Collector also lives in the "observability" namespace,
+  # so the full cross-namespace DNS name is required here too.
+  OTLP_METRICS_ENABLED: "true"
+  OTLP_METRICS_URL: "http://otel-collector.observability.svc.cluster.local:4318/v1/metrics"
   SWAGGER_ENABLED: "false"
 
 ---
@@ -89,7 +93,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: car-reselling-api-secret
-  namespace: development
+  namespace: car-reselling
 type: Opaque
 stringData:
   CAR_RESELLING_DB_URL: "jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
@@ -102,7 +106,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mysql-pvc
-  namespace: development
+  namespace: car-reselling
 spec:
   accessModes:
     - ReadWriteOnce
@@ -116,7 +120,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: mysql-secret
-  namespace: development
+  namespace: car-reselling
 type: Opaque
 stringData:
   MYSQL_ROOT_PASSWORD: "root"
@@ -130,7 +134,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
-  namespace: development
+  namespace: car-reselling
   labels:
     app: mysql
 spec:
@@ -179,7 +183,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  namespace: development
+  namespace: car-reselling
   labels:
     app: mysql
 spec:
@@ -198,7 +202,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: car-reselling-api
-  namespace: development
+  namespace: car-reselling
   labels:
     app: car-reselling-api
 spec:
@@ -287,7 +291,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: car-reselling-api
-  namespace: development
+  namespace: car-reselling
   labels:
     app: car-reselling-api
 spec:
@@ -311,7 +315,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: car-reselling-api-ingress
-  namespace: development
+  namespace: car-reselling
   annotations:
     # EWMA load balancing — picks the pod with best recent response time
     nginx.ingress.kubernetes.io/load-balance: "ewma"
@@ -348,7 +352,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: car-reselling-api-hpa
-  namespace: development
+  namespace: car-reselling
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -403,7 +407,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: car-reselling-api-pdb
-  namespace: development
+  namespace: car-reselling
 spec:
   minAvailable: 1
   selector:
