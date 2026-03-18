@@ -70,15 +70,22 @@ End-to-end MVP for a used car reseller in Brazil. The application includes a Jav
 │   └── provisioning/
 │       ├── datasources/          # Auto-provisioned Grafana datasources
 │       └── plugins/
-├── docker-compose.yml            # Development stack
-├── docker-compose-prod.yml       # Production stack (DockerHub images)
-├── docker-compose-observality.yml# Observability stack (standalone)
-├── otel-collector-config.yml     # OpenTelemetry Collector pipeline
-├── prometheus.yml                # Prometheus scrape configuration
-├── tempo-config.yml              # Grafana Tempo configuration
-├── loki-config.yml               # Grafana Loki configuration
-├── .env                          # Environment variables (not committed)
-└── .env.example                  # Template for .env
+├── docker-compose.yml                     # Development stack
+├── docker-compose-prod.yml                # Production stack (DockerHub images)
+├── docker-compose-observality.yml         # Observability stack (standalone)
+├── otel-collector-config.yml              # OpenTelemetry Collector pipeline
+├── prometheus.yml                         # Prometheus scrape configuration
+├── tempo-config.yml                       # Grafana Tempo configuration
+├── loki-config.yml                        # Grafana Loki configuration
+├── kubernetes/
+│   ├── observability-cluster.yml          # kind cluster: observability stack
+│   ├── observability-deployment.yml       # Grafana, Loki, Tempo, Prometheus, OTel
+│   ├── car-reselling-api-cluster.yml      # kind cluster: car-reselling-api
+│   ├── car-reselling-api-deployment.yml   # Deployment, Service, HPA, PDB
+│   ├── authentication-api-cluster.yml     # kind cluster: authentication-api
+│   └── authentication-api-deployment.yml  # Deployment, Service, HPA, PDB
+├── .env                                   # Environment variables (not committed)
+└── .env.example                           # Template for .env
 ```
 
 ---
@@ -1016,16 +1023,48 @@ jvm_memory_used_bytes{area="heap", job="car-reselling-api"}
 
 ## Kubernetes
 
-The `kubernetes/` folder contains everything needed to run the application on a Kubernetes cluster using **kind** (local) or any cloud-managed Kubernetes provider (EKS, GKE, AKS).
+The `kubernetes/` folder contains everything needed to run the full application stack on local kind clusters.
 
 ```
 kubernetes/
-├── create-cluster.yml               # kind cluster definition (1 control-plane + 2 workers)
-├── car-reselling-api-deployment.yml # Full production manifest (Deployment, Service, Ingress, HPA, PDB)
-└── car-reselling-api.yml            # Minimal standalone Pod (quick testing only)
+├── observability-cluster.yml          # kind cluster: observability stack (Grafana, Loki, Tempo, Prometheus, OTel)
+├── observability-deployment.yml       # Manifests for the observability stack
+├── car-reselling-api-cluster.yml      # kind cluster: car-reselling-api (NodePort 30808 → localhost:8080)
+├── car-reselling-api-deployment.yml   # Manifests: Namespace, ConfigMap, Secret, Deployment, Service, Ingress, HPA, PDB
+├── authentication-api-cluster.yml     # kind cluster: authentication-api (NodePort 30801 → localhost:8081)
+└── authentication-api-deployment.yml  # Manifests: Namespace, ConfigMap, Secret, Deployment, Service, Ingress, HPA, PDB
 ```
 
-> For a full description of every resource in `car-reselling-api-deployment.yml` see the comments at the top of that file.
+> Each deployment file contains detailed comments at the top describing every resource it creates.
+
+---
+
+### Architecture — three separate clusters
+
+The stack runs across **three independent kind clusters** on the same machine. Each cluster is a Docker container; they share the same Docker bridge network (`kind`) and communicate with each other via the host gateway IP.
+
+```
+Host machine
+├── kind cluster "observability"     → localhost:3000  (Grafana)
+│   namespace: observability             localhost:9090  (Prometheus)
+│   Grafana, Loki, Tempo,                localhost:3100  (Loki)
+│   Prometheus, OTel Collector           localhost:4317/4318 (OTel gRPC/HTTP)
+│
+├── kind cluster "car-reselling"     → localhost:8080  (car-reselling-api)
+│   namespace: car-reselling
+│   car-reselling-api
+│
+└── kind cluster "authentication"    → localhost:8081  (authentication-api)
+    namespace: authentication
+    authentication-api
+```
+
+**Cross-cluster networking:** `*.svc.cluster.local` DNS only resolves within the same cluster. To reach services in another cluster, pods use the Docker bridge **host gateway IP** (`172.22.0.1`) and the `hostPort` values mapped by `extraPortMappings` in the cluster config files.
+
+```bash
+# Find the host gateway IP (run this if it ever changes):
+docker network inspect kind --format='{{range .IPAM.Config}}{{.Gateway}}{{end}}'
+```
 
 ---
 
@@ -1034,7 +1073,7 @@ kubernetes/
 | Tool | Purpose | Install |
 |---|---|---|
 | `kubectl` | Kubernetes CLI | [docs.kubernetes.io](https://kubernetes.io/docs/tasks/tools/) |
-| `kind` | Local cluster in Docker | `go install sigs.k8s.io/kind@latest` or [kind.sigs.k8s.io](https://kind.sigs.k8s.io/docs/user/quick-start/) |
+| `kind` | Local clusters in Docker | [kind.sigs.k8s.io](https://kind.sigs.k8s.io/docs/user/quick-start/) |
 | `helm` | Package manager for k8s add-ons | [helm.sh](https://helm.sh/docs/intro/install/) |
 
 Verify your tools:
@@ -1047,209 +1086,261 @@ helm version
 
 ---
 
-### 1. Create the local cluster
+### External MySQL
 
-The cluster definition is in `kubernetes/create-cluster.yml`. It creates one control-plane node and two worker nodes (all as Docker containers via kind):
+MySQL runs as a plain Docker container **outside** all Kind clusters. Both APIs connect to it via the host gateway IP.
 
 ```bash
+# Start external MySQL (run once)
+docker run -d --name mysql \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=car_reselling \
+  -e MYSQL_USER=car \
+  -e MYSQL_PASSWORD=car \
+  -p 3306:3306 \
+  mysql:8.0
+
+# Verify it is accepting connections
+docker exec mysql mysqladmin ping -h localhost -u root -proot --silent
+```
+
+The DB URL used by both deployments is already configured to `172.22.0.1:3306` in their Secrets.
+
+---
+
+### 1. Context management
+
+Every `kubectl` command targets the **active context**. Always verify which cluster you are talking to before running `apply` or `delete`.
+
+```bash
+# Check the active context
+kubectl config current-context
+
+# List all available contexts
+kubectl config get-contexts
+
+# Switch context
+kubectl config use-context kind-observability
+kubectl config use-context kind-car-reselling
+kubectl config use-context kind-authentication
+
+# Or pass --context per command without switching globally
+kubectl get pods -n car-reselling --context kind-car-reselling
+kubectl get pods -n authentication --context kind-authentication
+```
+
+---
+
+### 2. Create the clusters
+
+Each cluster maps specific container ports to host ports so services are reachable at `localhost:<port>`.
+
+```bash
+# Observability stack (Grafana, Prometheus, Loki, Tempo, OTel)
 kind create cluster \
-  --config kubernetes/create-cluster.yml \
+  --config kubernetes/observability-cluster.yml \
+  --name observability
+
+# Car Reselling API  (nodePort 30808 → localhost:8080)
+kind create cluster \
+  --config kubernetes/car-reselling-api-cluster.yml \
   --name car-reselling
+
+# Authentication API  (nodePort 30801 → localhost:8081)
+kind create cluster \
+  --config kubernetes/authentication-api-cluster.yml \
+  --name authentication
+
+# List all running clusters
+kind get clusters
 ```
 
-Verify the nodes are ready:
-
-```bash
-kubectl get nodes
-# NAME                          STATUS   ROLES           AGE
-# car-reselling-control-plane   Ready    control-plane   30s
-# car-reselling-worker          Ready    <none>          20s
-# car-reselling-worker2         Ready    <none>          20s
-```
-
-> **Node autoscaling (1 → 3 nodes)**  
-> kind does not autoscale nodes dynamically. To change the number of worker nodes, edit `kubernetes/create-cluster.yml`, delete the cluster, and re-create it.  
-> On cloud providers (EKS / GKE / AKS) configure Cluster Autoscaler with `minCount=1` and `maxCount=3` on your node pool — no YAML change is needed.
+> **Memory note:** Each cluster node requires ~700 MB–1 GB of RAM. With all three running simultaneously you need at least 4 GB free. If cluster creation fails with `could not find a log line that matches "Reached target Multi-User System"`, you are out of memory — stop an unused cluster first:
+> ```bash
+> docker stop observability-control-plane   # pause without deleting
+> docker start observability-control-plane  # resume later
+> ```
 
 ---
 
-### 2. Load the local Docker image into the cluster
-
-kind runs its own internal registry. If you built the image locally (not pushed to DockerHub yet), load it so the cluster can pull it:
+### 3. Deploy the observability stack
 
 ```bash
-kind load docker-image viniciussf/car-reselling-api:latest \
-  --name car-reselling
+# Switch to the observability cluster
+kubectl config use-context kind-observability
+
+# Deploy all observability resources
+kubectl apply -f kubernetes/observability-deployment.yml
+
+# Watch pods come up
+kubectl get pods -n observability -w
 ```
 
-> Skip this step if the image is already available on DockerHub and the cluster has internet access.
+Once all pods are `Running`, the following are accessible on localhost:
+
+| URL | Service |
+|---|---|
+| `http://localhost:3000` | Grafana (admin / admin) |
+| `http://localhost:9090` | Prometheus |
+| `http://localhost:3100` | Loki push/query API |
+| `http://localhost:3200` | Tempo query API |
+| `localhost:4317` | OTel Collector — OTLP gRPC |
+| `http://localhost:4318` | OTel Collector — OTLP HTTP |
 
 ---
 
-### 3. Install cluster add-ons (once per cluster)
-
-The deployment manifest requires two add-ons: **NGINX Ingress Controller** (for EWMA load balancing) and **Prometheus stack + Prometheus Adapter** (for the custom latency-based HPA metric).
+### 4. Deploy car-reselling-api
 
 ```bash
-# ── Add Helm repos ───────────────────────────────────────────────
-helm repo add ingress-nginx      https://kubernetes.github.io/ingress-nginx
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
+# Switch to the car-reselling cluster
+kubectl config use-context kind-car-reselling
 
-# ── NGINX Ingress Controller ─────────────────────────────────────
-helm install ingress-nginx ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx \
-  --create-namespace
+# Load the local image into the cluster nodes
+kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
 
-# ── Prometheus + Grafana + Alertmanager (kube-prometheus-stack) ──
-helm install prometheus prometheus-community/kube-prometheus-stack \
-  --namespace monitoring \
-  --create-namespace
-
-# ── Prometheus Adapter (exposes custom metrics to HPA) ───────────
-helm install prometheus-adapter prometheus-community/prometheus-adapter \
-  --namespace monitoring \
-  --set prometheus.url=http://prometheus-operated.monitoring.svc
-```
-
-Wait for all pods to be running before proceeding:
-
-```bash
-kubectl get pods -n ingress-nginx
-kubectl get pods -n monitoring
-```
-
----
-
-### 4. Apply the custom metric rule for the HPA
-
-The `car-reselling-api-deployment.yml` file includes a `ConfigMap` for Prometheus Adapter at the bottom. Apply it and restart the adapter so the `http_slow_request_ratio` metric becomes available to the HPA:
-
-```bash
-# Apply the rules ConfigMap (already included in the main manifest, but
-# it targets the "monitoring" namespace so apply the whole file once)
+# Apply all resources
 kubectl apply -f kubernetes/car-reselling-api-deployment.yml
 
-# Restart Prometheus Adapter to load the new rule
-kubectl rollout restart deployment/prometheus-adapter -n monitoring
-
-# Verify the custom metric is registered
-kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1" | \
-  python3 -m json.tool | grep http_slow_request_ratio
+# Watch the pod come up
+kubectl get pods -n car-reselling -w
 ```
 
----
-
-### 5. Deploy car-reselling-api
-
-```bash
-kubectl apply -f kubernetes/car-reselling-api-deployment.yml
-```
-
-This creates the following resources in the `development` namespace:
+Resources created in the `car-reselling` namespace:
 
 | Resource | Name | Purpose |
 |---|---|---|
+| `ConfigMap` | `car-reselling-api-config` | Non-sensitive env vars (Loki URL, OTel URL, etc.) |
+| `Secret` | `car-reselling-api-secret` | DB credentials |
 | `Deployment` | `car-reselling-api` | Runs the API container |
-| `Service` | `car-reselling-api` | ClusterIP — internal routing |
-| `Ingress` | `car-reselling-api-ingress` | External entry-point (NGINX EWMA) |
-| `HorizontalPodAutoscaler` | `car-reselling-api-hpa` | Scales pods 1 → 3 on CPU or latency |
+| `Service` | `car-reselling-api` | NodePort 30808 → localhost:8080 |
+| `Ingress` | `car-reselling-api-ingress` | NGINX EWMA load balancing |
+| `HorizontalPodAutoscaler` | `car-reselling-api-hpa` | Scales 1 → 3 pods on CPU ≥ 3% or latency > 11% at 300ms |
 | `PodDisruptionBudget` | `car-reselling-api-pdb` | Keeps ≥ 1 pod during disruptions |
-| `ConfigMap` | `prometheus-adapter-rules` | Custom metric rule for the HPA |
+
+Open: `http://localhost:8080/swagger-ui/index.html`
 
 ---
 
-### 6. Verify the deployment
+### 5. Deploy authentication-api
 
 ```bash
-# Overall status
-kubectl get all -n development
+# Switch to the authentication cluster
+kubectl config use-context kind-authentication
 
-# Watch pods come up
-kubectl get pods -n development -w
+# Load the local image into the cluster nodes
+kind load docker-image viniciussf/authentication-api:latest --name authentication
 
-# Describe a pod (events, image pull status, probe results)
-kubectl describe pod -l app=car-reselling-api -n development
+# Apply all resources
+kubectl apply -f kubernetes/authentication-api-deployment.yml
 
-# Check HPA targets (CPU % and custom metric value)
-kubectl get hpa -n development
-kubectl describe hpa car-reselling-api-hpa -n development
+# Watch the pod come up
+kubectl get pods -n authentication -w
+```
+
+Resources created in the `authentication` namespace:
+
+| Resource | Name | Purpose |
+|---|---|---|
+| `ConfigMap` | `authentication-api-config` | Non-sensitive env vars |
+| `Secret` | `authentication-api-secret` | DB credentials + JWT_SECRET |
+| `Deployment` | `authentication-api` | Runs the API container |
+| `Service` | `authentication-api` | NodePort 30801 → localhost:8081 |
+| `Ingress` | `authentication-api-ingress` | NGINX EWMA load balancing |
+| `HorizontalPodAutoscaler` | `authentication-api-hpa` | Scales 1 → 3 pods on CPU or latency |
+| `PodDisruptionBudget` | `authentication-api-pdb` | Keeps ≥ 1 pod during disruptions |
+
+Open: `http://localhost:8081/swagger-ui/index.html`
+
+---
+
+### 6. Verify deployments
+
+```bash
+# ── All pods across all namespaces (all clusters need --context) ──
+kubectl get pods -A -o wide --context kind-observability
+kubectl get pods -A -o wide --context kind-car-reselling
+kubectl get pods -A -o wide --context kind-authentication
+
+# ── Pod details (events, probe results, image pull status) ────────
+kubectl describe pod -l app=car-reselling-api -n car-reselling
+kubectl describe pod -l app=authentication-api -n authentication
+
+# ── Logs ──────────────────────────────────────────────────────────
+kubectl logs -f -l app=car-reselling-api  -n car-reselling  --tail=-1
+kubectl logs -f -l app=authentication-api -n authentication --tail=-1
+kubectl logs -f -l app=grafana            -n observability  --tail=-1
+
+# ── Logs from a previously crashed pod ───────────────────────────
+kubectl logs -l app=car-reselling-api  -n car-reselling  --previous
+kubectl logs -l app=authentication-api -n authentication --previous
+
+# ── Check env vars actually injected into a running pod ──────────
+kubectl exec -n car-reselling  deployment/car-reselling-api  -- env | grep -E "DB_URL|LOKI|OTLP"
+kubectl exec -n authentication deployment/authentication-api -- env | grep -E "DB_URL|JWT"
+
+# ── HPA status ────────────────────────────────────────────────────
+kubectl get hpa -n car-reselling
+kubectl describe hpa car-reselling-api-hpa -n car-reselling
+
+# ── Services & NodePort mapping ───────────────────────────────────
+kubectl get svc -n car-reselling
+kubectl get svc -n authentication
 ```
 
 ---
 
-### 7. Access the API locally (port-forward)
-
-kind does not provision a real LoadBalancer, so use port-forward to reach the service from your machine:
+### 7. Useful kubectl operations
 
 ```bash
-# Forward local port 8080 to the service
-kubectl port-forward svc/car-reselling-api 8080:80 -n development
-```
+# ── Restart a deployment (picks up ConfigMap/Secret changes) ──────
+kubectl rollout restart deployment/car-reselling-api  -n car-reselling
+kubectl rollout restart deployment/authentication-api -n authentication
+kubectl rollout restart deployment/grafana            -n observability
 
-Then open `http://localhost:8080/api/v1/vehicles` in your browser or via curl.
+# ── Wait for rollout to complete ──────────────────────────────────
+kubectl rollout status deployment/car-reselling-api -n car-reselling
 
----
+# ── Rollback to the previous image version ────────────────────────
+kubectl rollout undo deployment/car-reselling-api -n car-reselling
 
-### Useful kubectl commands
+# ── Manual scale (HPA overrides this at next evaluation) ─────────
+kubectl scale deployment car-reselling-api --replicas=2 -n car-reselling
 
-```bash
-# ── Cluster & nodes ──────────────────────────────────────────────
-kubectl cluster-info
-kubectl get nodes -o wide
+# ── Delete a single pod (Deployment recreates it immediately) ─────
+kubectl delete pod -l app=car-reselling-api  -n car-reselling
+kubectl delete pod -l app=authentication-api -n authentication
 
-# ── Namespace overview ───────────────────────────────────────────
-kubectl get all -n development
-
-# ── Pods ─────────────────────────────────────────────────────────
-kubectl get pods -n development
-kubectl get pods -n development -o wide       # show which node each pod is on
-kubectl get pods -n development -w            # live watch
-kubectl describe pod <pod-name> -n development
-kubectl logs -f <pod-name> -n development     # stream logs
-kubectl logs <pod-name> -n development --previous  # logs from crashed pod
-kubectl exec -it <pod-name> -n development -- bash  # shell into a pod
-
-# ── Deployments ──────────────────────────────────────────────────
-kubectl get deployments -n development
-kubectl rollout status deployment/car-reselling-api -n development
-kubectl rollout history deployment/car-reselling-api -n development
-kubectl rollout undo deployment/car-reselling-api -n development   # rollback
-
-# ── Scaling (manual override — HPA will re-take control) ─────────
-kubectl scale deployment car-reselling-api --replicas=2 -n development
-
-# ── HPA ──────────────────────────────────────────────────────────
-kubectl get hpa -n development
-kubectl describe hpa car-reselling-api-hpa -n development
-
-# ── Services & Ingress ───────────────────────────────────────────
-kubectl get svc -n development
-kubectl get ingress -n development
-
-# ── Apply / delete the full manifest ────────────────────────────
+# ── Delete and recreate a stuck Service (e.g. nodePort conflict) ──
+kubectl delete svc car-reselling-api -n car-reselling
 kubectl apply  -f kubernetes/car-reselling-api-deployment.yml
-kubectl delete -f kubernetes/car-reselling-api-deployment.yml
 
-# ── kind cluster management ──────────────────────────────────────
-kind create cluster --config kubernetes/create-cluster.yml --name car-reselling
-kind get clusters
-kind delete cluster --name car-reselling
-kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
+# ── Shell into a running pod ──────────────────────────────────────
+kubectl exec -it deployment/car-reselling-api  -n car-reselling  -- sh
+kubectl exec -it deployment/authentication-api -n authentication -- sh
+
+# ── Check cluster resource usage ─────────────────────────────────
+kubectl top nodes
+kubectl top pods -n car-reselling
 ```
-
-> A full general-purpose cheatsheet is also available at `kubernetes/kubernetes-kind-cheatsheet.md`.
 
 ---
 
-### Tear down
+### 8. Tear down
 
 ```bash
-# Remove all car-reselling resources (keeps the cluster and add-ons)
-kubectl delete -f kubernetes/car-reselling-api-deployment.yml
+# ── Remove resources only (keeps cluster and its nodes) ───────────
+kubectl delete -f kubernetes/observability-deployment.yml    --context kind-observability
+kubectl delete -f kubernetes/car-reselling-api-deployment.yml  --context kind-car-reselling
+kubectl delete -f kubernetes/authentication-api-deployment.yml --context kind-authentication
 
-# Delete the entire local cluster
+# ── Delete entire clusters ────────────────────────────────────────
+kind delete cluster --name observability
 kind delete cluster --name car-reselling
+kind delete cluster --name authentication
+
+# ── Stop external MySQL container ─────────────────────────────────
+docker stop mysql
+docker rm   mysql
 ```
 
 ---
@@ -1393,51 +1484,86 @@ docker compose -f docker-compose-prod.yml down
 
 # ── Kubernetes ────────────────────────────────────────────────────────────────
 
-# Create local kind cluster (1 control-plane + 2 workers)
-kind create cluster --config kubernetes/observability-cluster.yml --name observability
+# Find Docker bridge host gateway IP (used in DB/Loki/OTel URLs across clusters)
+docker network inspect kind --format='{{range .IPAM.Config}}{{.Gateway}}{{end}}'
+
+# Start external MySQL (required by both APIs)
+docker run -d --name mysql \
+  -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=car_reselling \
+  -e MYSQL_USER=car -e MYSQL_PASSWORD=car \
+  -p 3306:3306 mysql:8.0
+
+# Create all three clusters
+kind create cluster --config kubernetes/observability-cluster.yml     --name observability
 kind create cluster --config kubernetes/car-reselling-api-cluster.yml --name car-reselling
 kind create cluster --config kubernetes/authentication-api-cluster.yml --name authentication
 
-# To list all clusters
-kubectl config get-clusters
+# List clusters and contexts
+kind get clusters
+kubectl config get-contexts
 
-# Deploy all resources (Deployment, Service, Ingress, HPA, PDB)
-kubectl apply -f kubernetes/observability-deployment.yml -n observability
+# Check / switch active context (ALWAYS verify before apply/delete)
+kubectl config current-context
+kubectl config use-context kind-observability
+kubectl config use-context kind-car-reselling
+kubectl config use-context kind-authentication
 
-# Load a locally-built image into the kind cluster
-kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
-kubectl apply -f kubernetes/car-reselling-api-deployment.yml -n car-reselling
-
-kind load docker-image viniciussf/authentication-api:latest --name authentication
-kubectl apply -f kubernetes/authentication-api-deployment.yml -n authentication
-
-# Watch pods start
+# ── Deploy observability stack ────────────────────────────────────
+kubectl config use-context kind-observability
+kubectl apply -f kubernetes/observability-deployment.yml
 kubectl get pods -n observability -w
-kubectl get pods -A -o wide -w
 
-# Check HPA scaling activity
+# ── Deploy car-reselling-api ──────────────────────────────────────
+kubectl config use-context kind-car-reselling
+kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
+kubectl apply -f kubernetes/car-reselling-api-deployment.yml
+kubectl get pods -n car-reselling -w
+
+# ── Deploy authentication-api ─────────────────────────────────────
+kubectl config use-context kind-authentication
+kind load docker-image viniciussf/authentication-api:latest --name authentication
+kubectl apply -f kubernetes/authentication-api-deployment.yml
+kubectl get pods -n authentication -w
+
+# ── Watch all pods across all namespaces ──────────────────────────
+kubectl get pods -A -o wide
+
+# ── Logs ──────────────────────────────────────────────────────────
+kubectl logs -f -l app=grafana            -n observability  --tail=100
+kubectl logs -f -l app=car-reselling-api  -n car-reselling  --tail=100
+kubectl logs -f -l app=authentication-api -n authentication --tail=100
+# Logs from a previously crashed pod
+kubectl logs -l app=car-reselling-api -n car-reselling --previous
+
+# ── Check env vars injected into a running pod ────────────────────
+kubectl exec -n car-reselling  deployment/car-reselling-api  -- env | grep -E "DB_URL|LOKI|OTLP"
+kubectl exec -n authentication deployment/authentication-api -- env | grep -E "DB_URL|JWT"
+
+# ── Restart after ConfigMap / Secret changes ──────────────────────
+kubectl rollout restart deployment/car-reselling-api  -n car-reselling
+kubectl rollout restart deployment/authentication-api -n authentication
+kubectl rollout restart deployment/grafana            -n observability
+
+# ── HPA status ────────────────────────────────────────────────────
+kubectl get hpa -n car-reselling
 kubectl describe hpa car-reselling-api-hpa -n car-reselling
 
-# Access the API from your machine (kind has no real LoadBalancer)
-kubectl port-forward svc/car-reselling-api 8080:80 -n development
+# ── Rollback to previous image ────────────────────────────────────
+kubectl rollout undo deployment/car-reselling-api -n car-reselling
 
-# Stream pod logs
-kubectl logs -f -l app=grafana -n observability
-kubectl logs -f -l app=car-reselling-api -n car-reselling --tail=-1
-kubectl logs -f -l app=authentication-api -n authentication --tail=-1
+# ── Delete a stuck Service and recreate it ────────────────────────
+kubectl delete svc car-reselling-api -n car-reselling
+kubectl apply  -f kubernetes/car-reselling-api-deployment.yml
 
-# Rollback to the previous image version
-kubectl rollout undo deployment/car-reselling-api -n development
+# ── Remove all resources (keeps clusters) ────────────────────────
+kubectl delete -f kubernetes/observability-deployment.yml     --context kind-observability
+kubectl delete -f kubernetes/car-reselling-api-deployment.yml  --context kind-car-reselling
+kubectl delete -f kubernetes/authentication-api-deployment.yml --context kind-authentication
 
-# Remove all car-reselling resources (keeps cluster and add-ons)
-kubectl delete -f kubernetes/observability-deployment.yml -n observability
-kubectl delete -f kubernetes/car-reselling-api-deployment.yml -n car-reselling
-kubectl delete -f kubernetes/authentication-api-deployment.yml -n authentication
-
-# Destroy the local cluster entirely
+# ── Destroy clusters entirely ─────────────────────────────────────
 kind delete cluster --name observability
-kind delete cluster --name authentication
 kind delete cluster --name car-reselling
+kind delete cluster --name authentication
 ```
 
 ---
