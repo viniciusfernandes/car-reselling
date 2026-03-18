@@ -1,5 +1,5 @@
 # ============================================================
-# car-reselling-api — Kubernetes Deployment Manifests
+# authentication-api — Kubernetes Deployment Manifests
 # ============================================================
 #
 # Resources defined here (in order):
@@ -24,7 +24,7 @@
 # ── Credentials ─────────────────────────────────────────────────
 #   The Secret below uses stringData with placeholder values.
 #   Before applying in production replace them or use:
-#     kubectl create secret generic car-reselling-api-secret \
+#     kubectl create secret generic authentication-api-secret \
 #       --from-literal=CAR_RESELLING_DB_PASSWORD=<real-pw> ...
 #     kubectl create secret generic mysql-secret \
 #       --from-literal=MYSQL_ROOT_PASSWORD=<real-pw> ...
@@ -43,16 +43,16 @@
 #
 #   # Prometheus stack  (provides metrics scraping)
 #   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-#   helm install prometheus prometheus-community/kube-prometheus-stack -n car-reselling --create-namespace
+#   helm install prometheus prometheus-community/kube-prometheus-stack -n authentication --create-namespace
 #
 #   # Prometheus Adapter  (bridges Prometheus metrics → k8s custom-metrics API)
 #   helm install prometheus-adapter prometheus-community/prometheus-adapter \
-#        -n car-reselling \
-#        --set prometheus.url=http://prometheus-operated.car-reselling.svc \
-#        -f <(kubectl get cm prometheus-adapter-rules -n car-reselling -o jsonpath='{.data.config\.yaml}')
+#        -n authentication \
+#        --set prometheus.url=http://prometheus-operated.authentication.svc \
+#        -f <(kubectl get cm prometheus-adapter-rules -n authentication -o jsonpath='{.data.config\.yaml}')
 #
 # ── Apply ────────────────────────────────────────────────────────
-#   kubectl apply -f car-reselling-api-deployment.yml
+#   kubectl apply -f authentication-api-deployment.yml
 # ============================================================
 
 ---
@@ -60,56 +60,42 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: car-reselling
+  name: authentication
 
 ---
 # ── 2. ConfigMap — non-sensitive environment variables ────────────
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: car-reselling-api-config
-  namespace: car-reselling
+  name: authentication-api-config
+  namespace: authentication
 data:
-  # Loki and OTel Collector run in a SEPARATE Kind cluster ("grafana").
-  # Cross-cluster DNS (*.svc.cluster.local) does not work across Kind clusters.
-  # Both clusters share the same Docker bridge network, so pods reach the
-  # other cluster's services via the host gateway IP (172.22.0.1) and the
-  # hostPort values defined in observability-cluster.yml extraPortMappings.
-  #
-  # If the host gateway IP ever changes, run:
-  #   docker network inspect kind --format='{{range .IPAM.Config}}{{.Gateway}}{{end}}'
-  LOKI_URL: "http://172.22.0.1:3100"
-  # Auth service URL; change to the actual service name if auth-api runs in the cluster
-  AUTH_BASE_URL: "http://authentication-api:8081"
-  CORS_ALLOWED_ORIGIN_PATTERNS: "*"
-  STORAGE_BASE_PATH: "/storage/vehicles"
-  # OTel Collector hostPort 4318 (HTTP) is mapped in car-reselling-cluster.yml
-  OTLP_METRICS_ENABLED: "false"
-  OTLP_METRICS_URL: "http://172.22.0.1:4318/v1/metrics"
   SWAGGER_ENABLED: "true"
 
 ---
 # ── 3. Secret — sensitive environment variables ───────────────────
 # Replace the stringData values before applying in production,
 # or pre-create the secret with kubectl and remove this resource.
+# JWT_SECRET must be a long random string (≥ 32 chars recommended).
+# Generate one with: openssl rand -base64 48
 apiVersion: v1
 kind: Secret
 metadata:
-  name: car-reselling-api-secret
-  namespace: car-reselling
+  name: authentication-api-secret
+  namespace: authentication
 type: Opaque
 stringData:
   CAR_RESELLING_DB_URL: "jdbc:mysql://mysql:3306/car_reselling?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
   CAR_RESELLING_DB_USERNAME: "car"
   CAR_RESELLING_DB_PASSWORD: "car"
-
+  JWT_SECRET: "f9ad16a56686595ccc5fea1da8b233688ee129cf64f2544cd10ce816e04087d0"
 ---
 # ── 4. MySQL PersistentVolumeClaim ────────────────────────────────
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mysql-pvc
-  namespace: car-reselling
+  namespace: authentication
 spec:
   accessModes:
     - ReadWriteOnce
@@ -123,7 +109,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: mysql-secret
-  namespace: car-reselling
+  namespace: authentication
 type: Opaque
 stringData:
   MYSQL_ROOT_PASSWORD: "root"
@@ -137,7 +123,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
-  namespace: car-reselling
+  namespace: authentication
   labels:
     app: mysql
 spec:
@@ -186,7 +172,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  namespace: car-reselling
+  namespace: authentication
   labels:
     app: mysql
 spec:
@@ -204,26 +190,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: car-reselling-api
-  namespace: car-reselling
+  name: authentication-api
+  namespace: authentication
   labels:
-    app: car-reselling-api
+    app: authentication-api
 spec:
   # The HPA below manages the replica count at runtime.
   # This value is the initial replica count and is overridden by HPA.
   replicas: 1
   selector:
     matchLabels:
-      app: car-reselling-api
+      app: authentication-api
   template:
     metadata:
       labels:
-        app: car-reselling-api
-      annotations:
-        # Prometheus scrape annotations — Micrometer exposes /actuator/prometheus
-        prometheus.io/scrape: "true"
-        prometheus.io/port:   "8080"
-        prometheus.io/path:   "/actuator/prometheus"
+        app: authentication-api
     spec:
       # ── Spread pods evenly across nodes ──────────────────────────
       # Ensures each worker node hosts at most one pod when cluster
@@ -235,7 +216,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app: car-reselling-api
+              app: authentication-api
 
       # Wait for MySQL to accept TCP connections before the API container
       # starts. Without this, Spring Boot (Liquibase) fails immediately
@@ -256,24 +237,24 @@ spec:
               echo "MySQL is ready."
 
       containers:
-        - name: car-reselling-api
-          image: viniciussf/car-reselling-api:latest
+        - name: authentication-api
+          image: viniciussf/authentication-api:latest
           # IfNotPresent: uses the image already loaded into the node
           # (via `kind load docker-image`). Change to Always when
           # deploying to a cloud cluster that pulls from DockerHub.
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 8081
 
           # ── Environment variables ─────────────────────────────────
           # Non-sensitive values come from the ConfigMap; DB credentials
           # come from the Secret. Both are defined earlier in this file.
           envFrom:
             - configMapRef:
-                name: car-reselling-api-config
+                name: authentication-api-config
             - secretRef:
-                name: car-reselling-api-secret
+                name: authentication-api-secret
 
           # ── Resource quotas ──────────────────────────────────────
           # CPU *request* is the denominator HPA uses to compute
@@ -289,45 +270,54 @@ spec:
           # ── Health probes ─────────────────────────────────────────
           # Spring Boot Actuator exposes /actuator/health/readiness
           # and /actuator/health/liveness out of the box.
+          # startupProbe gives the app up to 5 min (30 × 10s) to finish
+          # booting before liveness/readiness probes take over — prevents
+          # the liveness probe from killing a slow-starting container.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 30
+
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: 8080
-            initialDelaySeconds: 30
+              port: 8081
             periodSeconds: 10
             failureThreshold: 3
 
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: 8080
-            initialDelaySeconds: 60
+              port: 8081
             periodSeconds: 15
             failureThreshold: 5
 
 ---
 # ── 9. Service (NodePort) ─────────────────────────────────────────
-# nodePort: 30808 matches the extraPortMappings entry in
-# car-reselling-api-cluster.yml (containerPort: 30808 → hostPort: 8080).
+# nodePort: 30801 matches the extraPortMappings entry in
+# authentication-api-cluster.yml (containerPort: 30801 → hostPort: 8080).
 # This is what makes http://localhost:8080 work in Kind.
 # On a cloud cluster (EKS/GKE/AKS) switch back to ClusterIP and
 # re-enable the Ingress below for external traffic.
 apiVersion: v1
 kind: Service
 metadata:
-  name: car-reselling-api
-  namespace: car-reselling
+  name: authentication-api
+  namespace: authentication
   labels:
-    app: car-reselling-api
+    app: authentication-api
 spec:
   selector:
-    app: car-reselling-api
+    app: authentication-api
   ports:
     - name: http
       protocol: TCP
-      port: 8080
-      targetPort: 8080
-      nodePort: 30808
+      port: 8081
+      targetPort: 8081
+      nodePort: 30801
   type: NodePort
 
 ---
@@ -340,8 +330,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: car-reselling-api-ingress
-  namespace: car-reselling
+  name: authentication-api-ingress
+  namespace: authentication
   annotations:
     # EWMA load balancing — picks the pod with best recent response time
     nginx.ingress.kubernetes.io/load-balance: "ewma"
@@ -360,9 +350,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: car-reselling-api
+                name: authentication-api
                 port:
-                  number: 80
+                  number: 8081
 
 ---
 # ── 11. HorizontalPodAutoscaler ───────────────────────────────────
@@ -377,13 +367,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: car-reselling-api-hpa
-  namespace: car-reselling
+  name: authentication-api-hpa
+  namespace: authentication
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: car-reselling-api
+    name: authentication-api
 
   minReplicas: 1
   maxReplicas: 3
@@ -432,63 +422,12 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: car-reselling-api-pdb
-  namespace: car-reselling
+  name: authentication-api-pdb
+  namespace: authentication
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: car-reselling-api
+      app: authentication-api
 
 ---
-# ── 7. Prometheus Adapter — custom metric rule ─────────────────────
-# Instructs prometheus-adapter to expose "http_slow_request_ratio"
-# on the k8s custom-metrics API so the HPA above can read it.
-#
-# The PromQL query computes the per-pod fraction of HTTP requests
-# that took MORE than 300 ms:
-#
-#   slow_ratio = 1 - (requests_within_300ms / total_requests)
-#
-#   where requests_within_300ms = rate(http_server_requests_seconds_bucket{le="0.3"}[2m])
-#         total_requests         = rate(http_server_requests_seconds_count[2m])
-#
-# When slow_ratio > 0.11 (11 %), HPA trigger #2 fires.
-#
-# ── How to apply ─────────────────────────────────────────────────
-# 1. Deploy this ConfigMap to the namespace where prometheus-adapter
-#    is installed (typically "car-reselling"):
-#      kubectl apply -f car-reselling-api-deployment.yml
-# 2. Restart the adapter to pick up the new rule:
-#      kubectl rollout restart deployment/prometheus-adapter -n car-reselling
-# 3. Verify the metric is available:
-#      kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1" | jq '.resources[].name'
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-adapter-rules
-  namespace: car-reselling
-data:
-  config.yaml: |
-    rules:
-      # ── http_slow_request_ratio ─────────────────────────────────
-      # Series: http_server_requests_seconds_bucket (Micrometer / Spring Boot)
-      # Exposed per pod via /actuator/prometheus
-      - seriesQuery: 'http_server_requests_seconds_bucket{namespace!="",pod!=""}'
-        resources:
-          overrides:
-            namespace: { resource: namespace }
-            pod:       { resource: pod }
-        name:
-          matches: "http_server_requests_seconds_bucket"
-          as:      "http_slow_request_ratio"
-        metricsQuery: |
-          1 - (
-            sum by (namespace, pod) (
-              rate(http_server_requests_seconds_bucket{le="0.3",<<.LabelMatchers>>}[2m])
-            )
-            /
-            sum by (namespace, pod) (
-              rate(http_server_requests_seconds_count{<<.LabelMatchers>>}[2m])
-            )
-          )

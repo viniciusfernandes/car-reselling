@@ -1396,6 +1396,7 @@ docker compose -f docker-compose-prod.yml down
 # Create local kind cluster (1 control-plane + 2 workers)
 kind create cluster --config kubernetes/observability-cluster.yml --name observability
 kind create cluster --config kubernetes/car-reselling-api-cluster.yml --name car-reselling
+kind create cluster --config kubernetes/authentication-api-cluster.yml --name authentication
 
 # To list all clusters
 kubectl config get-clusters
@@ -1407,8 +1408,12 @@ kubectl apply -f kubernetes/observability-deployment.yml -n observability
 kind load docker-image viniciussf/car-reselling-api:latest --name car-reselling
 kubectl apply -f kubernetes/car-reselling-api-deployment.yml -n car-reselling
 
+kind load docker-image viniciussf/authentication-api:latest --name authentication
+kubectl apply -f kubernetes/authentication-api-deployment.yml -n authentication
+
 # Watch pods start
 kubectl get pods -n observability -w
+kubectl get pods -A -o wide -w
 
 # Check HPA scaling activity
 kubectl describe hpa car-reselling-api-hpa -n car-reselling
@@ -1419,6 +1424,7 @@ kubectl port-forward svc/car-reselling-api 8080:80 -n development
 # Stream pod logs
 kubectl logs -f -l app=grafana -n observability
 kubectl logs -f -l app=car-reselling-api -n car-reselling --tail=-1
+kubectl logs -f -l app=authentication-api -n authentication --tail=-1
 
 # Rollback to the previous image version
 kubectl rollout undo deployment/car-reselling-api -n development
@@ -1426,9 +1432,11 @@ kubectl rollout undo deployment/car-reselling-api -n development
 # Remove all car-reselling resources (keeps cluster and add-ons)
 kubectl delete -f kubernetes/observability-deployment.yml -n observability
 kubectl delete -f kubernetes/car-reselling-api-deployment.yml -n car-reselling
+kubectl delete -f kubernetes/authentication-api-deployment.yml -n authentication
 
 # Destroy the local cluster entirely
 kind delete cluster --name observability
+kind delete cluster --name authentication
 kind delete cluster --name car-reselling
 ```
 
