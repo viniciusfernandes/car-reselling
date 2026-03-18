@@ -96,3 +96,4 @@ volumes:
 networks:
   car_reselling_network:
     name: icontainer-network
+    external: true

@@ -52,6 +52,9 @@ dependencies {
     // Logs → Loki via loki4j (stable, no alpha dependencies)
     implementation 'com.github.loki4j:loki-logback-appender:1.5.2'
 
+    // Janino — required for <if condition="..."> in logback-spring.xml
+    implementation 'org.codehaus.janino:janino'
+
 
     // Lombok – compile-time code generation (@Slf4j, @Data, etc.)
     compileOnly 'org.projectlombok:lombok'

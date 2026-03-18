@@ -5,9 +5,16 @@
     <!--
         Read loki.url from Spring's environment so the profile can control it:
           - local profile   → application-local.yml  → http://localhost:3100  (port-mapped Docker)
-          - Docker / prod   → application.yml + LOKI_URL env-var → http://loki:3100 (container network)
+          - Kubernetes/prod → application.yml + LOKI_URL env-var
     -->
     <springProperty name="LOKI_PUSH_URL" source="loki.url" defaultValue="http://localhost:3100"/>
+
+    <!--
+        Mirror management.otlp.metrics.export.enabled so Loki shipping is
+        toggled by the same switch that controls OTLP metric export.
+        Set OTLP_METRICS_ENABLED=false (the default) to run without Loki.
+    -->
+    <springProperty name="LOKI_ENABLED" source="management.otlp.metrics.export.enabled" defaultValue="false"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -16,26 +23,39 @@
     </appender>
 
     <!--
-        loki4j appender: pushes log records directly to Loki via HTTP POST.
-        Labels use service_name so the LogQL query {service_name="car-reselling-api"} works.
+        The <if> block requires the Janino library on the classpath.
+        When LOKI_ENABLED=true the loki4j appender is registered and
+        attached to the root logger alongside CONSOLE.
+        When LOKI_ENABLED=false the appender is never instantiated, so
+        no background thread or HTTP connection is created.
     -->
-    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
-        <http>
-            <url>${LOKI_PUSH_URL}/loki/api/v1/push</url>
-        </http>
-        <format>
-            <label>
-                <pattern>service_name=car-reselling-api,level=%level,host=${HOSTNAME:-localhost}</pattern>
-            </label>
-            <message>
-                <pattern>${LOG_PATTERN}</pattern>
-            </message>
-            <sortByTime>true</sortByTime>
-        </format>
-    </appender>
+    <if condition='"true".equals(property("LOKI_ENABLED"))'>
+        <then>
+            <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+                <http>
+                    <url>${LOKI_PUSH_URL}/loki/api/v1/push</url>
+                </http>
+                <format>
+                    <label>
+                        <pattern>service_name=car-reselling-api,level=%level,host=${HOSTNAME:-localhost}</pattern>
+                    </label>
+                    <message>
+                        <pattern>${LOG_PATTERN}</pattern>
+                    </message>
+                    <sortByTime>true</sortByTime>
+                </format>
+            </appender>
 
-    <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="LOKI"/>
-    </root>
+            <root level="INFO">
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="LOKI"/>
+            </root>
+        </then>
+        <else>
+            <root level="INFO">
+                <appender-ref ref="CONSOLE"/>
+            </root>
+        </else>
+    </if>
+
 </configuration>
