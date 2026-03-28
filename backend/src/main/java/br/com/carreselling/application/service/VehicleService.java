@@ -136,6 +136,7 @@ public class VehicleService implements IVehicleService {
                 null,
                 null,
                 VehicleStatus.IN_LOT,
+                true,
                 null,
                 null,
                 null,
@@ -197,6 +198,7 @@ public class VehicleService implements IVehicleService {
                 vehicle.getPurchaseInvoiceDocumentId(),
                 vehicle.getPurchasePaymentReceiptDocumentId(),
                 vehicle.getStatus(),
+                vehicle.isOnService(),
                 vehicle.getAssignedPartnerId(),
                 partnerName,
                 servicesTotal,
@@ -253,12 +255,12 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<VehicleSummary> listVehicles(VehicleStatus status, String query, int page, int size) {
+    public List<VehicleSummary> listVehicles(VehicleStatus status, String query, Boolean onService, int page, int size) {
         if (size > 20) {
             size = 20;
         }
         int offset = Math.max(page, 0) * Math.max(size, 1);
-        List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(status, query, offset, size);
+        List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(status, query, onService, offset, size);
         return vehicles.stream()
                 .map(vehicle -> {
                     BigDecimal servicesTotal = vehicleRepository.findVehicleServicesTotalByVehicleId(vehicle.getId());
@@ -277,6 +279,7 @@ public class VehicleService implements IVehicleService {
                             vehicle.getModel(),
                             vehicle.getYear(),
                             vehicle.getStatus(),
+                            vehicle.isOnService(),
                             vehicle.getPurchasePrice(),
                             purchaseCommission,
                             servicesTotal,
@@ -289,8 +292,8 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public long countVehicles(VehicleStatus status, String query) {
-        return vehicleRepository.countVehicleByFilter(status, query);
+    public long countVehicles(VehicleStatus status, String query, Boolean onService) {
+        return vehicleRepository.countVehicleByFilter(status, query, onService);
     }
 
     @Override
@@ -418,6 +421,16 @@ public class VehicleService implements IVehicleService {
                 .forEach(service -> serviceRepository.deleteService(service.getId()));
 
         vehicleRepository.deleteVehicle(vehicleId);
+    }
+
+    @Override
+    public boolean toggleOnService(UUID vehicleId) {
+        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+                .orElseThrow(() -> new NotFoundException("Vehicle not found"));
+        vehicle.toggleOnService();
+        vehicle.setUpdatedAt(Instant.now());
+        vehicleRepository.updateVehicle(vehicle);
+        return vehicle.isOnService();
     }
 
     private void deleteDocumentSafely(UUID vehicleId, Document doc) {

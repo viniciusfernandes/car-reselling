@@ -28,6 +28,7 @@ public class Vehicle {
     private UUID purchasePaymentReceiptDocumentId;
     private UUID purchaseInvoiceDocumentId;
     private VehicleStatus status;
+    private boolean onService;
     private UUID assignedPartnerId;
     private Instant distributedAt;
     private LocalDate soldAt;
@@ -53,6 +54,7 @@ public class Vehicle {
                    UUID purchasePaymentReceiptDocumentId,
                    UUID purchaseInvoiceDocumentId,
                    VehicleStatus status,
+                   boolean onService,
                    UUID assignedPartnerId,
                    Instant distributedAt,
                    LocalDate soldAt,
@@ -77,6 +79,7 @@ public class Vehicle {
         this.purchasePaymentReceiptDocumentId = purchasePaymentReceiptDocumentId;
         this.purchaseInvoiceDocumentId = purchaseInvoiceDocumentId;
         this.status = status;
+        this.onService = onService;
         this.assignedPartnerId = assignedPartnerId;
         this.distributedAt = distributedAt;
         this.soldAt = soldAt;
@@ -223,6 +226,18 @@ public class Vehicle {
 
     public VehicleStatus getStatus() {
         return status;
+    }
+
+    public boolean isOnService() {
+        return onService;
+    }
+
+    public void setOnService(boolean onService) {
+        this.onService = onService;
+    }
+
+    public void toggleOnService() {
+        this.onService = !this.onService;
     }
 
     public UUID getAssignedPartnerId() {

@@ -26,6 +26,7 @@ public class VehicleDetailMapper {
             detail.purchaseInvoiceDocumentId(),
             detail.purchasePaymentReceiptDocumentId(),
             detail.status(),
+            detail.onService(),
             detail.assignedPartnerId(),
             detail.assignedPartnerName(),
             detail.servicesTotal(),

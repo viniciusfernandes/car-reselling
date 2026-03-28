@@ -16,6 +16,7 @@ public class VehicleListMapper {
             summary.model(),
             summary.year(),
             summary.status(),
+            summary.onService(),
             summary.purchasePrice(),
             summary.purchaseCommission(),
             summary.servicesTotal(),

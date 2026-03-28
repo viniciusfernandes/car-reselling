@@ -228,3 +228,17 @@ databaseChangeLog:
               UPDATE vehicles
               SET sold_at = DATE(COALESCE(updated_at, created_at))
               WHERE status = 'SOLD' AND sold_at IS NULL;
+  - changeSet:
+      id: vinicius-20260317-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE vehicles
+                ADD COLUMN on_service BOOLEAN NOT NULL DEFAULT TRUE AFTER status;
+
+              UPDATE vehicles
+              SET on_service = TRUE, status = 'IN_LOT'
+              WHERE status = 'IN_SERVICE';
+
+              CREATE INDEX idx_vehicles_on_service ON vehicles (on_service);

@@ -90,7 +90,14 @@
       "totalCost": "Total cost",
       "partner": "Assigned partner",
       "yardTime": "Yard time",
+      "onService": "In service",
       "actions": "Actions"
+    },
+    "onService": {
+      "enable": "Mark as in service",
+      "disable": "Remove from service",
+      "labelReady": "Ready",
+      "labelPreparation": "Preparation"
     },
     "delete": {
       "button": "Delete",
@@ -123,7 +130,7 @@
   },
   "status": {
     "IN_LOT": "In lot",
-    "IN_SERVICE": "In service",
+    "ON_SERVICE": "In service",
     "READY_FOR_DISTRIBUTION": "Ready for distribution",
     "DISTRIBUTED": "Distributed",
     "SOLD": "Sold"

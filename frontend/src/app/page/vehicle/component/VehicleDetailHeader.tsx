@@ -4,7 +4,6 @@ import { formatMoney } from "../../../service/formatters";
 
 const STATUS_KEYS: Record<VehicleStatus, string> = {
   IN_LOT: "status.IN_LOT",
-  IN_SERVICE: "status.IN_SERVICE",
   READY_FOR_DISTRIBUTION: "status.READY_FOR_DISTRIBUTION",
   DISTRIBUTED: "status.DISTRIBUTED",
   SOLD: "status.SOLD",

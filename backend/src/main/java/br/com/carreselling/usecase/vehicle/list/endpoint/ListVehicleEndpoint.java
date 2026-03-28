@@ -28,10 +28,11 @@ public class ListVehicleEndpoint {
     @GetMapping
     public ApiResponse<VehicleListResponse> list(@RequestParam(required = false) VehicleStatus status,
                                                  @RequestParam(required = false) String q,
+                                                 @RequestParam(required = false) Boolean onService,
                                                  @RequestParam(defaultValue = "0") int page,
                                                  @RequestParam(defaultValue = "20") int size) {
-        List<VehicleSummary> vehicles = vehicleService.listVehicles(status, q, page, size);
-        long total = vehicleService.countVehicles(status, q);
+        List<VehicleSummary> vehicles = vehicleService.listVehicles(status, q, onService, page, size);
+        long total = vehicleService.countVehicles(status, q, onService);
         List<VehicleListItem> items = vehicles.stream()
             .map(VehicleListMapper::toItem)
             .toList();

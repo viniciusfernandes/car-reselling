@@ -90,7 +90,14 @@
       "totalCost": "Custo total",
       "partner": "Parceiro",
       "yardTime": "Tempo pátio",
+      "onService": "Em serviço",
       "actions": "Ações"
+    },
+    "onService": {
+      "enable": "Marcar como em serviço",
+      "disable": "Remover do serviço",
+      "labelReady": "Pronto",
+      "labelPreparation": "Preparação"
     },
     "delete": {
       "button": "Excluir",
@@ -123,7 +130,7 @@
   },
   "status": {
     "IN_LOT": "No pátio",
-    "IN_SERVICE": "Em serviço",
+    "ON_SERVICE": "Em serviço",
     "READY_FOR_DISTRIBUTION": "Pronto para distribuição",
     "DISTRIBUTED": "Distribuído",
     "SOLD": "Vendido"

@@ -21,9 +21,9 @@ public interface VehicleRepository {
 
     Optional<Vehicle> findVehicleByVin(String vin);
 
-    List<Vehicle> findVehicleByFilter(VehicleStatus status, String query, int offset, int size);
+    List<Vehicle> findVehicleByFilter(VehicleStatus status, String query, Boolean onService, int offset, int size);
 
-    long countVehicleByFilter(VehicleStatus status, String query);
+    long countVehicleByFilter(VehicleStatus status, String query, Boolean onService);
 
     Vehicle updateVehicle(Vehicle vehicle);
 

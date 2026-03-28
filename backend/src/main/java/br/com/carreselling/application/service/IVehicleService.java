@@ -25,9 +25,9 @@ public interface IVehicleService {
 
     VehicleDetail getVehicle(UUID vehicleId);
 
-    List<VehicleSummary> listVehicles(VehicleStatus status, String query, int page, int size);
+    List<VehicleSummary> listVehicles(VehicleStatus status, String query, Boolean onService, int page, int size);
 
-    long countVehicles(VehicleStatus status, String query);
+    long countVehicles(VehicleStatus status, String query, Boolean onService);
 
     void updateVehicle(UUID vehicleId,
                        int year,
@@ -50,4 +50,6 @@ public interface IVehicleService {
     void assignPartner(UUID vehicleId, UUID partnerId);
 
     void deleteVehicle(UUID vehicleId);
+
+    boolean toggleOnService(UUID vehicleId);
 }

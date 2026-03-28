@@ -80,7 +80,6 @@ export default function VehicleOverviewTab({
 
   const statusOptions: Array<{ value: VehicleStatus; label: string }> = [
     { value: "IN_LOT", label: t("status.IN_LOT") },
-    { value: "IN_SERVICE", label: t("status.IN_SERVICE") },
     { value: "READY_FOR_DISTRIBUTION", label: t("status.READY_FOR_DISTRIBUTION") },
     { value: "DISTRIBUTED", label: t("status.DISTRIBUTED") },
     { value: "SOLD", label: t("status.SOLD") },

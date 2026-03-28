@@ -4,41 +4,45 @@ import { useTranslation } from "react-i18next";
 import { api, extractErrorMessage } from "../../service/api";
 import {
   ApiResponse,
+  VehicleListItem,
   VehicleListResponse,
   VehicleStatus,
 } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
 import { formatMoney } from "../../service/formatters";
 
+const ON_SERVICE_FILTER = "__ON_SERVICE__" as const;
+type FilterValue = VehicleStatus | "" | typeof ON_SERVICE_FILTER;
+
 export default function VehicleListPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<VehicleStatus | "">("");
+  const [filter, setFilter] = useState<FilterValue>("");
   const [page, setPage] = useState(0);
   const [data, setData] = useState<VehicleListResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const pageSize = 20;
 
-  const params = useMemo(
-    () => ({
+  const params = useMemo(() => {
+    const isOnServiceFilter = filter === ON_SERVICE_FILTER;
+    return {
       q: query || undefined,
-      status: status || undefined,
+      status: isOnServiceFilter || filter === "" ? undefined : filter,
+      onService: isOnServiceFilter ? true : undefined,
       page,
       size: pageSize,
-    }),
-    [query, status, page]
-  );
+    };
+  }, [query, filter, page]);
 
   const fetchVehicles = async () => {
     try {
       setLoading(true);
       const response = await api.get<ApiResponse<VehicleListResponse>>(
         "/vehicles",
-        {
-          params,
-        }
+        { params }
       );
       setData(response.data.data);
     } catch (error) {
@@ -50,21 +54,39 @@ export default function VehicleListPage() {
 
   useEffect(() => {
     fetchVehicles();
-  }, [params.q, params.status, params.page]);
+  }, [params.q, params.status, params.onService, params.page]);
+
+  const handleToggleOnService = async (
+    event: React.MouseEvent,
+    vehicle: VehicleListItem
+  ) => {
+    event.stopPropagation();
+    if (togglingId === vehicle.id) return;
+    setTogglingId(vehicle.id);
+    try {
+      await api.post(`/vehicles/${vehicle.id}/on-service/toggle`);
+      await fetchVehicles();
+    } catch (error) {
+      showToast(extractErrorMessage(error), "error");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const totalPages = data ? Math.ceil(data.total / data.size) : 1;
   const canGoPrev = page > 0;
   const canGoNext = data ? page + 1 < totalPages : false;
-  const statuses: Array<{ value: VehicleStatus | ""; label: string }> = [
+
+  const filters: Array<{ value: FilterValue; label: string }> = [
     { value: "", label: t("filters.all") },
     { value: "IN_LOT", label: t("status.IN_LOT") },
-    { value: "IN_SERVICE", label: t("status.IN_SERVICE") },
+    { value: ON_SERVICE_FILTER, label: t("status.ON_SERVICE") },
     { value: "DISTRIBUTED", label: t("status.DISTRIBUTED") },
     { value: "SOLD", label: t("status.SOLD") },
   ];
+
   const statusLabels: Record<VehicleStatus, string> = {
     IN_LOT: t("status.IN_LOT"),
-    IN_SERVICE: t("status.IN_SERVICE"),
     READY_FOR_DISTRIBUTION: t("status.READY_FOR_DISTRIBUTION"),
     DISTRIBUTED: t("status.DISTRIBUTED"),
     SOLD: t("status.SOLD"),
@@ -72,7 +94,7 @@ export default function VehicleListPage() {
 
   const statusBadgeClass: Record<VehicleStatus, string> = {
     IN_LOT: "bg-yellow-100 text-yellow-700",
-    IN_SERVICE: "bg-amber-100 text-amber-700",
+    READY_FOR_DISTRIBUTION: "bg-indigo-100 text-indigo-700",
     DISTRIBUTED: "bg-blue-100 text-blue-700",
     SOLD: "bg-green-100 text-green-700",
   };
@@ -105,16 +127,16 @@ export default function VehicleListPage() {
           className="w-full max-w-sm rounded-md border border-slate-200 px-3 py-2 text-sm shadow-sm"
         />
         <div className="flex flex-wrap gap-2">
-          {statuses.map((option) => (
+          {filters.map((option) => (
             <button
               key={option.value || "all"}
               type="button"
               onClick={() => {
-                setStatus(option.value);
+                setFilter(option.value);
                 setPage(0);
               }}
               className={`rounded-full px-3 py-1 text-xs font-medium ${
-                status === option.value
+                filter === option.value
                   ? "bg-slate-900 text-white"
                   : "bg-slate-100 text-slate-600"
               }`}
@@ -141,6 +163,7 @@ export default function VehicleListPage() {
                 <th className="px-3 py-2">{t("vehicles.table.partner")}</th>
                 <th className="px-3 py-2">{t("vehicles.table.yardTime")}</th>
                 <th className="px-3 py-2">{t("vehicles.table.status")}</th>
+                <th className="px-3 py-2 text-center">{t("vehicles.table.onService")}</th>
               </tr>
             </thead>
             <tbody>
@@ -184,10 +207,36 @@ export default function VehicleListPage() {
                     </td>
                     <td className="px-3 py-2">
                       <span
-                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass[vehicle.status]}`}
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass[vehicle.status]}`}
                       >
                         {statusLabels[vehicle.status]}
                       </span>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        type="button"
+                        title={
+                          vehicle.onService
+                            ? t("vehicles.onService.disable")
+                            : t("vehicles.onService.enable")
+                        }
+                        disabled={togglingId === vehicle.id}
+                        onClick={(e) => handleToggleOnService(e, vehicle)}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-opacity disabled:opacity-50 ${
+                          vehicle.onService
+                            ? "bg-red-100 text-red-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-2 w-2 rounded-full ${
+                            vehicle.onService ? "bg-red-500" : "bg-blue-500"
+                          }`}
+                        />
+                        {vehicle.onService
+                          ? t("vehicles.onService.labelPreparation")
+                          : t("vehicles.onService.labelReady")}
+                      </button>
                     </td>
                   </tr>
                 ))

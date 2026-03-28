@@ -4,7 +4,6 @@ export type ApiResponse<T> = {
 
 export type VehicleStatus =
   | "IN_LOT"
-  | "IN_SERVICE"
   | "READY_FOR_DISTRIBUTION"
   | "DISTRIBUTED"
   | "SOLD";
@@ -28,6 +27,7 @@ export type VehicleListItem = {
   model: string;
   year: number;
   status: VehicleStatus;
+  onService: boolean;
   purchasePrice: number;
   purchaseCommission: number;
   servicesTotal: number;
@@ -60,6 +60,7 @@ export type VehicleDetail = {
   purchaseInvoiceDocumentId?: string | null;
   purchasePaymentReceiptDocumentId?: string | null;
   status: VehicleStatus;
+  onService: boolean;
   assignedPartnerId?: string | null;
   assignedPartnerName?: string | null;
   servicesTotal: number;
