@@ -139,8 +139,8 @@ public class Vehicle {
     }
 
     public void ensureServicesEditable() {
-        if (status == VehicleStatus.DISTRIBUTED || status == VehicleStatus.SOLD) {
-            throw new InvalidStateException("Services are read-only after distribution.");
+        if (status == VehicleStatus.SOLD) {
+            throw new InvalidStateException("Services are read-only after sold.");
         }
     }
 
