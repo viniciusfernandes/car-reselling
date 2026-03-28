@@ -229,7 +229,7 @@ databaseChangeLog:
               SET sold_at = DATE(COALESCE(updated_at, created_at))
               WHERE status = 'SOLD' AND sold_at IS NULL;
   - changeSet:
-      id: vinicius-20260317-01
+      id: vinicius-20260317-02
       author: vinicius
       changes:
         - sql:
