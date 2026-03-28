@@ -59,7 +59,6 @@ export default function VehicleListPage() {
     { value: "", label: t("filters.all") },
     { value: "IN_LOT", label: t("status.IN_LOT") },
     { value: "IN_SERVICE", label: t("status.IN_SERVICE") },
-    { value: "READY_FOR_DISTRIBUTION", label: t("status.READY_FOR_DISTRIBUTION") },
     { value: "DISTRIBUTED", label: t("status.DISTRIBUTED") },
     { value: "SOLD", label: t("status.SOLD") },
   ];
@@ -69,6 +68,13 @@ export default function VehicleListPage() {
     READY_FOR_DISTRIBUTION: t("status.READY_FOR_DISTRIBUTION"),
     DISTRIBUTED: t("status.DISTRIBUTED"),
     SOLD: t("status.SOLD"),
+  };
+
+  const statusBadgeClass: Record<VehicleStatus, string> = {
+    IN_LOT: "bg-yellow-100 text-yellow-700",
+    IN_SERVICE: "bg-amber-100 text-amber-700",
+    DISTRIBUTED: "bg-blue-100 text-blue-700",
+    SOLD: "bg-green-100 text-green-700",
   };
 
   return (
@@ -120,28 +126,27 @@ export default function VehicleListPage() {
       </div>
       <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="overflow-auto">
-          <table className="min-w-full text-sm">
+          <table className="min-w-full whitespace-nowrap text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">{t("vehicles.table.plate")}</th>
-                <th className="px-4 py-3">{t("vehicles.table.brand")}</th>
-                <th className="px-4 py-3">{t("vehicles.table.model")}</th>
-                <th className="px-4 py-3">{t("vehicles.table.year")}</th>
-                <th className="px-4 py-3">{t("vehicles.table.status")}</th>
-                <th className="px-4 py-3 text-right">{t("vehicles.table.purchasePrice")}</th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-3 py-2">{t("vehicles.table.plate")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.model")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.year")}</th>
+                <th className="px-3 py-2 text-right">{t("vehicles.table.purchasePrice")}</th>
+                <th className="px-3 py-2 text-right">
                   {t("vehicles.table.purchaseCommission")}
                 </th>
-                <th className="px-4 py-3 text-right">{t("vehicles.table.servicesTotal")}</th>
-                <th className="px-4 py-3 text-right">{t("vehicles.table.totalCost")}</th>
-                <th className="px-4 py-3">{t("vehicles.table.partner")}</th>
-                <th className="px-4 py-3">{t("vehicles.table.yardTime")}</th>
+                <th className="px-3 py-2 text-right">{t("vehicles.table.servicesTotal")}</th>
+                <th className="px-3 py-2 text-right">{t("vehicles.table.totalCost")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.partner")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.yardTime")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.status")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-4 py-6 text-center">
+                  <td colSpan={11} className="px-3 py-6 text-center">
                     {t("vehicles.loading")}
                   </td>
                 </tr>
@@ -152,40 +157,43 @@ export default function VehicleListPage() {
                     className="cursor-pointer border-t hover:bg-slate-50"
                     onClick={() => navigate(`/vehicles/${vehicle.id}`)}
                   >
-                    <td className="px-4 py-3 font-medium">
+                    <td className="px-3 py-2 font-medium">
                       {vehicle.licensePlate}
                     </td>
-                    <td className="px-4 py-3">{vehicle.brand}</td>
-                    <td className="px-4 py-3">{vehicle.model}</td>
-                    <td className="px-4 py-3">{vehicle.year}</td>
-                    <td className="px-4 py-3">
-                      {statusLabels[vehicle.status]}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-2">{vehicle.model}</td>
+                    <td className="px-3 py-2">{vehicle.year}</td>
+                    <td className="px-3 py-2 text-right">
                       {formatMoney(vehicle.purchasePrice)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-2 text-right">
                       {formatMoney(vehicle.purchaseCommission)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-2 text-right">
                       {formatMoney(vehicle.servicesTotal)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-2 text-right">
                       {formatMoney(vehicle.totalCost)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       {vehicle.assignedPartnerName ?? "-"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       {vehicle.yardDays !== null && vehicle.yardDays !== undefined
                         ? t("units.days", { value: vehicle.yardDays })
                         : "-"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass[vehicle.status]}`}
+                      >
+                        {statusLabels[vehicle.status]}
+                      </span>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={11} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={11} className="px-3 py-6 text-center text-slate-500">
                     {t("vehicles.empty")}
                   </td>
                 </tr>

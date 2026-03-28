@@ -43,7 +43,7 @@ function AppLayout() {
     <ToastProvider>
       <div className="min-h-screen">
         <header className="bg-white shadow-sm">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-4">
             <h1 className="text-lg font-semibold">{t("app.title")}</h1>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ function AppLayout() {
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-6 py-8">
+        <main className="mx-auto max-w-screen-2xl px-6 py-8">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
