@@ -298,7 +298,7 @@ public class VehicleService implements IVehicleService {
                             servicesTotal,
                             totalCost,
                             partnerName,
-                            vehicle.calculateTotalYardDays(history)
+                            vehicle.calculateTotalServiceDays(history)
                     );
                 })
                 .toList();

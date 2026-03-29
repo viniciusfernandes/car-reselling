@@ -207,10 +207,10 @@ export default function VehicleListPage() {
                         {statusLabels[vehicle.status]}
                       </span>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 text-center">
                       {vehicle.yardDays !== null && vehicle.yardDays !== undefined
-                          ? t("units.days", { value: vehicle.yardDays })
-                          : "-"}
+                        ? `${vehicle.yardDays} d`
+                        : "-"}
                     </td>
                     <td className="px-3 py-2 text-center">
                       <button

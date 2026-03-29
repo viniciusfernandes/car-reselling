@@ -16,5 +16,5 @@ public record VehicleListItem(UUID id,
                               BigDecimal servicesTotal,
                               BigDecimal totalCost,
                               String assignedPartnerName,
-                              int yardDays) {
+                              double yardDays) {
 }
