@@ -161,8 +161,8 @@ export default function VehicleListPage() {
                 <th className="px-3 py-2 text-right">{t("vehicles.table.servicesTotal")}</th>
                 <th className="px-3 py-2 text-right">{t("vehicles.table.totalCost")}</th>
                 <th className="px-3 py-2">{t("vehicles.table.partner")}</th>
-                <th className="px-3 py-2">{t("vehicles.table.yardTime")}</th>
                 <th className="px-3 py-2">{t("vehicles.table.status")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.yardTime")}</th>
                 <th className="px-3 py-2 text-center">{t("vehicles.table.onService")}</th>
               </tr>
             </thead>
@@ -201,16 +201,16 @@ export default function VehicleListPage() {
                       {vehicle.assignedPartnerName ?? "-"}
                     </td>
                     <td className="px-3 py-2">
-                      {vehicle.yardDays !== null && vehicle.yardDays !== undefined
-                        ? t("units.days", { value: vehicle.yardDays })
-                        : "-"}
-                    </td>
-                    <td className="px-3 py-2">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass[vehicle.status]}`}
                       >
                         {statusLabels[vehicle.status]}
                       </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      {vehicle.yardDays !== null && vehicle.yardDays !== undefined
+                          ? t("units.days", { value: vehicle.yardDays })
+                          : "-"}
                     </td>
                     <td className="px-3 py-2 text-center">
                       <button
