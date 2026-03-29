@@ -315,38 +315,39 @@ public class Vehicle {
     }
 
     /**
-     * Calculates the total days the vehicle spent on service (on_service=true).
-     *
+     * Calculates the total hours the vehicle spent on service (on_service=true),
+     * returned as a decimal rounded to one place (e.g. 3h 30m → 3.5).
+     * <p>
      * History is ordered by changedAt ASC. Each entry represents when on_service
      * transitioned to that value. Intervals where on_service=true are summed.
      * If the vehicle is currently on service the open interval extends to now.
-     *
-     * Example — on_service=true, history=[22/Mar, 24/Mar, 26/Mar]:
-     *   interval 1: 22→24 = 2 days  |  interval 2: 26→now(28) = 2 days  → 4 days
-     *
-     * Example — on_service=false, history=[22/Mar, 24/Mar, 26/Mar, 30/Mar]:
-     *   interval 1: 22→24 = 2 days  |  interval 2: 26→30 = 4 days  → 6 days
+     * <p>
+     * Example — on_service=true, history=[22/Mar 10:00, 22/Mar 13:30]:
+     * interval: 10:00→13:30 = 3.5 h  (open, extends to now)
      */
-    public int calculateTotalYardDays(List<VehicleOnServiceHistory> history) {
+    public double calculateTotalServiceDays(List<VehicleOnServiceHistory> history) {
         if (history == null || history.isEmpty()) {
-            return 0;
+            return 0.0;
         }
-        long totalDays = 0;
+        long totalSeconds = 0;
         Instant intervalStart = null;
         for (VehicleOnServiceHistory record : history) {
             if (record.onService()) {
                 intervalStart = record.changedAt();
             } else {
                 if (intervalStart != null) {
-                    totalDays += Math.max(ChronoUnit.DAYS.between(intervalStart, record.changedAt()), 0);
+                    totalSeconds += Math.max(ChronoUnit.SECONDS.between(intervalStart, record.changedAt()), 0);
                     intervalStart = null;
                 }
             }
         }
         if (this.onService && intervalStart != null) {
-            totalDays += Math.max(ChronoUnit.DAYS.between(intervalStart, Instant.now()), 0);
+            totalSeconds += Math.max(ChronoUnit.SECONDS.between(intervalStart, Instant.now()), 0);
         }
-        return (int) totalDays;
+        double days = totalSeconds / (3600.0 * 24.0);
+        int roundedDays = (int) days;
+        double rest = days - roundedDays;
+        return rest < 0.5 ? roundedDays + 0.5 : roundedDays + 1;
     }
 
     @Override
