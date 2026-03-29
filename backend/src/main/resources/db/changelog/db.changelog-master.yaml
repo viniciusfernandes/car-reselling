@@ -242,3 +242,21 @@ databaseChangeLog:
               WHERE status = 'IN_SERVICE';
 
               CREATE INDEX idx_vehicles_on_service ON vehicles (on_service);
+  - changeSet:
+      id: vinicius-20260328-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE IF NOT EXISTS vehicle_on_service_history (
+                id CHAR(36) PRIMARY KEY,
+                vehicle_id CHAR(36) NOT NULL,
+                on_service BOOLEAN NOT NULL,
+                changed_at DATETIME NOT NULL,
+                KEY idx_on_service_history_vehicle (vehicle_id),
+                CONSTRAINT fk_on_service_history_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+              );
+
+              INSERT INTO vehicle_on_service_history (id, vehicle_id, on_service, changed_at)
+              SELECT UUID(), id, TRUE, created_at
+              FROM vehicles;

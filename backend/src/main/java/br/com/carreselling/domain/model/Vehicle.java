@@ -5,6 +5,8 @@ import br.com.carreselling.domain.exception.InvalidStateException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -312,20 +314,39 @@ public class Vehicle {
         return status == VehicleStatus.SOLD;
     }
 
-    public int calculateTotalYardDays() {
-        Instant lastDate = this.distributedAt;
-        if (!status.alreadyDistribuited()) {
-            lastDate = Instant.now();
-        }
-
-        if (createdAt == null || lastDate == null) {
+    /**
+     * Calculates the total days the vehicle spent on service (on_service=true).
+     *
+     * History is ordered by changedAt ASC. Each entry represents when on_service
+     * transitioned to that value. Intervals where on_service=true are summed.
+     * If the vehicle is currently on service the open interval extends to now.
+     *
+     * Example — on_service=true, history=[22/Mar, 24/Mar, 26/Mar]:
+     *   interval 1: 22→24 = 2 days  |  interval 2: 26→now(28) = 2 days  → 4 days
+     *
+     * Example — on_service=false, history=[22/Mar, 24/Mar, 26/Mar, 30/Mar]:
+     *   interval 1: 22→24 = 2 days  |  interval 2: 26→30 = 4 days  → 6 days
+     */
+    public int calculateTotalYardDays(List<VehicleOnServiceHistory> history) {
+        if (history == null || history.isEmpty()) {
             return 0;
         }
-        long days = java.time.temporal.ChronoUnit.DAYS.between(
-                createdAt,
-                lastDate
-        );
-        return (int) Math.max(days, 0);
+        long totalDays = 0;
+        Instant intervalStart = null;
+        for (VehicleOnServiceHistory record : history) {
+            if (record.onService()) {
+                intervalStart = record.changedAt();
+            } else {
+                if (intervalStart != null) {
+                    totalDays += Math.max(ChronoUnit.DAYS.between(intervalStart, record.changedAt()), 0);
+                    intervalStart = null;
+                }
+            }
+        }
+        if (this.onService && intervalStart != null) {
+            totalDays += Math.max(ChronoUnit.DAYS.between(intervalStart, Instant.now()), 0);
+        }
+        return (int) totalDays;
     }
 
     @Override

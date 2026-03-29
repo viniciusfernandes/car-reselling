@@ -14,6 +14,7 @@ import br.com.carreselling.domain.repository.DocumentRepository;
 import br.com.carreselling.domain.repository.PartnerRepository;
 import br.com.carreselling.domain.repository.ServiceRepository;
 import br.com.carreselling.domain.repository.VehicleModelRepository;
+import br.com.carreselling.domain.repository.VehicleOnServiceHistoryRepository;
 import br.com.carreselling.domain.repository.VehicleRepository;
 import br.com.carreselling.infrastructure.storage.DocumentStorage;
 
@@ -44,6 +45,7 @@ public class VehicleService implements IVehicleService {
     private final ColorRepository colorRepository;
     private final VehicleModelRepository vehicleModelRepository;
     private final VehicleSalesCalculator salesCalculator;
+    private final VehicleOnServiceHistoryRepository onServiceHistoryRepository;
 
     public VehicleService(VehicleRepository vehicleRepository,
                           DocumentRepository documentRepository,
@@ -53,7 +55,8 @@ public class VehicleService implements IVehicleService {
                           BrandRepository brandRepository,
                           ColorRepository colorRepository,
                           VehicleModelRepository vehicleModelRepository,
-                          VehicleSalesCalculator salesCalculator) {
+                          VehicleSalesCalculator salesCalculator,
+                          VehicleOnServiceHistoryRepository onServiceHistoryRepository) {
         this.vehicleRepository = vehicleRepository;
         this.documentRepository = documentRepository;
         this.documentStorage = documentStorage;
@@ -63,6 +66,7 @@ public class VehicleService implements IVehicleService {
         this.colorRepository = colorRepository;
         this.vehicleModelRepository = vehicleModelRepository;
         this.salesCalculator = salesCalculator;
+        this.onServiceHistoryRepository = onServiceHistoryRepository;
     }
 
     @Override
@@ -146,6 +150,12 @@ public class VehicleService implements IVehicleService {
         );
         vehicle.ensureDistributionInvariant();
         vehicleRepository.saveVehicle(vehicle);
+        onServiceHistoryRepository.save(new VehicleOnServiceHistory(
+                UuidGenerator.generate(),
+                vehicle.getId(),
+                vehicle.isOnService(),
+                now
+        ));
         return vehicle.getId();
     }
 
@@ -272,6 +282,9 @@ public class VehicleService implements IVehicleService {
                             ? BigDecimal.ZERO
                             : vehicle.getPurchaseCommission();
 
+                    List<VehicleOnServiceHistory> history =
+                            onServiceHistoryRepository.findByVehicleId(vehicle.getId());
+
                     return new VehicleSummary(
                             vehicle.getId(),
                             vehicle.getLicensePlate(),
@@ -285,7 +298,7 @@ public class VehicleService implements IVehicleService {
                             servicesTotal,
                             totalCost,
                             partnerName,
-                            vehicle.calculateTotalYardDays()
+                            vehicle.calculateTotalYardDays(history)
                     );
                 })
                 .toList();
@@ -428,8 +441,15 @@ public class VehicleService implements IVehicleService {
         Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         vehicle.toggleOnService();
-        vehicle.setUpdatedAt(Instant.now());
+        Instant now = Instant.now();
+        vehicle.setUpdatedAt(now);
         vehicleRepository.updateVehicle(vehicle);
+        onServiceHistoryRepository.save(new VehicleOnServiceHistory(
+                UuidGenerator.generate(),
+                vehicle.getId(),
+                vehicle.isOnService(),
+                now
+        ));
         return vehicle.isOnService();
     }
 
