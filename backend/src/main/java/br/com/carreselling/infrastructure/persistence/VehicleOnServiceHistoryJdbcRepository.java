@@ -49,6 +49,14 @@ public class VehicleOnServiceHistoryJdbcRepository implements VehicleOnServiceHi
         );
     }
 
+    @Override
+    public void deleteByVehicleId(UUID vehicleId) {
+        jdbcTemplate.update(
+                "DELETE FROM vehicle_on_service_history WHERE vehicle_id = ?",
+                vehicleId.toString()
+        );
+    }
+
     private static class HistoryRowMapper implements RowMapper<VehicleOnServiceHistory> {
 
         @Override

@@ -10,4 +10,6 @@ public interface VehicleOnServiceHistoryRepository {
     void save(VehicleOnServiceHistory history);
 
     List<VehicleOnServiceHistory> findByVehicleId(UUID vehicleId);
+
+    void deleteByVehicleId(UUID vehicleId);
 }

@@ -433,6 +433,8 @@ public class VehicleService implements IVehicleService {
         serviceRepository.findServiceByVehicleId(vehicleId)
                 .forEach(service -> serviceRepository.deleteService(service.getId()));
 
+        onServiceHistoryRepository.deleteByVehicleId(vehicleId);
+
         vehicleRepository.deleteVehicle(vehicleId);
     }
 
