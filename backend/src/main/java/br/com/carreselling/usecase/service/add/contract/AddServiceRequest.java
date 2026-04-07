@@ -11,6 +11,7 @@ public record AddServiceRequest(
     @NotNull ServiceType serviceType,
     @NotNull @PositiveOrZero BigDecimal serviceValue,
     @Size(max = 500) String description,
-    LocalDate performedAt
+    @NotNull LocalDate startDate,
+    LocalDate endDate
 ) {
 }

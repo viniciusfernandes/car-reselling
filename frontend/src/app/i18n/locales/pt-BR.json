@@ -96,6 +96,7 @@
     "onService": {
       "enable": "Marcar como em serviço",
       "disable": "Remover do serviço",
+      "openServices": "Abrir detalhes de serviço",
       "labelReady": "Pronto",
       "labelPreparation": "Preparação"
     },
@@ -191,7 +192,8 @@
       "type": "Tipo de serviço",
       "value": "Valor do serviço",
       "description": "Descrição",
-      "performedAt": "Data de execução",
+      "startDate": "Data de início",
+      "endDate": "Data de término",
       "addAction": "Adicionar serviço",
       "readOnly": "Os serviços ficam somente leitura após a distribuição.",
       "added": "Serviço adicionado",
@@ -200,7 +202,8 @@
       "empty": "Nenhum serviço cadastrado.",
       "table": {
         "type": "Tipo",
-        "date": "Data",
+        "startDate": "Data de início",
+        "endDate": "Data de término",
         "value": "Valor",
         "description": "Descrição",
         "actions": "Ações"

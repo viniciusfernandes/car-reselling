@@ -10,5 +10,6 @@ public record ServiceItem(UUID id,
                           ServiceType serviceType,
                           String description,
                           BigDecimal serviceValue,
-                          LocalDate performedAt) {
+                          LocalDate startDate,
+                          LocalDate endDate) {
 }

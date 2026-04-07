@@ -34,7 +34,8 @@ public class AddServiceEndpoint {
             request.serviceType(),
             request.serviceValue(),
             request.description(),
-            request.performedAt()
+            request.startDate(),
+            request.endDate()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(new AddServiceResponse(serviceId)));

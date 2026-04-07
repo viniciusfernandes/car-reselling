@@ -96,6 +96,7 @@
     "onService": {
       "enable": "Mark as in service",
       "disable": "Remove from service",
+      "openServices": "Open service details",
       "labelReady": "Ready",
       "labelPreparation": "Preparation"
     },
@@ -191,7 +192,8 @@
       "type": "Service type",
       "value": "Service value",
       "description": "Description",
-      "performedAt": "Performed at",
+      "startDate": "Start date",
+      "endDate": "End date",
       "addAction": "Add service",
       "readOnly": "Services are read-only after distribution.",
       "added": "Service added",
@@ -200,7 +202,8 @@
       "empty": "No services yet.",
       "table": {
         "type": "Type",
-        "date": "Date",
+        "startDate": "Start date",
+        "endDate": "End date",
         "value": "Value",
         "description": "Description",
         "actions": "Actions"

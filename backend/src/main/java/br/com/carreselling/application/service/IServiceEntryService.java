@@ -1,6 +1,7 @@
 package br.com.carreselling.application.service;
 
 import br.com.carreselling.application.service.model.ServiceSummary;
+import br.com.carreselling.domain.model.ServiceOnVehicle;
 import br.com.carreselling.domain.model.ServiceType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,7 +14,8 @@ public interface IServiceEntryService {
                     ServiceType serviceType,
                     BigDecimal serviceValue,
                     String description,
-                    LocalDate performedAt);
+                    LocalDate startDate,
+                    LocalDate endDate);
 
     List<ServiceSummary> listServices(UUID vehicleId);
 
@@ -24,7 +26,12 @@ public interface IServiceEntryService {
                        ServiceType serviceType,
                        BigDecimal serviceValue,
                        String description,
-                       LocalDate performedAt);
+                       LocalDate startDate,
+                       LocalDate endDate);
 
     void deleteService(UUID vehicleId, UUID serviceId);
+
+    long calculateTotalServiceDays(List<ServiceOnVehicle> services);
+
+    double calculateTotalServiceDays(UUID vehicleId);
 }

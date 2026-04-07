@@ -50,6 +50,4 @@ public interface IVehicleService {
     void assignPartner(UUID vehicleId, UUID partnerId);
 
     void deleteVehicle(UUID vehicleId);
-
-    boolean toggleOnService(UUID vehicleId);
 }
