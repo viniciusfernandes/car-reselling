@@ -1,6 +1,6 @@
 package br.com.carreselling.domain.repository;
 
-import br.com.carreselling.domain.model.ServiceEntry;
+import br.com.carreselling.domain.model.ServiceOnVehicle;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -8,15 +8,17 @@ import java.util.UUID;
 
 public interface ServiceRepository {
 
-    ServiceEntry saveService(ServiceEntry serviceEntry);
+    ServiceOnVehicle saveService(ServiceOnVehicle serviceEntry);
 
-    Optional<ServiceEntry> findServiceById(UUID id);
+    Optional<ServiceOnVehicle> findServiceById(UUID id);
 
-    List<ServiceEntry> findServiceByVehicleId(UUID vehicleId);
+    List<ServiceOnVehicle> findServiceByVehicleId(UUID vehicleId);
 
-    ServiceEntry updateService(ServiceEntry serviceEntry);
+    ServiceOnVehicle updateService(ServiceOnVehicle serviceEntry);
 
     void deleteService(UUID id);
 
     BigDecimal findServiceTotalByVehicleId(UUID vehicleId);
+
+    boolean existsOpenServiceByVehicleId(UUID vehicleId);
 }

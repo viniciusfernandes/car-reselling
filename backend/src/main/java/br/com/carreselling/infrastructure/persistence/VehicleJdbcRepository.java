@@ -37,9 +37,9 @@ public class VehicleJdbcRepository implements VehicleRepository {
                         INSERT INTO vehicles
                         (id, license_plate, renavam, vin, year, color, model, brand, brand_id, model_id, supplier_source,
                          purchase_price, freight_cost, purchase_commission, selling_price, purchase_payment_receipt_document_id,
-                         purchase_invoice_document_id, status, on_service, assigned_partner_id, distributed_at, sold_at,
+                         purchase_invoice_document_id, status, assigned_partner_id, distributed_at, sold_at,
                          sale_commission_rate, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 vehicle.getId().toString(),
                 vehicle.getLicensePlate(),
@@ -59,7 +59,6 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
                 optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
                 vehicle.getStatus().name(),
-                vehicle.isOnService(),
                 optionalUuid(vehicle.getAssignedPartnerId()),
                 vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
                 vehicle.getSoldAt(),
@@ -112,24 +111,27 @@ public class VehicleJdbcRepository implements VehicleRepository {
 
     @Override
     public List<Vehicle> findVehicleByFilter(VehicleStatus status, String query, Boolean onService, int offset, int size) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM vehicles WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT * FROM vehicles v WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
         if (status != null) {
-            sql.append("AND status = ? ");
+            sql.append("AND v.status = ? ");
             params.add(status.name());
         }
         if (onService != null) {
-            sql.append("AND on_service = ? ");
-            params.add(onService);
+            if (Boolean.TRUE.equals(onService)) {
+                sql.append("AND EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+            } else {
+                sql.append("AND NOT EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+            }
         }
         if (query != null && !query.isBlank()) {
-            sql.append("AND (license_plate LIKE ? OR model LIKE ? OR brand LIKE ?) ");
+            sql.append("AND (v.license_plate LIKE ? OR v.model LIKE ? OR v.brand LIKE ?) ");
             String q = "%" + query + "%";
             params.add(q);
             params.add(q);
             params.add(q);
         }
-        sql.append("ORDER BY created_at DESC LIMIT ? OFFSET ?");
+        sql.append("ORDER BY v.created_at DESC LIMIT ? OFFSET ?");
         params.add(size);
         params.add(offset);
         return jdbcTemplate.query(java.util.Objects.requireNonNull(sql.toString()),
@@ -139,18 +141,21 @@ public class VehicleJdbcRepository implements VehicleRepository {
 
     @Override
     public long countVehicleByFilter(VehicleStatus status, String query, Boolean onService) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM vehicles WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM vehicles v WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
         if (status != null) {
-            sql.append("AND status = ? ");
+            sql.append("AND v.status = ? ");
             params.add(status.name());
         }
         if (onService != null) {
-            sql.append("AND on_service = ? ");
-            params.add(onService);
+            if (Boolean.TRUE.equals(onService)) {
+                sql.append("AND EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+            } else {
+                sql.append("AND NOT EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+            }
         }
         if (query != null && !query.isBlank()) {
-            sql.append("AND (license_plate LIKE ? OR model LIKE ? OR brand LIKE ?) ");
+            sql.append("AND (v.license_plate LIKE ? OR v.model LIKE ? OR v.brand LIKE ?) ");
             String q = "%" + query + "%";
             params.add(q);
             params.add(q);
@@ -171,7 +176,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                         SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, brand_id = ?, model_id = ?, supplier_source = ?,
                             purchase_price = ?, freight_cost = ?, purchase_commission = ?, selling_price = ?,
                             purchase_payment_receipt_document_id = ?, purchase_invoice_document_id = ?,
-                            status = ?, on_service = ?, assigned_partner_id = ?, distributed_at = ?, sold_at = ?,
+                            status = ?, assigned_partner_id = ?, distributed_at = ?, sold_at = ?,
                             sale_commission_rate = ?, updated_at = ?
                         WHERE id = ?
                         """,
@@ -191,7 +196,6 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
                 optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
                 vehicle.getStatus().name(),
-                vehicle.isOnService(),
                 optionalUuid(vehicle.getAssignedPartnerId()),
                 vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
                 vehicle.getSoldAt(),
@@ -419,7 +423,6 @@ public class VehicleJdbcRepository implements VehicleRepository {
             UUID paymentReceiptId = optionalUuid(rs.getString("purchase_payment_receipt_document_id"));
             UUID invoiceId = optionalUuid(rs.getString("purchase_invoice_document_id"));
             VehicleStatus status = VehicleStatus.valueOf(rs.getString("status"));
-            boolean onService = rs.getBoolean("on_service");
             UUID assignedPartnerId = optionalUuid(rs.getString("assigned_partner_id"));
             Timestamp distributedAt = rs.getTimestamp("distributed_at");
             java.sql.Date soldAtDate = rs.getDate("sold_at");
@@ -445,7 +448,6 @@ public class VehicleJdbcRepository implements VehicleRepository {
                     paymentReceiptId,
                     invoiceId,
                     status,
-                    onService,
                     assignedPartnerId,
                     distributedAt == null ? null : distributedAt.toInstant(),
                     soldAtDate == null ? null : soldAtDate.toLocalDate(),

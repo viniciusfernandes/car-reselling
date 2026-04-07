@@ -100,7 +100,8 @@ export type ServiceItem = {
   serviceType: ServiceType;
   description?: string | null;
   serviceValue: number;
-  performedAt?: string | null;
+  startDate: string;
+  endDate?: string | null;
 };
 
 export type ServiceListResponse = {

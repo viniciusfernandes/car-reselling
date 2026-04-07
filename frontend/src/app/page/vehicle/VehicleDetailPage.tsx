@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, extractErrorMessage } from "../../service/api";
 import {
@@ -30,9 +30,11 @@ export default function VehicleDetailPage() {
   const { t } = useTranslation();
   const { vehicleId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const initialTab = (location.state as { tab?: TabKey } | null)?.tab ?? "overview";
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [vehicle, setVehicle] = useState<VehicleDetail | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [servicesTotal, setServicesTotal] = useState(0);

@@ -23,7 +23,6 @@ export default function VehicleListPage() {
   const [page, setPage] = useState(0);
   const [data, setData] = useState<VehicleListResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const pageSize = 20;
 
   const params = useMemo(() => {
@@ -56,21 +55,12 @@ export default function VehicleListPage() {
     fetchVehicles();
   }, [params.q, params.status, params.onService, params.page]);
 
-  const handleToggleOnService = async (
+  const handleOnServiceClick = (
     event: React.MouseEvent,
     vehicle: VehicleListItem
   ) => {
     event.stopPropagation();
-    if (togglingId === vehicle.id) return;
-    setTogglingId(vehicle.id);
-    try {
-      await api.post(`/vehicles/${vehicle.id}/on-service/toggle`);
-      await fetchVehicles();
-    } catch (error) {
-      showToast(extractErrorMessage(error), "error");
-    } finally {
-      setTogglingId(null);
-    }
+    navigate(`/vehicles/${vehicle.id}`, { state: { tab: "services" } });
   };
 
   const totalPages = data ? Math.ceil(data.total / data.size) : 1;
@@ -215,14 +205,9 @@ export default function VehicleListPage() {
                     <td className="px-3 py-2 text-center">
                       <button
                         type="button"
-                        title={
-                          vehicle.onService
-                            ? t("vehicles.onService.disable")
-                            : t("vehicles.onService.enable")
-                        }
-                        disabled={togglingId === vehicle.id}
-                        onClick={(e) => handleToggleOnService(e, vehicle)}
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-opacity disabled:opacity-50 ${
+                        title={t("vehicles.onService.openServices")}
+                        onClick={(e) => handleOnServiceClick(e, vehicle)}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
                           vehicle.onService
                             ? "bg-red-100 text-red-700"
                             : "bg-blue-100 text-blue-700"

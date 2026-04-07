@@ -5,31 +5,44 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-public class ServiceEntry {
+public class ServiceOnVehicle {
 
     private final UUID id;
     private final UUID vehicleId;
     private ServiceType serviceType;
     private String description;
     private BigDecimal serviceValue;
-    private LocalDate performedAt;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private Instant createdAt;
     private Instant updatedAt;
 
-    public ServiceEntry(UUID id,
-                        UUID vehicleId,
-                        ServiceType serviceType,
-                        String description,
-                        BigDecimal serviceValue,
-                        LocalDate performedAt,
-                        Instant createdAt,
-                        Instant updatedAt) {
+    public ServiceOnVehicle(UUID id,
+                            UUID vehicleId,
+                            LocalDate startDate,
+                            LocalDate endDate) {
+        this.id = id;
+        this.vehicleId = vehicleId;
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
+    public ServiceOnVehicle(UUID id,
+                            UUID vehicleId,
+                            ServiceType serviceType,
+                            String description,
+                            BigDecimal serviceValue,
+                            LocalDate startDate,
+                            LocalDate endDate,
+                            Instant createdAt,
+                            Instant updatedAt) {
         this.id = id;
         this.vehicleId = vehicleId;
         this.serviceType = serviceType;
         this.description = description;
         this.serviceValue = serviceValue;
-        this.performedAt = performedAt;
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -54,8 +67,12 @@ public class ServiceEntry {
         return serviceValue;
     }
 
-    public LocalDate getPerformedAt() {
-        return performedAt;
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
     }
 
     public Instant getCreatedAt() {
@@ -66,11 +83,13 @@ public class ServiceEntry {
         return updatedAt;
     }
 
-    public void update(ServiceType serviceType, String description, BigDecimal serviceValue, LocalDate performedAt) {
+    public void update(ServiceType serviceType, String description, BigDecimal serviceValue,
+                       LocalDate startDate, LocalDate endDate) {
         this.serviceType = serviceType;
         this.description = description;
         this.serviceValue = serviceValue;
-        this.performedAt = performedAt;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 
     public void setCreatedAt(Instant createdAt) {

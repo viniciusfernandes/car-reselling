@@ -1,8 +1,9 @@
 package br.com.carreselling.infrastructure.persistence;
 
-import br.com.carreselling.domain.model.ServiceEntry;
+import br.com.carreselling.domain.model.ServiceOnVehicle;
 import br.com.carreselling.domain.model.ServiceType;
 import br.com.carreselling.domain.repository.ServiceRepository;
+
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -26,56 +28,59 @@ public class ServiceJdbcRepository implements ServiceRepository {
     }
 
     @Override
-    public ServiceEntry saveService(ServiceEntry serviceEntry) {
+    public ServiceOnVehicle saveService(ServiceOnVehicle serviceEntry) {
         jdbcTemplate.update("""
-                INSERT INTO services
-                (id, vehicle_id, service_type, description, service_value, performed_at, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-            serviceEntry.getId().toString(),
-            serviceEntry.getVehicleId().toString(),
-            serviceEntry.getServiceType().name(),
-            serviceEntry.getDescription(),
-            serviceEntry.getServiceValue(),
-            serviceEntry.getPerformedAt(),
-            Timestamp.from(serviceEntry.getCreatedAt()),
-            serviceEntry.getUpdatedAt() == null ? null : Timestamp.from(serviceEntry.getUpdatedAt())
+                        INSERT INTO services
+                        (id, vehicle_id, service_type, description, service_value, start_date, end_date, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                serviceEntry.getId().toString(),
+                serviceEntry.getVehicleId().toString(),
+                serviceEntry.getServiceType().name(),
+                serviceEntry.getDescription(),
+                serviceEntry.getServiceValue(),
+                serviceEntry.getStartDate(),
+                serviceEntry.getEndDate(),
+                Timestamp.from(serviceEntry.getCreatedAt()),
+                serviceEntry.getUpdatedAt() == null ? null : Timestamp.from(serviceEntry.getUpdatedAt())
         );
         return serviceEntry;
     }
 
     @Override
-    public Optional<ServiceEntry> findServiceById(UUID id) {
-        List<ServiceEntry> result = jdbcTemplate.query("""
-                SELECT * FROM services WHERE id = ?
-                """,
-            new ServiceRowMapper(),
-            id.toString());
+    public Optional<ServiceOnVehicle> findServiceById(UUID id) {
+        List<ServiceOnVehicle> result = jdbcTemplate.query("""
+                        SELECT * FROM services WHERE id = ?
+                        """,
+                new ServiceRowMapper(),
+                id.toString());
         return result.stream().findFirst();
     }
 
     @Override
-    public List<ServiceEntry> findServiceByVehicleId(UUID vehicleId) {
+    public List<ServiceOnVehicle> findServiceByVehicleId(UUID vehicleId) {
         return jdbcTemplate.query("""
-                SELECT * FROM services WHERE vehicle_id = ? ORDER BY created_at DESC
-                """,
-            new ServiceRowMapper(),
-            vehicleId.toString());
+                        SELECT * FROM services WHERE vehicle_id = ? ORDER BY created_at DESC
+                        """,
+                new ServiceRowMapper(),
+                vehicleId.toString());
     }
 
     @Override
-    public ServiceEntry updateService(ServiceEntry serviceEntry) {
+    public ServiceOnVehicle updateService(ServiceOnVehicle serviceEntry) {
         jdbcTemplate.update("""
-                UPDATE services
-                SET service_type = ?, description = ?, service_value = ?, performed_at = ?, updated_at = ?
-                WHERE id = ?
-                """,
-            serviceEntry.getServiceType().name(),
-            serviceEntry.getDescription(),
-            serviceEntry.getServiceValue(),
-            serviceEntry.getPerformedAt(),
-            serviceEntry.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(serviceEntry.getUpdatedAt()),
-            serviceEntry.getId().toString()
+                        UPDATE services
+                        SET service_type = ?, description = ?, service_value = ?,
+                            start_date = ?, end_date = ?, updated_at = ?
+                        WHERE id = ?
+                        """,
+                serviceEntry.getServiceType().name(),
+                serviceEntry.getDescription(),
+                serviceEntry.getServiceValue(),
+                serviceEntry.getStartDate(),
+                serviceEntry.getEndDate(),
+                serviceEntry.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(serviceEntry.getUpdatedAt()),
+                serviceEntry.getId().toString()
         );
         return serviceEntry;
     }
@@ -88,34 +93,45 @@ public class ServiceJdbcRepository implements ServiceRepository {
     @Override
     public BigDecimal findServiceTotalByVehicleId(UUID vehicleId) {
         BigDecimal total = jdbcTemplate.queryForObject("""
-                SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ?
-                """,
-            new Object[]{vehicleId.toString()},
-            BigDecimal.class);
+                        SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ?
+                        """,
+                new Object[]{vehicleId.toString()},
+                BigDecimal.class);
         return total == null ? BigDecimal.ZERO : total;
     }
 
-    private static class ServiceRowMapper implements RowMapper<ServiceEntry> {
+    @Override
+    public boolean existsOpenServiceByVehicleId(UUID vehicleId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM services WHERE vehicle_id = ? AND (end_date IS NULL OR end_date > CURRENT_DATE))",
+                Boolean.class,
+                vehicleId.toString()
+        ));
+    }
+
+    private static class ServiceRowMapper implements RowMapper<ServiceOnVehicle> {
 
         @Override
-        public ServiceEntry mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public ServiceOnVehicle mapRow(ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
             UUID vehicleId = UUID.fromString(rs.getString("vehicle_id"));
             ServiceType serviceType = ServiceType.valueOf(rs.getString("service_type"));
             String description = rs.getString("description");
             BigDecimal value = rs.getBigDecimal("service_value");
-            LocalDate performedAt = rs.getDate("performed_at") == null ? null : rs.getDate("performed_at").toLocalDate();
+            LocalDate startDate = rs.getDate("start_date") == null ? null : rs.getDate("start_date").toLocalDate();
+            LocalDate endDate = rs.getDate("end_date") == null ? null : rs.getDate("end_date").toLocalDate();
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
-            return new ServiceEntry(
-                id,
-                vehicleId,
-                serviceType,
-                description,
-                value,
-                performedAt,
-                createdAt,
-                updatedAt == null ? null : updatedAt.toInstant()
+            return new ServiceOnVehicle(
+                    id,
+                    vehicleId,
+                    serviceType,
+                    description,
+                    value,
+                    startDate,
+                    endDate,
+                    createdAt,
+                    updatedAt == null ? null : updatedAt.toInstant()
             );
         }
     }

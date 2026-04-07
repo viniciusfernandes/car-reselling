@@ -5,8 +5,6 @@ import br.com.carreselling.domain.exception.InvalidStateException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -30,7 +28,6 @@ public class Vehicle {
     private UUID purchasePaymentReceiptDocumentId;
     private UUID purchaseInvoiceDocumentId;
     private VehicleStatus status;
-    private boolean onService;
     private UUID assignedPartnerId;
     private Instant distributedAt;
     private LocalDate soldAt;
@@ -56,7 +53,6 @@ public class Vehicle {
                    UUID purchasePaymentReceiptDocumentId,
                    UUID purchaseInvoiceDocumentId,
                    VehicleStatus status,
-                   boolean onService,
                    UUID assignedPartnerId,
                    Instant distributedAt,
                    LocalDate soldAt,
@@ -81,7 +77,6 @@ public class Vehicle {
         this.purchasePaymentReceiptDocumentId = purchasePaymentReceiptDocumentId;
         this.purchaseInvoiceDocumentId = purchaseInvoiceDocumentId;
         this.status = status;
-        this.onService = onService;
         this.assignedPartnerId = assignedPartnerId;
         this.distributedAt = distributedAt;
         this.soldAt = soldAt;
@@ -230,18 +225,6 @@ public class Vehicle {
         return status;
     }
 
-    public boolean isOnService() {
-        return onService;
-    }
-
-    public void setOnService(boolean onService) {
-        this.onService = onService;
-    }
-
-    public void toggleOnService() {
-        this.onService = !this.onService;
-    }
-
     public UUID getAssignedPartnerId() {
         return assignedPartnerId;
     }
@@ -312,42 +295,6 @@ public class Vehicle {
 
     public boolean isSold() {
         return status == VehicleStatus.SOLD;
-    }
-
-    /**
-     * Calculates the total hours the vehicle spent on service (on_service=true),
-     * returned as a decimal rounded to one place (e.g. 3h 30m → 3.5).
-     * <p>
-     * History is ordered by changedAt ASC. Each entry represents when on_service
-     * transitioned to that value. Intervals where on_service=true are summed.
-     * If the vehicle is currently on service the open interval extends to now.
-     * <p>
-     * Example — on_service=true, history=[22/Mar 10:00, 22/Mar 13:30]:
-     * interval: 10:00→13:30 = 3.5 h  (open, extends to now)
-     */
-    public double calculateTotalServiceDays(List<VehicleOnServiceHistory> history) {
-        if (history == null || history.isEmpty()) {
-            return 0.0;
-        }
-        long totalSeconds = 0;
-        Instant intervalStart = null;
-        for (VehicleOnServiceHistory record : history) {
-            if (record.onService()) {
-                intervalStart = record.changedAt();
-            } else {
-                if (intervalStart != null) {
-                    totalSeconds += Math.max(ChronoUnit.SECONDS.between(intervalStart, record.changedAt()), 0);
-                    intervalStart = null;
-                }
-            }
-        }
-        if (this.onService && intervalStart != null) {
-            totalSeconds += Math.max(ChronoUnit.SECONDS.between(intervalStart, Instant.now()), 0);
-        }
-        double days = totalSeconds / (3600.0 * 24.0);
-        int roundedDays = (int) days;
-        double rest = days - roundedDays;
-        return rest < 0.5 ? roundedDays + 0.5 : roundedDays + 1;
     }
 
     @Override

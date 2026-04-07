@@ -7,14 +7,20 @@ import br.com.carreselling.application.service.model.VehicleTaxes;
 import br.com.carreselling.domain.exception.ConflictException;
 import br.com.carreselling.domain.exception.InvalidStateException;
 import br.com.carreselling.domain.exception.NotFoundException;
-import br.com.carreselling.domain.model.*;
+import br.com.carreselling.domain.model.Brand;
+import br.com.carreselling.domain.model.Color;
+import br.com.carreselling.domain.model.Document;
+import br.com.carreselling.domain.model.Partner;
+import br.com.carreselling.domain.model.SupplierSource;
+import br.com.carreselling.domain.model.Vehicle;
+import br.com.carreselling.domain.model.VehicleModel;
+import br.com.carreselling.domain.model.VehicleStatus;
 import br.com.carreselling.domain.repository.BrandRepository;
 import br.com.carreselling.domain.repository.ColorRepository;
 import br.com.carreselling.domain.repository.DocumentRepository;
 import br.com.carreselling.domain.repository.PartnerRepository;
 import br.com.carreselling.domain.repository.ServiceRepository;
 import br.com.carreselling.domain.repository.VehicleModelRepository;
-import br.com.carreselling.domain.repository.VehicleOnServiceHistoryRepository;
 import br.com.carreselling.domain.repository.VehicleRepository;
 import br.com.carreselling.infrastructure.storage.DocumentStorage;
 
@@ -45,7 +51,7 @@ public class VehicleService implements IVehicleService {
     private final ColorRepository colorRepository;
     private final VehicleModelRepository vehicleModelRepository;
     private final VehicleSalesCalculator salesCalculator;
-    private final VehicleOnServiceHistoryRepository onServiceHistoryRepository;
+    private final ServiceOnVehicleService serviceOnVehicleService;
 
     public VehicleService(VehicleRepository vehicleRepository,
                           DocumentRepository documentRepository,
@@ -55,8 +61,7 @@ public class VehicleService implements IVehicleService {
                           BrandRepository brandRepository,
                           ColorRepository colorRepository,
                           VehicleModelRepository vehicleModelRepository,
-                          VehicleSalesCalculator salesCalculator,
-                          VehicleOnServiceHistoryRepository onServiceHistoryRepository) {
+                          VehicleSalesCalculator salesCalculator, ServiceOnVehicleService serviceOnVehicleService) {
         this.vehicleRepository = vehicleRepository;
         this.documentRepository = documentRepository;
         this.documentStorage = documentStorage;
@@ -66,7 +71,7 @@ public class VehicleService implements IVehicleService {
         this.colorRepository = colorRepository;
         this.vehicleModelRepository = vehicleModelRepository;
         this.salesCalculator = salesCalculator;
-        this.onServiceHistoryRepository = onServiceHistoryRepository;
+        this.serviceOnVehicleService = serviceOnVehicleService;
     }
 
     @Override
@@ -140,7 +145,6 @@ public class VehicleService implements IVehicleService {
                 null,
                 null,
                 VehicleStatus.IN_LOT,
-                true,
                 null,
                 null,
                 null,
@@ -150,12 +154,6 @@ public class VehicleService implements IVehicleService {
         );
         vehicle.ensureDistributionInvariant();
         vehicleRepository.saveVehicle(vehicle);
-        onServiceHistoryRepository.save(new VehicleOnServiceHistory(
-                UuidGenerator.generate(),
-                vehicle.getId(),
-                vehicle.isOnService(),
-                now
-        ));
         return vehicle.getId();
     }
 
@@ -191,6 +189,7 @@ public class VehicleService implements IVehicleService {
         BigDecimal purchaseCommission = vehicle.getPurchaseCommission() == null
                 ? BigDecimal.ZERO
                 : vehicle.getPurchaseCommission();
+        boolean onService = serviceRepository.existsOpenServiceByVehicleId(vehicleId);
         return new VehicleDetail(
                 vehicle.getId(),
                 vehicle.getLicensePlate(),
@@ -208,7 +207,7 @@ public class VehicleService implements IVehicleService {
                 vehicle.getPurchaseInvoiceDocumentId(),
                 vehicle.getPurchasePaymentReceiptDocumentId(),
                 vehicle.getStatus(),
-                vehicle.isOnService(),
+                onService,
                 vehicle.getAssignedPartnerId(),
                 partnerName,
                 servicesTotal,
@@ -265,12 +264,12 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<VehicleSummary> listVehicles(VehicleStatus status, String query, Boolean onService, int page, int size) {
+    public List<VehicleSummary> listVehicles(VehicleStatus status, String query, Boolean isOnService, int page, int size) {
         if (size > 20) {
             size = 20;
         }
         int offset = Math.max(page, 0) * Math.max(size, 1);
-        List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(status, query, onService, offset, size);
+        List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(status, query, isOnService, offset, size);
         return vehicles.stream()
                 .map(vehicle -> {
                     BigDecimal servicesTotal = vehicleRepository.findVehicleServicesTotalByVehicleId(vehicle.getId());
@@ -282,9 +281,7 @@ public class VehicleService implements IVehicleService {
                             ? BigDecimal.ZERO
                             : vehicle.getPurchaseCommission();
 
-                    List<VehicleOnServiceHistory> history =
-                            onServiceHistoryRepository.findByVehicleId(vehicle.getId());
-
+                    boolean serviceOpened = serviceRepository.existsOpenServiceByVehicleId(vehicle.getId());
                     return new VehicleSummary(
                             vehicle.getId(),
                             vehicle.getLicensePlate(),
@@ -292,15 +289,16 @@ public class VehicleService implements IVehicleService {
                             vehicle.getModel(),
                             vehicle.getYear(),
                             vehicle.getStatus(),
-                            vehicle.isOnService(),
+                            serviceOpened,
                             vehicle.getPurchasePrice(),
                             purchaseCommission,
                             servicesTotal,
                             totalCost,
                             partnerName,
-                            vehicle.calculateTotalServiceDays(history)
+                            serviceOnVehicleService.calculateTotalServiceDays(vehicle.getId())
                     );
                 })
+                .filter(vehicle -> isOnService == null || vehicle.onService() == isOnService)
                 .toList();
     }
 
@@ -433,26 +431,7 @@ public class VehicleService implements IVehicleService {
         serviceRepository.findServiceByVehicleId(vehicleId)
                 .forEach(service -> serviceRepository.deleteService(service.getId()));
 
-        onServiceHistoryRepository.deleteByVehicleId(vehicleId);
-
         vehicleRepository.deleteVehicle(vehicleId);
-    }
-
-    @Override
-    public boolean toggleOnService(UUID vehicleId) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
-                .orElseThrow(() -> new NotFoundException("Vehicle not found"));
-        vehicle.toggleOnService();
-        Instant now = Instant.now();
-        vehicle.setUpdatedAt(now);
-        vehicleRepository.updateVehicle(vehicle);
-        onServiceHistoryRepository.save(new VehicleOnServiceHistory(
-                UuidGenerator.generate(),
-                vehicle.getId(),
-                vehicle.isOnService(),
-                now
-        ));
-        return vehicle.isOnService();
     }
 
     private void deleteDocumentSafely(UUID vehicleId, Document doc) {

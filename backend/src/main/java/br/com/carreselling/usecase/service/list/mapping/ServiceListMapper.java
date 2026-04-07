@@ -15,7 +15,8 @@ public class ServiceListMapper {
             summary.serviceType(),
             summary.description(),
             summary.serviceValue(),
-            summary.performedAt()
+            summary.startDate(),
+            summary.endDate()
         );
     }
 }

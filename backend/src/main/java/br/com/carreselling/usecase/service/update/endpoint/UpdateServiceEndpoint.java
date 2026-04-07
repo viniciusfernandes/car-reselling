@@ -33,7 +33,8 @@ public class UpdateServiceEndpoint {
             request.serviceType(),
             request.serviceValue(),
             request.description(),
-            request.performedAt()
+            request.startDate(),
+            request.endDate()
         );
         return new ApiResponse<>(null);
     }
