@@ -145,7 +145,7 @@ public class ServiceOnVehicleService implements IServiceEntryService {
 
         dates.add(start);
         dates.add(end);
-        for (int j = 0; j < orderedServices.size(); j++) {
+        for (int j = 1; j < orderedServices.size(); j++) {
             LocalDate last = dates.pop();
             if (!last.isBefore(now)) {
                 dates.add(now);
