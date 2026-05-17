@@ -2,9 +2,16 @@ package br.com.carreselling.domain.model;
 
 public enum ServiceType {
     MECHANICAL,
-    PAINT,
-    BODYWORK,
     ELECTRICAL,
     UPHOLSTERY,
-    WINDOWS
+    AESTHETICS,
+    INSPECTION,
+    DISPATCHER,
+    FINES,
+    PARTS,
+    FREIGHT,
+    PURCHASE_TAX,
+    PURCHASE_COMMISSION,
+    BODYWORK_AND_PAINT,
+    OTHERS
 }

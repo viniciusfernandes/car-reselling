@@ -145,11 +145,18 @@
   },
   "serviceTypes": {
     "MECHANICAL": "Mecânico",
-    "PAINT": "Pintura",
-    "BODYWORK": "Funilaria",
     "ELECTRICAL": "Elétrica",
     "UPHOLSTERY": "Tapeçaria",
-    "WINDOWS": "Vidros"
+    "AESTHETICS": "Estética",
+    "INSPECTION": "Vistoria",
+    "DISPATCHER": "Despachante",
+    "FINES": "Multas",
+    "PARTS": "Peças",
+    "FREIGHT": "Frete",
+    "PURCHASE_TAX": "Taxa Compra",
+    "PURCHASE_COMMISSION": "Comissão Compra",
+    "BODYWORK_AND_PAINT": "Funilaria/Pintura",
+    "OTHERS": "Outros"
   },
   "documentTypes": {
     "INVOICE": "Nota fiscal",

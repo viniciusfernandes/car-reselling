@@ -145,11 +145,18 @@
   },
   "serviceTypes": {
     "MECHANICAL": "Mechanical",
-    "PAINT": "Paint",
-    "BODYWORK": "Bodywork",
     "ELECTRICAL": "Electrical",
     "UPHOLSTERY": "Upholstery",
-    "WINDOWS": "Windows"
+    "AESTHETICS": "Aesthetics",
+    "INSPECTION": "Inspection",
+    "DISPATCHER": "Dispatcher",
+    "FINES": "Fines",
+    "PARTS": "Parts",
+    "FREIGHT": "Freight",
+    "PURCHASE_TAX": "Purchase Tax",
+    "PURCHASE_COMMISSION": "Purchase Commission",
+    "BODYWORK_AND_PAINT": "Bodywork & Paint",
+    "OTHERS": "Others"
   },
   "documentTypes": {
     "INVOICE": "Invoice",

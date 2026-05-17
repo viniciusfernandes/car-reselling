@@ -61,11 +61,18 @@ export default function VehicleServicesTab({
 
     const serviceOptions: Array<{ value: ServiceType; label: string }> = [
         {value: "MECHANICAL", label: t("serviceTypes.MECHANICAL")},
-        {value: "PAINT", label: t("serviceTypes.PAINT")},
-        {value: "BODYWORK", label: t("serviceTypes.BODYWORK")},
         {value: "ELECTRICAL", label: t("serviceTypes.ELECTRICAL")},
         {value: "UPHOLSTERY", label: t("serviceTypes.UPHOLSTERY")},
-        {value: "WINDOWS", label: t("serviceTypes.WINDOWS")},
+        {value: "AESTHETICS", label: t("serviceTypes.AESTHETICS")},
+        {value: "INSPECTION", label: t("serviceTypes.INSPECTION")},
+        {value: "DISPATCHER", label: t("serviceTypes.DISPATCHER")},
+        {value: "FINES", label: t("serviceTypes.FINES")},
+        {value: "PARTS", label: t("serviceTypes.PARTS")},
+        {value: "FREIGHT", label: t("serviceTypes.FREIGHT")},
+        {value: "PURCHASE_TAX", label: t("serviceTypes.PURCHASE_TAX")},
+        {value: "PURCHASE_COMMISSION", label: t("serviceTypes.PURCHASE_COMMISSION")},
+        {value: "BODYWORK_AND_PAINT", label: t("serviceTypes.BODYWORK_AND_PAINT")},
+        {value: "OTHERS", label: t("serviceTypes.OTHERS")},
     ];
 
     const getMoneyError = (value: string) => {
