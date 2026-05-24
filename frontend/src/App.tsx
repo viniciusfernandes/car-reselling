@@ -6,6 +6,7 @@ import NewVehiclePage from "./app/page/vehicle/NewVehiclePage";
 import VehicleDetailPage from "./app/page/vehicle/VehicleDetailPage";
 import DistributedVehiclesReportPage from "./app/page/report/DistributedVehiclesReportPage";
 import SoldVehiclesReportPage from "./app/page/report/SoldVehiclesReportPage";
+import PaymentsPage from "./app/page/payment/PaymentsPage";
 import PartnerManagementPage from "./app/page/partner/PartnerManagementPage";
 import ToastProvider from "./app/component/notification/ToastProvider";
 import LoginPage from "./app/page/auth/LoginPage";
@@ -96,6 +97,14 @@ function AppLayout() {
                     {t("nav.sales")}
                   </NavLink>
                   <NavLink
+                    to="/payments"
+                    className={({ isActive }) =>
+                      `${linkClass} ${isActive ? activeClass : ""}`
+                    }
+                  >
+                    {t("nav.payments")}
+                  </NavLink>
+                  <NavLink
                     to="/partners"
                     className={({ isActive }) =>
                       `${linkClass} ${isActive ? activeClass : ""}`
@@ -166,6 +175,14 @@ function AppLayout() {
               element={
                 <RequireAuth>
                   <SoldVehiclesReportPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <RequireAuth>
+                  <PaymentsPage />
                 </RequireAuth>
               }
             />

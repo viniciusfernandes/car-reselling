@@ -6,6 +6,7 @@
     "vehicles": "Veículos",
     "reports": "Veículos distribuídos",
     "sales": "Vendas",
+    "payments": "Pagamentos",
     "partners": "Parceiros",
     "logout": "Sair"
   },
@@ -328,6 +329,80 @@
     "save": "Salvar",
     "saving": "Salvando...",
     "cancel": "Cancelar"
+  },
+  "payments": {
+    "title": "Pagamentos",
+    "subtitle": "Gerencie garantias, custos operacionais e retiradas mensais.",
+    "empty": "Nenhum lançamento encontrado.",
+    "deleted": "Lançamento excluído.",
+    "totalLabel": "Total",
+    "tabs": {
+      "warranty": "Garantia",
+      "warrantyDesc": "Despesas pós-venda vinculadas a um veículo (mecânico, elétrico etc.).",
+      "operational": "Custos Operacionais",
+      "operationalDesc": "Despesas da empresa não relacionadas a veículos (almoço, contador, sistema etc.).",
+      "bonus": "Pro Labore / Bônus",
+      "bonusDesc": "Retiradas mensais: Pro Labore, Bônus, PLR e outros."
+    },
+    "types": {
+      "WARRANTY": "Garantia",
+      "OPERATIONAL_COST": "Custo Operacional",
+      "PRO_LABORE": "Pro Labore",
+      "BONUS_PLR": "Bônus / PLR",
+      "OTHER": "Outro"
+    },
+    "table": {
+      "type": "Tipo",
+      "description": "Descrição",
+      "amount": "Valor",
+      "date": "Data",
+      "referenceMonth": "Mês ref.",
+      "notes": "Observações",
+      "docs": "Comprovantes"
+    },
+    "form": {
+      "titleCreate": "Novo lançamento",
+      "titleEdit": "Editar lançamento",
+      "category": "Categoria",
+      "type": "Tipo",
+      "vehicle": "Veículo (placa)",
+      "selectVehicle": "Selecione um veículo",
+      "vehiclePlatePlaceholder": "ex.: ABC1D23",
+      "vehicleNotFound": "Veículo não encontrado.",
+      "vehicleNotSold": "Atenção: este veículo ainda não está marcado como vendido. O servidor irá rejeitar caso não esteja.",
+      "description": "Tipo",
+      "descriptionPlaceholder": "ex.: MECÂNICO, ELÉTRICO, ALMOÇO...",
+      "amount": "Valor",
+      "date": "Data do pagamento",
+      "referenceMonth": "Mês de referência",
+      "notes": "Observações",
+      "notesPlaceholder": "Informações adicionais...",
+      "created": "Lançamento criado com sucesso.",
+      "updated": "Lançamento atualizado com sucesso."
+    },
+    "warranty": {
+      "add": "Adicionar garantia",
+      "filterPlate": "Placa",
+      "filterMonth": "Mês",
+      "plate": "Placa"
+    },
+    "operational": {
+      "add": "Adicionar custo",
+      "filterMonth": "Mês",
+      "totalMonth": "Total em {{month}}"
+    },
+    "bonus": {
+      "add": "Adicionar retirada",
+      "filterMonth": "Mês"
+    },
+    "documents": {
+      "title": "Comprovantes",
+      "upload": "Anexar comprovante",
+      "manage": "Comprovantes",
+      "uploaded": "Comprovante enviado.",
+      "deleted": "Comprovante excluído.",
+      "empty": "Nenhum comprovante anexado."
+    }
   },
   "partners": {
     "title": "Parceiros",

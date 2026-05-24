@@ -90,6 +90,60 @@ export default function DateInput({ label, error, required, ...props }: Props) {
     );
   }
 
+  if (props.type === "month") {
+    const { value, onChange, onBlur, disabled, name, id, required: inputRequired } = props;
+
+    const parseMonthValue = (v?: string) => {
+      if (!v) return null;
+      const [year, month] = v.split("-").map(Number);
+      if (!year || !month) return null;
+      const d = new Date(year, month - 1, 1);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+
+    const toMonthValue = (d: Date | null) => {
+      if (!d) return "";
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    };
+
+    const selectedMonth = parseMonthValue(typeof value === "string" ? value : undefined);
+
+    return (
+      <label className="block text-sm">
+        <span className="font-medium text-slate-700">
+          {label}
+          {required ? <span className="text-red-500"> *</span> : null}
+        </span>
+        <DatePicker
+          key={`${i18n.language}-month-picker`}
+          selected={selectedMonth}
+          onChange={(date) => {
+            const nextValue = toMonthValue(date);
+            if (onChange) {
+              onChange({ target: { value: nextValue } } as ChangeEvent<HTMLInputElement>);
+            }
+          }}
+          onBlur={onBlur}
+          locale={locale}
+          showMonthYearPicker
+          showFullMonthYearPicker
+          dateFormat="MM/yyyy"
+          placeholderText="MM/AAAA"
+          disabled={disabled}
+          name={name}
+          id={id}
+          required={inputRequired}
+          className={`mt-1 w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 ${
+            error
+              ? "border-red-400 focus:ring-red-200"
+              : "border-slate-200 focus:ring-slate-200"
+          }`}
+        />
+        {error ? <span className="text-xs text-red-600">{error}</span> : null}
+      </label>
+    );
+  }
+
   return (
     <label className="block text-sm">
       <span className="font-medium text-slate-700">

@@ -221,3 +221,54 @@ export type DistributedVehiclesReport = {
   overallVehiclesCount: number;
   overallVehiclesTotalValue: number;
 };
+
+export enum PaymentType {
+  WARRANTY = "WARRANTY",
+  OPERATIONAL_COST = "OPERATIONAL_COST",
+  PRO_LABORE = "PRO_LABORE",
+  BONUS_PLR = "BONUS_PLR",
+  OTHER = "OTHER",
+}
+
+export type PaymentItem = {
+  id: string;
+  paymentType: PaymentType;
+  description?: string | null;
+  amount: number;
+  paymentDate: string;
+  vehicleId?: string | null;
+  vehicleLicensePlate?: string | null;
+  referenceMonth?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+};
+
+export type PaymentListResponse = {
+  payments: PaymentItem[];
+};
+
+export type PaymentDocumentItem = {
+  id: string;
+  paymentId: string;
+  originalFileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+};
+
+export type PaymentDocumentListResponse = {
+  documents: PaymentDocumentItem[];
+};
+
+export type CreatePaymentRequest = {
+  paymentType: PaymentType;
+  description?: string;
+  amount: number;
+  paymentDate: string;
+  vehicleLicensePlate?: string;
+  referenceMonth?: string;
+  notes?: string;
+};
+
+export type UpdatePaymentRequest = CreatePaymentRequest;

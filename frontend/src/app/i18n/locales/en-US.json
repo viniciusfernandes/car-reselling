@@ -6,6 +6,7 @@
     "vehicles": "Vehicles",
     "reports": "Distributed vehicles",
     "sales": "Sales",
+    "payments": "Payments",
     "partners": "Partners",
     "logout": "Logout"
   },
@@ -328,6 +329,80 @@
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel"
+  },
+  "payments": {
+    "title": "Payments",
+    "subtitle": "Manage warranties, operational costs, and monthly withdrawals.",
+    "empty": "No entries found.",
+    "deleted": "Entry deleted.",
+    "totalLabel": "Total",
+    "tabs": {
+      "warranty": "Warranty",
+      "warrantyDesc": "Post-sale expenses linked to a vehicle (mechanic, electrical, etc.).",
+      "operational": "Operational Costs",
+      "operationalDesc": "Company expenses not related to vehicles (lunch, accountant, system, etc.).",
+      "bonus": "Pro Labore / Bonus",
+      "bonusDesc": "Monthly withdrawals: Pro Labore, Bonus, PLR, and others."
+    },
+    "types": {
+      "WARRANTY": "Warranty",
+      "OPERATIONAL_COST": "Operational Cost",
+      "PRO_LABORE": "Pro Labore",
+      "BONUS_PLR": "Bonus / PLR",
+      "OTHER": "Other"
+    },
+    "table": {
+      "type": "Type",
+      "description": "Description",
+      "amount": "Amount",
+      "date": "Date",
+      "referenceMonth": "Ref. Month",
+      "notes": "Notes",
+      "docs": "Receipts"
+    },
+    "form": {
+      "titleCreate": "New entry",
+      "titleEdit": "Edit entry",
+      "category": "Category",
+      "type": "Type",
+      "vehicle": "Vehicle (plate)",
+      "selectVehicle": "Select a vehicle",
+      "vehiclePlatePlaceholder": "e.g.: ABC1D23",
+      "vehicleNotFound": "Vehicle not found.",
+      "vehicleNotSold": "Warning: this vehicle is not marked as sold yet. The server will reject it if that's the case.",
+      "description": "Type",
+      "descriptionPlaceholder": "e.g.: MECHANIC, ELECTRICAL, LUNCH...",
+      "amount": "Amount",
+      "date": "Payment date",
+      "referenceMonth": "Reference month",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional information...",
+      "created": "Entry created successfully.",
+      "updated": "Entry updated successfully."
+    },
+    "warranty": {
+      "add": "Add warranty",
+      "filterPlate": "Plate",
+      "filterMonth": "Month",
+      "plate": "Plate"
+    },
+    "operational": {
+      "add": "Add cost",
+      "filterMonth": "Month",
+      "totalMonth": "Total in {{month}}"
+    },
+    "bonus": {
+      "add": "Add withdrawal",
+      "filterMonth": "Month"
+    },
+    "documents": {
+      "title": "Receipts",
+      "upload": "Attach receipt",
+      "manage": "Receipts",
+      "uploaded": "Receipt uploaded.",
+      "deleted": "Receipt deleted.",
+      "empty": "No receipts attached."
+    }
   },
   "partners": {
     "title": "Partners",

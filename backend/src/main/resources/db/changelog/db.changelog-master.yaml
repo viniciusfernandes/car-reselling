@@ -289,4 +289,64 @@ databaseChangeLog:
             sql: |
               ALTER TABLE services
                 DROP COLUMN performed_at;
-              
+
+  - changeSet:
+      id: vinicius-20260517-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE IF NOT EXISTS payments (
+                id CHAR(36) PRIMARY KEY,
+                payment_type VARCHAR(32) NOT NULL,
+                description VARCHAR(500) NULL,
+                amount DECIMAL(13,2) NOT NULL,
+                payment_date DATE NOT NULL,
+                vehicle_id CHAR(36) NULL,
+                reference_month CHAR(7) NULL,
+                notes VARCHAR(1000) NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NULL,
+                KEY idx_payments_type (payment_type),
+                KEY idx_payments_date (payment_date),
+                KEY idx_payments_vehicle (vehicle_id),
+                KEY idx_payments_month (reference_month)
+              );
+
+              CREATE TABLE IF NOT EXISTS payment_documents (
+                id CHAR(36) PRIMARY KEY,
+                payment_id CHAR(36) NOT NULL,
+                original_file_name VARCHAR(512) NOT NULL,
+                content_type VARCHAR(255) NOT NULL,
+                size_bytes BIGINT NOT NULL,
+                storage_key VARCHAR(1024) NOT NULL,
+                uploaded_at DATETIME NOT NULL,
+                uploaded_by VARCHAR(128) NULL,
+                KEY idx_payment_documents_payment (payment_id),
+                CONSTRAINT fk_payment_documents_payment FOREIGN KEY (payment_id) REFERENCES payments(id)
+              );
+
+  - changeSet:
+      id: vinicius-20260518-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE payments
+                ADD COLUMN reference_year  INT NULL,
+                ADD COLUMN reference_month_new INT NULL;
+
+              UPDATE payments
+              SET reference_year      = CAST(SUBSTRING(reference_month, 1, 4) AS UNSIGNED),
+                  reference_month_new = CAST(SUBSTRING(reference_month, 6, 2) AS UNSIGNED)
+              WHERE reference_month IS NOT NULL;
+
+              ALTER TABLE payments
+                DROP INDEX idx_payments_month,
+                DROP COLUMN reference_month;
+
+              ALTER TABLE payments
+                CHANGE COLUMN reference_month_new reference_month INT NULL;
+
+              CREATE INDEX idx_payments_year_month ON payments (reference_year, reference_month);
+

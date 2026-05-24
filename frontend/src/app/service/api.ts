@@ -1,5 +1,14 @@
 import axios from "axios";
 import i18n from "../i18n";
+import type {
+  ApiResponse,
+  PaymentType,
+  PaymentListResponse,
+  PaymentItem,
+  PaymentDocumentListResponse,
+  CreatePaymentRequest,
+  UpdatePaymentRequest,
+} from "./types";
 
 const AUTH_TOKEN_KEY = "auth_token";
 const AUTH_TOKEN_EVENT = "auth-token-changed";
@@ -86,3 +95,53 @@ export function extractFieldErrors(errors?: string[]) {
     return acc;
   }, {});
 }
+
+export const paymentsApi = {
+  list(params?: { paymentType?: PaymentType; referenceMonth?: string; licensePlate?: string }) {
+    return api.get<ApiResponse<PaymentListResponse>>("/payments", { params });
+  },
+
+  get(id: string) {
+    return api.get<ApiResponse<PaymentItem>>(`/payments/${id}`);
+  },
+
+  create(data: CreatePaymentRequest) {
+    return api.post<ApiResponse<{ id: string }>>("/payments", data);
+  },
+
+  update(id: string, data: UpdatePaymentRequest) {
+    return api.put<ApiResponse<void>>(`/payments/${id}`, data);
+  },
+
+  delete(id: string) {
+    return api.delete(`/payments/${id}`);
+  },
+
+  listDocuments(paymentId: string) {
+    return api.get<ApiResponse<PaymentDocumentListResponse>>(`/payments/${paymentId}/documents`);
+  },
+
+  uploadDocument(paymentId: string, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post<ApiResponse<{ documentId: string }>>(`/payments/${paymentId}/documents`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  downloadDocument(paymentId: string, documentId: string) {
+    return api.get(`/payments/${paymentId}/documents/${documentId}/download`, {
+      responseType: "blob",
+    });
+  },
+
+  deleteDocument(paymentId: string, documentId: string) {
+    return api.delete(`/payments/${paymentId}/documents/${documentId}`);
+  },
+
+  listDescriptions(paymentType?: PaymentType) {
+    return api.get<ApiResponse<string[]>>("/payments/descriptions", {
+      params: paymentType ? { paymentType } : undefined,
+    });
+  },
+};
