@@ -183,6 +183,10 @@ export default function PaymentFormModal({
     ? typeOptions.filter((o) => allowedTypes.includes(o.value))
     : typeOptions;
 
+  const typeFieldDisabled = !visibleTypes.some(
+    (o) => o.value === PaymentType.WARRANTY || o.value === PaymentType.OPERATIONAL_COST
+  );
+
   return (
     <dialog
       ref={dialogRef}
@@ -298,14 +302,15 @@ export default function PaymentFormModal({
           ) : null}
 
           {/* Tipo (description) — ComboboxInput with UPPERCASE */}
-          <ComboboxInput
+
+          {!typeFieldDisabled && <ComboboxInput
             label={t("payments.form.description")}
             placeholder={t("payments.form.descriptionPlaceholder")}
             value={description}
             suggestions={descriptionSuggestions}
             onChange={(e) => setDescription(e.target.value.toUpperCase())}
             onBlur={() => setDescription((prev) => prev.toUpperCase().trim())}
-          />
+          />}
 
           <div className="grid grid-cols-2 gap-4">
             <MoneyInput
