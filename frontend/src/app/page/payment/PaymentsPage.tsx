@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import DashboardTab from "./component/DashboardTab";
 import WarrantyTab from "./component/WarrantyTab";
 import OperationalCostTab from "./component/OperationalCostTab";
 import ProLaboreBonusTab from "./component/ProLaboreBonusTab";
 
-type TabKey = "warranty" | "operational" | "bonus";
+type TabKey = "dashboard" | "warranty" | "operational" | "bonus";
 
 export default function PaymentsPage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabKey>("warranty");
+  const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
 
   const tabs: { key: TabKey; label: string; description: string }[] = [
+    {
+      key: "dashboard",
+      label: t("payments.tabs.dashboard"),
+      description: t("payments.tabs.dashboardDesc"),
+    },
     {
       key: "warranty",
       label: t("payments.tabs.warranty"),
@@ -62,6 +68,7 @@ export default function PaymentsPage() {
         </div>
 
         <div className="p-6">
+          {activeTab === "dashboard" ? <DashboardTab /> : null}
           {activeTab === "warranty" ? <WarrantyTab /> : null}
           {activeTab === "operational" ? <OperationalCostTab /> : null}
           {activeTab === "bonus" ? <ProLaboreBonusTab /> : null}

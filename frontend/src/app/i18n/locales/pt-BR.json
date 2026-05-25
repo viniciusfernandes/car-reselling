@@ -337,12 +337,33 @@
     "deleted": "Lançamento excluído.",
     "totalLabel": "Total",
     "tabs": {
+      "dashboard": "Dashboard Principal",
+      "dashboardDesc": "Visão geral financeira do negócio: caixa, patrimônio e evolução de lucro.",
       "warranty": "Garantia",
       "warrantyDesc": "Despesas pós-venda vinculadas a um veículo (mecânico, elétrico etc.).",
       "operational": "Custos Operacionais",
       "operationalDesc": "Despesas da empresa não relacionadas a veículos (almoço, contador, sistema etc.).",
       "bonus": "Pro Labore / Bônus",
       "bonusDesc": "Retiradas mensais: Pro Labore, Bônus, PLR e outros."
+    },
+    "dashboard": {
+      "cashValue": "Valor em Caixa",
+      "editBase": "Ajustar base",
+      "cashBaseLabel": "Capital base",
+      "patrimony": "Patrimônio da Empresa",
+      "cashIn": "Caixa",
+      "vehiclesIn": "Veículos em estoque",
+      "vehicleCount": "Quantidade de Carros",
+      "vehicleCountUnit": "carros",
+      "vehicleValue": "Valor total do estoque",
+      "salesProfit": "Lucro Vendas",
+      "vehiclesSold": "carros vendidos",
+      "purchaseProfit": "Lucro Compras",
+      "totalAcquired": "Total adquirido",
+      "monthlyEvolution": "Evolução do Lucro Mês a Mês",
+      "monthlyEvolutionDesc": "Lucro líquido de vendas menos despesas lançadas, por mês (últimos 12 meses).",
+      "legendPositive": "Resultado positivo",
+      "legendNegative": "Resultado negativo"
     },
     "types": {
       "WARRANTY": "Garantia",

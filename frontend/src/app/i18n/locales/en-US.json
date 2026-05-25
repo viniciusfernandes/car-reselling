@@ -337,12 +337,33 @@
     "deleted": "Entry deleted.",
     "totalLabel": "Total",
     "tabs": {
+      "dashboard": "Main Dashboard",
+      "dashboardDesc": "Financial overview: cash position, net worth, and profit evolution.",
       "warranty": "Warranty",
       "warrantyDesc": "Post-sale expenses linked to a vehicle (mechanic, electrical, etc.).",
       "operational": "Operational Costs",
       "operationalDesc": "Company expenses not related to vehicles (lunch, accountant, system, etc.).",
       "bonus": "Pro Labore / Bonus",
       "bonusDesc": "Monthly withdrawals: Pro Labore, Bonus, PLR, and others."
+    },
+    "dashboard": {
+      "cashValue": "Cash Value",
+      "editBase": "Adjust base",
+      "cashBaseLabel": "Base capital",
+      "patrimony": "Company Net Worth",
+      "cashIn": "Cash",
+      "vehiclesIn": "Vehicle inventory",
+      "vehicleCount": "Vehicle Count",
+      "vehicleCountUnit": "vehicles",
+      "vehicleValue": "Total inventory value",
+      "salesProfit": "Sales Profit",
+      "vehiclesSold": "vehicles sold",
+      "purchaseProfit": "Purchase Profit",
+      "totalAcquired": "Total acquired",
+      "monthlyEvolution": "Month-by-Month Profit Evolution",
+      "monthlyEvolutionDesc": "Net sales profit minus recorded expenses, per month (last 12 months).",
+      "legendPositive": "Positive result",
+      "legendNegative": "Negative result"
     },
     "types": {
       "WARRANTY": "Warranty",
