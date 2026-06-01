@@ -1,5 +1,6 @@
 package br.com.carreselling.infrastructure.persistence;
 
+import br.com.carreselling.application.service.model.MonthlyPaymentTotal;
 import br.com.carreselling.domain.model.Payment;
 import br.com.carreselling.domain.model.PaymentType;
 import br.com.carreselling.domain.repository.PaymentRepository;
@@ -134,6 +135,34 @@ public class PaymentJdbcRepository implements PaymentRepository {
     @Override
     public void deletePayment(UUID id) {
         jdbcTemplate.update("DELETE FROM payments WHERE id = ?", id.toString());
+    }
+
+    @Override
+    public BigDecimal findTotalPaymentsAmount() {
+        BigDecimal result = jdbcTemplate.queryForObject(
+                "SELECT COALESCE(SUM(amount), 0) FROM payments",
+                BigDecimal.class
+        );
+        return result == null ? BigDecimal.ZERO : result;
+    }
+
+    @Override
+    public List<MonthlyPaymentTotal> findMonthlyPaymentTotals() {
+        return jdbcTemplate.query("""
+                        SELECT
+                            YEAR(payment_date)  AS pay_year,
+                            MONTH(payment_date) AS pay_month,
+                            SUM(amount)         AS total
+                        FROM payments
+                        GROUP BY YEAR(payment_date), MONTH(payment_date)
+                        ORDER BY pay_year, pay_month
+                        """,
+                (rs, rowNum) -> new MonthlyPaymentTotal(
+                        rs.getInt("pay_year"),
+                        rs.getInt("pay_month"),
+                        rs.getBigDecimal("total")
+                )
+        );
     }
 
     private static class PaymentRowMapper implements RowMapper<Payment> {

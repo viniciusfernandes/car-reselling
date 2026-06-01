@@ -67,7 +67,7 @@ public class ReportService implements IReportService {
 
     @Override
     public SoldVehiclesReport soldVehiclesReport(DistributedVehiclesFilter filter) {
-        List<SoldVehicle> soldVehicles = vehicleRepository.soldVehiclesReport(filter);
+        List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(filter);
         return salesCalculator.buildReport(soldVehicles);
     }
 

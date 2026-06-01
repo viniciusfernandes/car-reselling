@@ -1,5 +1,6 @@
 package br.com.carreselling.infrastructure.persistence;
 
+import br.com.carreselling.application.service.model.VehiclesTotalCost;
 import br.com.carreselling.application.service.model.DistributedVehiclesFilter;
 import br.com.carreselling.application.service.model.DistribuitedVehicle;
 import br.com.carreselling.application.service.model.SoldVehicle;
@@ -295,7 +296,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
     }
 
     @Override
-    public List<SoldVehicle> soldVehiclesReport(DistributedVehiclesFilter filter) {
+    public List<SoldVehicle> findTotalServicesFromSoldVehicles(DistributedVehiclesFilter filter) {
         StringBuilder sql = new StringBuilder("""
                 SELECT v.id AS vehicle_id,
                        v.license_plate,
@@ -351,6 +352,30 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 java.util.Objects.requireNonNull(sql.toString()),
                 new SoldVehicleMapper(),
                 params.toArray(new Object[0])
+        );
+    }
+
+    @Override
+    public VehiclesTotalCost findVehicleTotalCost() {
+        return jdbcTemplate.queryForObject("""
+                        SELECT
+                            COUNT(*) AS total_vehicles,
+                            COALESCE(SUM(v.purchase_price + v.freight_cost + v.purchase_commission
+                                + COALESCE(svc.services_total, 0)), 0) AS total_cost,
+                            COALESCE(SUM(v.purchase_commission), 0) AS total_purchase_commission
+                        FROM vehicles v
+                        LEFT JOIN (
+                            SELECT vehicle_id, SUM(service_value) AS services_total
+                            FROM services
+                            GROUP BY vehicle_id
+                        ) svc ON svc.vehicle_id = v.id
+                        WHERE v.status != 'SOLD'
+                        """,
+                (rs, rowNum) -> new VehiclesTotalCost(
+                        rs.getInt("total_vehicles"),
+                        rs.getBigDecimal("total_cost"),
+                        rs.getBigDecimal("total_purchase_commission")
+                )
         );
     }
 

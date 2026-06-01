@@ -3,6 +3,9 @@ package br.com.carreselling.infrastructure.persistence;
 import br.com.carreselling.domain.model.ServiceOnVehicle;
 import br.com.carreselling.domain.model.ServiceType;
 import br.com.carreselling.domain.repository.ServiceRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -13,10 +16,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
 
 @Repository
 public class ServiceJdbcRepository implements ServiceRepository {
@@ -98,6 +97,11 @@ public class ServiceJdbcRepository implements ServiceRepository {
                 new Object[]{vehicleId.toString()},
                 BigDecimal.class);
         return total == null ? BigDecimal.ZERO : total;
+    }
+
+    @Override
+    public void deleteServicesByVehicleId(UUID vehicleId) {
+        jdbcTemplate.update("DELETE FROM services WHERE  vehicle_id = ?", vehicleId.toString());
     }
 
     @Override

@@ -20,5 +20,7 @@ public interface ServiceRepository {
 
     BigDecimal findServiceTotalByVehicleId(UUID vehicleId);
 
+    void  deleteServicesByVehicleId(UUID vehicleId);
+
     boolean existsOpenServiceByVehicleId(UUID vehicleId);
 }

@@ -261,6 +261,26 @@ export type PaymentDocumentListResponse = {
   documents: PaymentDocumentItem[];
 };
 
+export type FinancialMonthlyPoint = {
+  year: number;
+  month: number;
+  salesProfit: number;
+  expenses: number;
+  net: number;
+};
+
+export type FinancialDashboardData = {
+  valorEmCaixa: number;
+  patrimonio: number;
+  activeVehiclesCount: number;
+  activeVehiclesTotalCost: number;
+  lucroVendas: number;
+  totalVehiclesSold: number;
+  lucroCompras: number;
+  totalVehiclesAcquired: number;
+  monthlyEvolution: FinancialMonthlyPoint[];
+};
+
 export type CreatePaymentRequest = {
   paymentType: PaymentType;
   description?: string;

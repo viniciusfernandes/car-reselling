@@ -1,5 +1,6 @@
 package br.com.carreselling.domain.repository;
 
+import br.com.carreselling.application.service.model.VehiclesTotalCost;
 import br.com.carreselling.application.service.model.DistributedVehiclesFilter;
 import br.com.carreselling.application.service.model.DistribuitedVehicle;
 import br.com.carreselling.application.service.model.SoldVehicle;
@@ -35,5 +36,7 @@ public interface VehicleRepository {
 
     List<DistribuitedVehicle> distributedVehiclesReport(DistributedVehiclesFilter filter);
 
-    List<SoldVehicle> soldVehiclesReport(DistributedVehiclesFilter filter);
+    List<SoldVehicle> findTotalServicesFromSoldVehicles(DistributedVehiclesFilter filter);
+
+    VehiclesTotalCost findVehicleTotalCost();
 }

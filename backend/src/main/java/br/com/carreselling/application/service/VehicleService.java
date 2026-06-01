@@ -9,19 +9,12 @@ import br.com.carreselling.domain.exception.InvalidStateException;
 import br.com.carreselling.domain.exception.NotFoundException;
 import br.com.carreselling.domain.model.Brand;
 import br.com.carreselling.domain.model.Color;
-import br.com.carreselling.domain.model.Document;
 import br.com.carreselling.domain.model.Partner;
 import br.com.carreselling.domain.model.SupplierSource;
 import br.com.carreselling.domain.model.Vehicle;
 import br.com.carreselling.domain.model.VehicleModel;
 import br.com.carreselling.domain.model.VehicleStatus;
-import br.com.carreselling.domain.repository.BrandRepository;
-import br.com.carreselling.domain.repository.ColorRepository;
-import br.com.carreselling.domain.repository.DocumentRepository;
-import br.com.carreselling.domain.repository.PartnerRepository;
-import br.com.carreselling.domain.repository.ServiceRepository;
-import br.com.carreselling.domain.repository.VehicleModelRepository;
-import br.com.carreselling.domain.repository.VehicleRepository;
+import br.com.carreselling.domain.repository.*;
 import br.com.carreselling.infrastructure.storage.DocumentStorage;
 
 import java.math.BigDecimal;
@@ -43,6 +36,7 @@ public class VehicleService implements IVehicleService {
     private static final String PLATE_REGEX = "^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$";
 
     private final VehicleRepository vehicleRepository;
+    private final VehicleOnServiceHistoryRepository vehicleOnServiceHistoryRepository;
     private final DocumentRepository documentRepository;
     private final DocumentStorage documentStorage;
     private final ServiceRepository serviceRepository;
@@ -53,7 +47,7 @@ public class VehicleService implements IVehicleService {
     private final VehicleSalesCalculator salesCalculator;
     private final ServiceOnVehicleService serviceOnVehicleService;
 
-    public VehicleService(VehicleRepository vehicleRepository,
+    public VehicleService(VehicleRepository vehicleRepository, VehicleOnServiceHistoryRepository vehicleOnServiceHistoryRepository,
                           DocumentRepository documentRepository,
                           DocumentStorage documentStorage,
                           ServiceRepository serviceRepository,
@@ -63,6 +57,7 @@ public class VehicleService implements IVehicleService {
                           VehicleModelRepository vehicleModelRepository,
                           VehicleSalesCalculator salesCalculator, ServiceOnVehicleService serviceOnVehicleService) {
         this.vehicleRepository = vehicleRepository;
+        this.vehicleOnServiceHistoryRepository = vehicleOnServiceHistoryRepository;
         this.documentRepository = documentRepository;
         this.documentStorage = documentStorage;
         this.serviceRepository = serviceRepository;
@@ -416,30 +411,27 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteVehicle(UUID vehicleId) {
         vehicleRepository.findVehicleById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
 
-        var documents = documentRepository.findDocumentByVehicleId(vehicleId);
-
-        for (var doc : documents) {
-            deleteDocumentSafely(vehicleId, doc);
-            documentRepository.deleteDocument(doc.getId());
-        }
-
-        serviceRepository.findServiceByVehicleId(vehicleId)
-                .forEach(service -> serviceRepository.deleteService(service.getId()));
-
+        List<String> storageKeys = documentRepository.findStorageKeyByVehicleId(vehicleId);
+        deleteFormStorage(vehicleId, storageKeys);
+        vehicleOnServiceHistoryRepository.deleteByVehicleId(vehicleId);
+        serviceRepository.deleteServicesByVehicleId(vehicleId);
         vehicleRepository.deleteVehicle(vehicleId);
     }
 
-    private void deleteDocumentSafely(UUID vehicleId, Document doc) {
-        try {
-            documentStorage.delete(doc.getStorageKey());
-        } catch (Exception e) {
-            log.warn("Storage object not found while deleting document.vehicleId={} documentId={}, storageKey={}",
-                    vehicleId, doc.getId(), doc.getStorageKey());
+    private void deleteFormStorage(UUID vehicleId, List<String> storageKeys) {
+        for (var storageKey : storageKeys) {
+            try {
+                documentStorage.delete(storageKey);
+            } catch (Exception e) {
+                log.warn("Storage object not found while deleting document.vehicleId={}, storageKey={}",
+                        vehicleId, storageKey);
+                throw e;
+            }
         }
     }
 

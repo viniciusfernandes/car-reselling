@@ -13,5 +13,9 @@ public interface DocumentRepository {
 
     List<Document> findDocumentByVehicleId(UUID vehicleId);
 
+    List<String> findStorageKeyByVehicleId(UUID vehicleId);
+
     void deleteDocument(UUID id);
+
+    void deleteDocumentByVEhicleId(UUID vehicleId);
 }

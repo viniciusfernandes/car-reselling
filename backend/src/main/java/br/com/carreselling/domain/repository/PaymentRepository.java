@@ -1,8 +1,10 @@
 package br.com.carreselling.domain.repository;
 
+import br.com.carreselling.application.service.model.MonthlyPaymentTotal;
 import br.com.carreselling.domain.model.Payment;
 import br.com.carreselling.domain.model.PaymentType;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,4 +22,8 @@ public interface PaymentRepository {
     Payment updatePayment(Payment payment);
 
     void deletePayment(UUID id);
+
+    BigDecimal findTotalPaymentsAmount();
+
+    List<MonthlyPaymentTotal> findMonthlyPaymentTotals();
 }

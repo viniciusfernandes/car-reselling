@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, paymentsApi, extractErrorMessage } from "../../../service/api";
-import type {
-  ApiResponse,
-  SoldVehiclesReport,
-  VehicleListItem,
-  VehicleListResponse,
-  PaymentItem,
-} from "../../../service/types";
+import { dashboardApi, extractErrorMessage } from "../../../service/api";
+import type { FinancialDashboardData, FinancialMonthlyPoint } from "../../../service/types";
 import { formatMoney, parseMoney } from "../../../service/formatters";
 import { useToast } from "../../../component/notification/ToastProvider";
 
@@ -15,15 +9,6 @@ import { useToast } from "../../../component/notification/ToastProvider";
 
 const CASH_BASE_KEY = "fin_dashboard_cash_base";
 const MONTH_ABR = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type MonthlyPoint = {
-  month: string; // YYYY-MM
-  salesProfit: number;
-  expenses: number;
-  net: number;
-};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -37,7 +22,7 @@ function kFmt(val: number): string {
 
 // ─── Bar Chart ────────────────────────────────────────────────────────────────
 
-function MonthlyBarChart({ data, emptyLabel }: { data: MonthlyPoint[]; emptyLabel: string }) {
+function MonthlyBarChart({ data, emptyLabel }: { data: FinancialMonthlyPoint[]; emptyLabel: string }) {
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-sm text-slate-400">
@@ -107,10 +92,9 @@ function MonthlyBarChart({ data, emptyLabel }: { data: MonthlyPoint[]; emptyLabe
         const by = d.net >= 0 ? zeroY - barH : zeroY;
         const fill = d.net >= 0 ? "#22c55e" : "#f87171";
         const cx = bx + bw / 2;
-        const [yr, mo] = d.month.split("-");
 
         return (
-          <g key={d.month}>
+          <g key={`${d.year}-${d.month}`}>
             <rect x={bx} y={by} width={bw} height={barH} fill={fill} rx="2" opacity="0.85" />
             <text
               x={cx}
@@ -119,7 +103,7 @@ function MonthlyBarChart({ data, emptyLabel }: { data: MonthlyPoint[]; emptyLabe
               fontSize="9.5"
               fill="#94a3b8"
             >
-              {MONTH_ABR[parseInt(mo, 10) - 1] ?? mo}
+              {MONTH_ABR[d.month - 1] ?? d.month}
             </text>
             <text
               x={cx}
@@ -128,7 +112,7 @@ function MonthlyBarChart({ data, emptyLabel }: { data: MonthlyPoint[]; emptyLabe
               fontSize="9"
               fill="#c4cdd6"
             >
-              {yr.slice(2)}
+              {String(d.year).slice(2)}
             </text>
           </g>
         );
@@ -161,9 +145,7 @@ export default function DashboardTab() {
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [soldReport, setSoldReport] = useState<SoldVehiclesReport | null>(null);
-  const [vehicles, setVehicles] = useState<VehicleListItem[]>([]);
-  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [data, setData] = useState<FinancialDashboardData | null>(null);
 
   const [cashBase, setCashBase] = useState<number>(() => {
     const raw = localStorage.getItem(CASH_BASE_KEY);
@@ -172,92 +154,24 @@ export default function DashboardTab() {
   const [editingCash, setEditingCash] = useState(false);
   const [cashDraft, setCashDraft] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
+  const fetchDashboard = useMemo(
+    () => async (base: number) => {
       try {
         setLoading(true);
-        const [soldRes, vehiclesRes, paymentsRes] = await Promise.all([
-          api.get<ApiResponse<SoldVehiclesReport>>("/reports/sold-vehicles"),
-          api.get<ApiResponse<VehicleListResponse>>("/vehicles", { params: { size: 9999 } }),
-          paymentsApi.list(),
-        ]);
-        if (cancelled) return;
-        setSoldReport(soldRes.data.data);
-        setVehicles(vehiclesRes.data.data.items);
-        setPayments(paymentsRes.data.data.payments);
+        const res = await dashboardApi.getFinancialDashboard(base);
+        setData(res.data.data);
       } catch (err) {
-        if (!cancelled) showToast(extractErrorMessage(err), "error");
+        showToast(extractErrorMessage(err), "error");
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [showToast]);
-
-  // ── Derived metrics ──────────────────────────────────────────────────────────
-
-  const activeVehicles = useMemo(
-    () => vehicles.filter((v) => v.status !== "SOLD"),
-    [vehicles]
+    },
+    [showToast]
   );
 
-  const activeVehiclesTotalCost = useMemo(
-    () => activeVehicles.reduce((s, v) => s + v.totalCost, 0),
-    [activeVehicles]
-  );
-
-  const totalPaymentsAmount = useMemo(
-    () => payments.reduce((s, p) => s + p.amount, 0),
-    [payments]
-  );
-
-  const lucroVendas = soldReport?.profit ?? 0;
-
-  /*
-   * Cash = initial capital + net profit from all past sales
-   *      - capital currently tied up in active inventory
-   *      - all operational payments (expenses)
-   *
-   * Patrimônio = Cash + active vehicle inventory value
-   *            = initial capital + net profit from sales - total payments
-   */
-  const valorEmCaixa = cashBase + lucroVendas - activeVehiclesTotalCost - totalPaymentsAmount;
-  const patrimonio = valorEmCaixa + activeVehiclesTotalCost;
-
-  const lucroCompras = useMemo(
-    () =>
-      (soldReport?.totalCommissionValue ?? 0) +
-      activeVehicles.reduce((s, v) => s + v.purchaseCommission, 0),
-    [soldReport, activeVehicles]
-  );
-
-  // ── Monthly evolution ────────────────────────────────────────────────────────
-
-  const monthlyData = useMemo((): MonthlyPoint[] => {
-    const salesMap: Record<string, number> = {};
-    for (const v of soldReport?.vehicles ?? []) {
-      const mo = v.soldAt.slice(0, 7);
-      salesMap[mo] = (salesMap[mo] ?? 0) + v.profit;
-    }
-    const expMap: Record<string, number> = {};
-    for (const p of payments) {
-      const mo = p.paymentDate.slice(0, 7);
-      expMap[mo] = (expMap[mo] ?? 0) + p.amount;
-    }
-    const allMonths = [
-      ...new Set([...Object.keys(salesMap), ...Object.keys(expMap)]),
-    ].sort();
-    return allMonths.slice(-12).map((mo) => ({
-      month: mo,
-      salesProfit: salesMap[mo] ?? 0,
-      expenses: expMap[mo] ?? 0,
-      net: (salesMap[mo] ?? 0) - (expMap[mo] ?? 0),
-    }));
-  }, [soldReport, payments]);
+  useEffect(() => {
+    fetchDashboard(cashBase);
+  }, [fetchDashboard, cashBase]);
 
   // ── Cash editing ─────────────────────────────────────────────────────────────
 
@@ -276,7 +190,7 @@ export default function DashboardTab() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  if (loading) {
+  if (loading || data === null) {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -347,14 +261,16 @@ export default function DashboardTab() {
             <>
               <p
                 className={`mt-2 text-2xl font-semibold tabular-nums ${
-                  valorEmCaixa < 0 ? "text-red-700" : "text-blue-900"
+                  data.valorEmCaixa < 0 ? "text-red-700" : "text-blue-900"
                 }`}
               >
-                {formatMoney(valorEmCaixa)}
+                {formatMoney(data.valorEmCaixa)}
               </p>
-              <p className="mt-1.5 text-xs text-blue-500">
-                {t("payments.dashboard.cashBaseLabel")}: {formatMoney(cashBase)}
-              </p>
+              {cashBase !== 0 && (
+                <p className="mt-1.5 text-xs text-blue-500">
+                  {t("payments.dashboard.cashBaseLabel")}: {formatMoney(cashBase)}
+                </p>
+              )}
             </>
           )}
         </div>
@@ -365,12 +281,16 @@ export default function DashboardTab() {
             {t("payments.dashboard.patrimony")}
           </span>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-violet-900">
-            {formatMoney(patrimonio)}
+            {formatMoney(data.patrimonio)}
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-violet-600">
-            <span>{t("payments.dashboard.cashIn")}: {formatMoney(valorEmCaixa)}</span>
+            <span>
+              {t("payments.dashboard.cashIn")}: {formatMoney(data.valorEmCaixa)}
+            </span>
             <span className="text-violet-400">+</span>
-            <span>{t("payments.dashboard.vehiclesIn")}: {formatMoney(activeVehiclesTotalCost)}</span>
+            <span>
+              {t("payments.dashboard.vehiclesIn")}: {formatMoney(data.activeVehiclesTotalCost)}
+            </span>
           </div>
         </div>
       </div>
@@ -383,13 +303,13 @@ export default function DashboardTab() {
             {t("payments.dashboard.vehicleCount")}
           </span>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-amber-900">
-            {activeVehicles.length}
+            {data.activeVehiclesCount}
             <span className="ml-1.5 text-sm font-normal text-amber-700">
               {t("payments.dashboard.vehicleCountUnit")}
             </span>
           </p>
           <p className="mt-1 text-xs text-amber-600">
-            {t("payments.dashboard.vehicleValue")}: {formatMoney(activeVehiclesTotalCost)}
+            {t("payments.dashboard.vehicleValue")}: {formatMoney(data.activeVehiclesTotalCost)}
           </p>
         </div>
 
@@ -399,11 +319,10 @@ export default function DashboardTab() {
             {t("payments.dashboard.salesProfit")}
           </span>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-green-900">
-            {formatMoney(lucroVendas)}
+            {formatMoney(data.lucroVendas)}
           </p>
           <p className="mt-1 text-xs text-green-600">
-            {soldReport?.totalVehiclesSold ?? 0}{" "}
-            {t("payments.dashboard.vehiclesSold")}
+            {data.totalVehiclesSold} {t("payments.dashboard.vehiclesSold")}
           </p>
         </div>
 
@@ -413,10 +332,10 @@ export default function DashboardTab() {
             {t("payments.dashboard.purchaseProfit")}
           </span>
           <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-900">
-            {formatMoney(lucroCompras)}
+            {formatMoney(data.lucroCompras)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            {t("payments.dashboard.totalAcquired")}: {vehicles.length}
+            {t("payments.dashboard.totalAcquired")}: {data.totalVehiclesAcquired}
           </p>
         </div>
       </div>
@@ -433,10 +352,13 @@ export default function DashboardTab() {
         </div>
 
         <div className="px-4 py-4">
-          <MonthlyBarChart data={monthlyData} emptyLabel={t("payments.empty")} />
+          <MonthlyBarChart
+            data={data.monthlyEvolution}
+            emptyLabel={t("payments.empty")}
+          />
         </div>
 
-        {monthlyData.length > 0 && (
+        {data.monthlyEvolution.length > 0 && (
           <div className="flex gap-4 border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
             <span className="flex items-center gap-1.5">
               <span className="inline-block h-3 w-3 rounded-sm bg-green-500 opacity-85" />
