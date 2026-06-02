@@ -1,13 +1,7 @@
 package br.com.carreselling.application.service;
 
-import br.com.carreselling.application.service.model.VehiclesTotalCost;
-import br.com.carreselling.application.service.model.DistributedVehiclesFilter;
-import br.com.carreselling.application.service.model.FinancialDashboard;
-import br.com.carreselling.application.service.model.FinancialMonthlyPoint;
-import br.com.carreselling.application.service.model.MonthlyPaymentTotal;
-import br.com.carreselling.application.service.model.SoldVehicle;
-import br.com.carreselling.application.service.model.SoldVehicleItem;
-import br.com.carreselling.application.service.model.SoldVehiclesReport;
+import br.com.carreselling.application.service.model.*;
+import br.com.carreselling.domain.repository.CashBalanceRepository;
 import br.com.carreselling.domain.repository.PaymentRepository;
 import br.com.carreselling.domain.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
@@ -24,18 +18,21 @@ public class DashboardService implements IDashboardService {
     private final VehicleRepository vehicleRepository;
     private final PaymentRepository paymentRepository;
     private final VehicleSalesCalculator salesCalculator;
+    private final CashBalanceRepository cashBalanceRepository;
 
     public DashboardService(VehicleRepository vehicleRepository,
                             PaymentRepository paymentRepository,
-                            VehicleSalesCalculator salesCalculator) {
+                            VehicleSalesCalculator salesCalculator,
+                            CashBalanceRepository cashBalanceRepository) {
         this.vehicleRepository = vehicleRepository;
         this.paymentRepository = paymentRepository;
         this.salesCalculator = salesCalculator;
+        this.cashBalanceRepository = cashBalanceRepository;
     }
 
     @Override
-    public FinancialDashboard getFinancialDashboard(BigDecimal cashBase) {
-        BigDecimal base = cashBase == null ? BigDecimal.ZERO : cashBase;
+    public FinancialDashboard getFinancialDashboard() {
+        BigDecimal cashBalance = cashBalanceRepository.findCashBalance().amount;
 
         List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(new DistributedVehiclesFilter(null, null, null, null, null));
         SoldVehiclesReport soldReport = salesCalculator.buildReport(soldVehicles);
@@ -45,7 +42,7 @@ public class DashboardService implements IDashboardService {
         List<MonthlyPaymentTotal> monthlyPayments = paymentRepository.findMonthlyPaymentTotals();
 
         BigDecimal lucroVendas = soldReport.profit();
-        BigDecimal valorEmCaixa = base
+        BigDecimal valorEmCaixa = cashBalance
                 .add(lucroVendas)
                 .subtract(vehicleCost.totalCost())
                 .subtract(totalPayments);
@@ -58,6 +55,7 @@ public class DashboardService implements IDashboardService {
                 soldReport.vehicles(), monthlyPayments);
 
         return new FinancialDashboard(
+                cashBalance,
                 valorEmCaixa,
                 patrimonio,
                 vehicleCost.totalVehicles(),
@@ -71,7 +69,7 @@ public class DashboardService implements IDashboardService {
     }
 
     private List<FinancialMonthlyPoint> buildMonthlyEvolution(List<SoldVehicleItem> soldItems,
-                                                               List<MonthlyPaymentTotal> monthlyPayments) {
+                                                              List<MonthlyPaymentTotal> monthlyPayments) {
         Map<String, BigDecimal> salesMap = new LinkedHashMap<>();
         for (SoldVehicleItem item : soldItems) {
             if (item.soldAt() == null) {

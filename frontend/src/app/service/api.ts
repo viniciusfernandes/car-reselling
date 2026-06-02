@@ -2,6 +2,7 @@ import axios from "axios";
 import i18n from "../i18n";
 import type {
   ApiResponse,
+  CashBalanceData,
   FinancialDashboardData,
   PaymentType,
   PaymentListResponse,
@@ -98,10 +99,17 @@ export function extractFieldErrors(errors?: string[]) {
 }
 
 export const dashboardApi = {
-  getFinancialDashboard(cashBase?: number) {
-    return api.get<ApiResponse<FinancialDashboardData>>("/reports/financial-dashboard", {
-      params: cashBase != null && cashBase !== 0 ? { cashBase } : undefined,
-    });
+  getFinancialDashboard() {
+    return api.get<ApiResponse<FinancialDashboardData>>("/reports/financial-dashboard");
+  },
+};
+
+export const cashBalanceApi = {
+  get() {
+    return api.get<ApiResponse<CashBalanceData>>("/financial/cash-balance");
+  },
+  update(amount: number) {
+    return api.put<ApiResponse<CashBalanceData>>("/financial/cash-balance", { amount });
   },
 };
 

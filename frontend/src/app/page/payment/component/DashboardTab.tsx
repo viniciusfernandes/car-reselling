@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { dashboardApi, extractErrorMessage } from "../../../service/api";
+import { cashBalanceApi, dashboardApi, extractErrorMessage } from "../../../service/api";
 import type { FinancialDashboardData, FinancialMonthlyPoint } from "../../../service/types";
 import { formatMoney, parseMoney } from "../../../service/formatters";
 import { useToast } from "../../../component/notification/ToastProvider";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CASH_BASE_KEY = "fin_dashboard_cash_base";
 const MONTH_ABR = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -145,47 +144,48 @@ export default function DashboardTab() {
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [data, setData] = useState<FinancialDashboardData | null>(null);
 
-  const [cashBase, setCashBase] = useState<number>(() => {
-    const raw = localStorage.getItem(CASH_BASE_KEY);
-    return raw !== null ? Number(raw) : 0;
-  });
   const [editingCash, setEditingCash] = useState(false);
   const [cashDraft, setCashDraft] = useState("");
 
-  const fetchDashboard = useMemo(
-    () => async (base: number) => {
-      try {
-        setLoading(true);
-        const res = await dashboardApi.getFinancialDashboard(base);
-        setData(res.data.data);
-      } catch (err) {
-        showToast(extractErrorMessage(err), "error");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [showToast]
-  );
+  const fetchDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await dashboardApi.getFinancialDashboard();
+      setData(res.data.data);
+    } catch (err) {
+      showToast(extractErrorMessage(err), "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
 
   useEffect(() => {
-    fetchDashboard(cashBase);
-  }, [fetchDashboard, cashBase]);
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   // ── Cash editing ─────────────────────────────────────────────────────────────
 
   const startEditCash = () => {
-    setCashDraft(cashBase.toFixed(2).replace(".", ","));
+    setCashDraft((data?.cashBalanceAmount ?? 0).toFixed(2).replace(".", ","));
     setEditingCash(true);
   };
 
-  const confirmEditCash = () => {
+  const confirmEditCash = async () => {
     const val = parseMoney(cashDraft);
-    const next = isNaN(val) ? cashBase : Math.max(0, val);
-    setCashBase(next);
-    localStorage.setItem(CASH_BASE_KEY, String(next));
-    setEditingCash(false);
+    const next = isNaN(val) ? (data?.cashBalanceAmount ?? 0) : Math.max(0, val);
+    try {
+      setSaving(true);
+      await cashBalanceApi.update(next);
+      setEditingCash(false);
+      await fetchDashboard();
+    } catch (err) {
+      showToast(extractErrorMessage(err), "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -235,24 +235,27 @@ export default function DashboardTab() {
                 value={cashDraft}
                 onChange={(e) => setCashDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") confirmEditCash();
+                  if (e.key === "Enter") void confirmEditCash();
                   if (e.key === "Escape") setEditingCash(false);
                 }}
                 placeholder="0,00"
                 className="w-36 rounded border border-blue-300 bg-white px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
                 autoFocus
+                disabled={saving}
               />
               <button
                 type="button"
-                onClick={confirmEditCash}
-                className="text-xs font-medium text-green-700 hover:underline"
+                onClick={() => void confirmEditCash()}
+                disabled={saving}
+                className="text-xs font-medium text-green-700 hover:underline disabled:opacity-50"
               >
-                {t("actions.save")}
+                {saving ? t("actions.saving") : t("actions.save")}
               </button>
               <button
                 type="button"
                 onClick={() => setEditingCash(false)}
-                className="text-xs text-slate-500 hover:underline"
+                disabled={saving}
+                className="text-xs text-slate-500 hover:underline disabled:opacity-50"
               >
                 {t("actions.cancel")}
               </button>
@@ -266,9 +269,9 @@ export default function DashboardTab() {
               >
                 {formatMoney(data.valorEmCaixa)}
               </p>
-              {cashBase !== 0 && (
+              {data.cashBalanceAmount !== 0 && (
                 <p className="mt-1.5 text-xs text-blue-500">
-                  {t("payments.dashboard.cashBaseLabel")}: {formatMoney(cashBase)}
+                  {t("payments.dashboard.cashBaseLabel")}: {formatMoney(data.cashBalanceAmount)}
                 </p>
               )}
             </>

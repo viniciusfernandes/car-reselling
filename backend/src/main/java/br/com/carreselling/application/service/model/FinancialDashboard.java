@@ -3,7 +3,8 @@ package br.com.carreselling.application.service.model;
 import java.math.BigDecimal;
 import java.util.List;
 
-public record FinancialDashboard(BigDecimal valorEmCaixa,
+public record FinancialDashboard(BigDecimal cashBalanceAmount,
+                                 BigDecimal valorEmCaixa,
                                  BigDecimal patrimonio,
                                  int activeVehiclesCount,
                                  BigDecimal activeVehiclesTotalCost,

@@ -3,9 +3,12 @@ package br.com.carreselling.config;
 import br.com.carreselling.domain.exception.ConflictException;
 import br.com.carreselling.domain.exception.InvalidStateException;
 import br.com.carreselling.domain.exception.NotFoundException;
+import br.com.carreselling.usecase.UseCaseException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -24,10 +27,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex,
-                                                            HttpServletRequest request) {
+                                                             HttpServletRequest request) {
         List<String> errors = ex.getBindingResult().getFieldErrors().stream()
-            .map(GlobalExceptionHandler::formatFieldError)
-            .toList();
+                .map(GlobalExceptionHandler::formatFieldError)
+                .toList();
         log.warn("Validation failed on {} {}: {}", request.getMethod(), request.getRequestURI(), errors);
         return ResponseEntity.badRequest().body(new ApiErrorResponse(errors, traceId(request)));
     }
@@ -36,8 +39,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleConstraint(ConstraintViolationException ex,
                                                              HttpServletRequest request) {
         List<String> errors = ex.getConstraintViolations().stream()
-            .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-            .toList();
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .toList();
         log.warn("Constraint violation on {} {}: {}", request.getMethod(), request.getRequestURI(), errors);
         return ResponseEntity.badRequest().body(new ApiErrorResponse(errors, traceId(request)));
     }
@@ -46,14 +49,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleNotFound(NotFoundException ex, HttpServletRequest request) {
         log.warn("Not found on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
+                .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
     }
 
     @ExceptionHandler({ConflictException.class, InvalidStateException.class, DataIntegrityViolationException.class})
     public ResponseEntity<ApiErrorResponse> handleConflict(RuntimeException ex, HttpServletRequest request) {
         log.warn("Conflict on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
-            .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
+                .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -61,23 +64,30 @@ public class GlobalExceptionHandler {
                                                                   HttpServletRequest request) {
         log.warn("Illegal argument on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
+                .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException ex,
                                                              HttpServletRequest request) {
         log.debug("Static resource not found on {} {}: {}", request.getMethod(), request.getRequestURI(),
-            ex.getMessage());
+                ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(new ApiErrorResponse(List.of("Resource not found"), traceId(request)));
+                .body(new ApiErrorResponse(List.of("Resource not found"), traceId(request)));
+    }
+
+    @ExceptionHandler(UseCaseException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoResource(UseCaseException ex,
+                                                             HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(new ApiErrorResponse(List.of("Unexpected error"), traceId(request)));
+                .body(new ApiErrorResponse(List.of("Unexpected error"), traceId(request)));
     }
 
     private static String traceId(HttpServletRequest request) {

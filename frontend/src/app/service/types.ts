@@ -270,6 +270,7 @@ export type FinancialMonthlyPoint = {
 };
 
 export type FinancialDashboardData = {
+  cashBalanceAmount: number;
   valorEmCaixa: number;
   patrimonio: number;
   activeVehiclesCount: number;
@@ -279,6 +280,11 @@ export type FinancialDashboardData = {
   lucroCompras: number;
   totalVehiclesAcquired: number;
   monthlyEvolution: FinancialMonthlyPoint[];
+};
+
+export type CashBalanceData = {
+  amount: number;
+  updatedAt: string;
 };
 
 export type CreatePaymentRequest = {

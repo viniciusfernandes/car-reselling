@@ -350,3 +350,25 @@ databaseChangeLog:
 
               CREATE INDEX idx_payments_year_month ON payments (reference_year, reference_month);
 
+  - changeSet:
+      id: vinicius-20260601-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE IF NOT EXISTS cash_balance (
+                amount DECIMAL(13,2) NOT NULL DEFAULT 0,
+                updated_at DATETIME NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS cash_balance_history (
+                id CHAR(36) PRIMARY KEY,
+                amount DECIMAL(13,2) NOT NULL,
+                changed_at DATETIME NOT NULL,
+                changed_by VARCHAR(255) NULL,
+                KEY idx_cash_balance_history_changed_at (changed_at)
+              );
+
+              INSERT INTO cash_balance (amount, updated_at)
+              VALUES (0, NOW());
+
