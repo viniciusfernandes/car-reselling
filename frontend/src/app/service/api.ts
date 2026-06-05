@@ -98,9 +98,11 @@ export function extractFieldErrors(errors?: string[]) {
   }, {});
 }
 
-export const dashboardApi = {
-  getFinancialDashboard() {
-    return api.get<ApiResponse<FinancialDashboardData>>("/reports/financial-dashboard");
+export const financialApi = {
+  getFinancialDashboard(startDate?: string, endDate?: string) {
+    return api.get<ApiResponse<FinancialDashboardData>>("/reports/financial-dashboard", {
+      params: { startDate, endDate },
+    });
   },
 };
 
@@ -114,7 +116,7 @@ export const cashBalanceApi = {
 };
 
 export const paymentsApi = {
-  list(params?: { paymentType?: PaymentType; referenceMonth?: string; licensePlate?: string }) {
+  list(params?: { paymentType?: PaymentType; paymentMonth?: string; licensePlate?: string }) {
     return api.get<ApiResponse<PaymentListResponse>>("/payments", { params });
   },
 

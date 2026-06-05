@@ -372,3 +372,14 @@ databaseChangeLog:
               INSERT INTO cash_balance (amount, updated_at)
               VALUES (0, NOW());
 
+  - changeSet:
+      id: vinicius-20260605-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE payments
+                DROP INDEX idx_payments_year_month,
+                DROP COLUMN reference_year,
+                DROP COLUMN reference_month;
+

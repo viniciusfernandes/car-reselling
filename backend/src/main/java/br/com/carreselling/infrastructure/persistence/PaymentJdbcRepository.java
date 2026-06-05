@@ -34,8 +34,8 @@ public class PaymentJdbcRepository implements PaymentRepository {
         jdbcTemplate.update("""
                         INSERT INTO payments
                         (id, payment_type, description, amount, payment_date, vehicle_id,
-                         reference_year, reference_month, notes, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         notes, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 payment.id.toString(),
                 payment.paymentType.name(),
@@ -43,8 +43,6 @@ public class PaymentJdbcRepository implements PaymentRepository {
                 payment.amount,
                 payment.paymentDate,
                 payment.vehicleId == null ? null : payment.vehicleId.toString(),
-                payment.referenceYear,
-                payment.referenceMonth,
                 payment.notes,
                 Timestamp.from(payment.createdAt),
                 payment.updatedAt == null ? null : Timestamp.from(payment.updatedAt)
@@ -66,7 +64,7 @@ public class PaymentJdbcRepository implements PaymentRepository {
     }
 
     @Override
-    public List<Payment> findPayments(PaymentType paymentType, Integer referenceYear, Integer referenceMonth, String licensePlate) {
+    public List<Payment> findPayments(PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate) {
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
                 SELECT p.*, v.license_plate
@@ -79,13 +77,13 @@ public class PaymentJdbcRepository implements PaymentRepository {
             sql.append(" AND p.payment_type = ?");
             params.add(paymentType.name());
         }
-        if (referenceYear != null) {
-            sql.append(" AND p.reference_year = ?");
-            params.add(referenceYear);
+        if (paymentYear != null) {
+            sql.append(" AND YEAR(p.payment_date) = ?");
+            params.add(paymentYear);
         }
-        if (referenceMonth != null) {
-            sql.append(" AND p.reference_month = ?");
-            params.add(referenceMonth);
+        if (paymentMonth != null) {
+            sql.append(" AND MONTH(p.payment_date) = ?");
+            params.add(paymentMonth);
         }
         if (licensePlate != null && !licensePlate.isBlank()) {
             sql.append(" AND v.license_plate LIKE ?");
@@ -115,7 +113,7 @@ public class PaymentJdbcRepository implements PaymentRepository {
         jdbcTemplate.update("""
                         UPDATE payments
                         SET payment_type = ?, description = ?, amount = ?, payment_date = ?,
-                            vehicle_id = ?, reference_year = ?, reference_month = ?, notes = ?, updated_at = ?
+                            vehicle_id = ?, notes = ?, updated_at = ?
                         WHERE id = ?
                         """,
                 payment.paymentType.name(),
@@ -123,8 +121,6 @@ public class PaymentJdbcRepository implements PaymentRepository {
                 payment.amount,
                 payment.paymentDate,
                 payment.vehicleId == null ? null : payment.vehicleId.toString(),
-                payment.referenceYear,
-                payment.referenceMonth,
                 payment.notes,
                 Timestamp.from(Instant.now()),
                 payment.id.toString()
@@ -138,30 +134,48 @@ public class PaymentJdbcRepository implements PaymentRepository {
     }
 
     @Override
-    public BigDecimal findTotalPaymentsAmount() {
-        BigDecimal result = jdbcTemplate.queryForObject(
-                "SELECT COALESCE(SUM(amount), 0) FROM payments",
-                BigDecimal.class
-        );
+    public BigDecimal findTotalPaymentsAmount(LocalDate startDate, LocalDate endDate) {
+        StringBuilder sql = new StringBuilder("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (startDate != null) {
+            sql.append(" AND payment_date >= ?");
+            params.add(Date.valueOf(startDate));
+        }
+        if (endDate != null) {
+            sql.append(" AND payment_date <= ?");
+            params.add(Date.valueOf(endDate));
+        }
+        BigDecimal result = jdbcTemplate.queryForObject(sql.toString(), BigDecimal.class, params.toArray());
         return result == null ? BigDecimal.ZERO : result;
     }
 
     @Override
-    public List<MonthlyPaymentTotal> findMonthlyPaymentTotals() {
-        return jdbcTemplate.query("""
-                        SELECT
-                            YEAR(payment_date)  AS pay_year,
-                            MONTH(payment_date) AS pay_month,
-                            SUM(amount)         AS total
-                        FROM payments
-                        GROUP BY YEAR(payment_date), MONTH(payment_date)
-                        ORDER BY pay_year, pay_month
-                        """,
+    public List<MonthlyPaymentTotal> findMonthlyPaymentTotals(LocalDate startDate, LocalDate endDate) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT
+                    YEAR(payment_date)  AS pay_year,
+                    MONTH(payment_date) AS pay_month,
+                    SUM(amount)         AS total
+                FROM payments
+                WHERE 1=1
+                """);
+        List<Object> params = new ArrayList<>();
+        if (startDate != null) {
+            sql.append(" AND payment_date >= ?");
+            params.add(Date.valueOf(startDate));
+        }
+        if (endDate != null) {
+            sql.append(" AND payment_date <= ?");
+            params.add(Date.valueOf(endDate));
+        }
+        sql.append(" GROUP BY YEAR(payment_date), MONTH(payment_date) ORDER BY pay_year, pay_month");
+        return jdbcTemplate.query(sql.toString(),
                 (rs, rowNum) -> new MonthlyPaymentTotal(
                         rs.getInt("pay_year"),
                         rs.getInt("pay_month"),
                         rs.getBigDecimal("total")
-                )
+                ),
+                params.toArray()
         );
     }
 
@@ -177,16 +191,12 @@ public class PaymentJdbcRepository implements PaymentRepository {
             LocalDate paymentDate = paymentDateSql == null ? null : paymentDateSql.toLocalDate();
             String vehicleIdStr = rs.getString("vehicle_id");
             UUID vehicleId = vehicleIdStr == null ? null : UUID.fromString(vehicleIdStr);
-            int referenceYearRaw = rs.getInt("reference_year");
-            Integer referenceYear = rs.wasNull() ? null : referenceYearRaw;
-            int referenceMonthRaw = rs.getInt("reference_month");
-            Integer referenceMonth = rs.wasNull() ? null : referenceMonthRaw;
             String notes = rs.getString("notes");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAtTs = rs.getTimestamp("updated_at");
             Instant updatedAt = updatedAtTs == null ? null : updatedAtTs.toInstant();
             Payment payment = new Payment(id, paymentType, description, amount, paymentDate,
-                    vehicleId, referenceYear, referenceMonth, notes, createdAt, updatedAt);
+                    vehicleId, notes, createdAt, updatedAt);
             String licensePlate = rs.getString("license_plate");
             if (licensePlate != null) {
                 payment.vehicleLicensePlate = licensePlate;

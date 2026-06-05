@@ -29,7 +29,7 @@ export default function ProLaboreBonusTab() {
       setLoading(true);
       const results = await Promise.all(
         ALLOWED_TYPES.map((type) =>
-          paymentsApi.list({ paymentType: type, referenceMonth: filterMonth || undefined })
+          paymentsApi.list({ paymentType: type, paymentMonth: filterMonth || undefined })
         )
       );
       const all = results.flatMap((r) => r.data.data.payments);
@@ -146,7 +146,6 @@ export default function ProLaboreBonusTab() {
                 <th className="px-4 py-3">{t("payments.table.description")}</th>
                 <th className="px-4 py-3 text-right">{t("payments.table.amount")}</th>
                 <th className="px-4 py-3">{t("payments.table.date")}</th>
-                <th className="px-4 py-3">{t("payments.table.referenceMonth")}</th>
                 <th className="px-4 py-3">{t("payments.table.notes")}</th>
                 <th className="px-4 py-3">{t("vehicles.table.actions")}</th>
               </tr>
@@ -166,7 +165,6 @@ export default function ProLaboreBonusTab() {
                     {formatMoney(p.amount)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{formatDate(p.paymentDate)}</td>
-                  <td className="px-4 py-3">{p.referenceMonth ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">
                     {p.notes ?? "—"}
                   </td>

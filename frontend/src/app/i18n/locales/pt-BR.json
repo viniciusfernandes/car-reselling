@@ -7,6 +7,7 @@
     "reports": "Veículos distribuídos",
     "sales": "Vendas",
     "payments": "Pagamentos",
+    "finances": "Finanças",
     "partners": "Parceiros",
     "logout": "Sair"
   },
@@ -339,6 +340,8 @@
     "tabs": {
       "dashboard": "Dashboard Principal",
       "dashboardDesc": "Visão geral financeira do negócio: caixa, patrimônio e evolução de lucro.",
+      "financial": "Financeiro",
+      "financialDesc": "Visão geral financeira do negócio: caixa, patrimônio e evolução de lucro.",
       "warranty": "Garantia",
       "warrantyDesc": "Despesas pós-venda vinculadas a um veículo (mecânico, elétrico etc.).",
       "operational": "Custos Operacionais",
@@ -363,7 +366,10 @@
       "monthlyEvolution": "Evolução do Lucro Mês a Mês",
       "monthlyEvolutionDesc": "Lucro líquido de vendas menos despesas lançadas, por mês (últimos 12 meses).",
       "legendPositive": "Resultado positivo",
-      "legendNegative": "Resultado negativo"
+      "legendNegative": "Resultado negativo",
+      "periodStart": "Data início",
+      "periodEnd": "Data fim",
+      "resetPeriod": "Últimos 12 meses"
     },
     "types": {
       "WARRANTY": "Garantia",

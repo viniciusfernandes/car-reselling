@@ -7,6 +7,7 @@
     "reports": "Distributed vehicles",
     "sales": "Sales",
     "payments": "Payments",
+    "finances": "Finanças",
     "partners": "Partners",
     "logout": "Logout"
   },
@@ -339,6 +340,8 @@
     "tabs": {
       "dashboard": "Main Dashboard",
       "dashboardDesc": "Financial overview: cash position, net worth, and profit evolution.",
+      "financial": "Financial",
+      "financialDesc": "Financial overview: cash position, net worth, and profit evolution.",
       "warranty": "Warranty",
       "warrantyDesc": "Post-sale expenses linked to a vehicle (mechanic, electrical, etc.).",
       "operational": "Operational Costs",
@@ -363,7 +366,10 @@
       "monthlyEvolution": "Month-by-Month Profit Evolution",
       "monthlyEvolutionDesc": "Net sales profit minus recorded expenses, per month (last 12 months).",
       "legendPositive": "Positive result",
-      "legendNegative": "Negative result"
+      "legendNegative": "Negative result",
+      "periodStart": "Start date",
+      "periodEnd": "End date",
+      "resetPeriod": "Last 12 months"
     },
     "types": {
       "WARRANTY": "Warranty",

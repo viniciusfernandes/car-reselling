@@ -29,15 +29,12 @@ public class CreatePaymentEndpoint {
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreatePaymentResponse>> create(@Valid @RequestBody CreatePaymentRequest request) {
-        String[] referenceDates = request.referenceMonth().split("-");
         UUID id = paymentService.createPayment(
                 request.paymentType(),
                 request.description(),
                 request.amount(),
                 request.paymentDate(),
                 request.vehicleLicensePlate(),
-                Integer.valueOf(referenceDates[0]),
-                Integer.valueOf(referenceDates[1]),
                 request.notes()
         );
         return ResponseEntity.status(HttpStatus.CREATED)

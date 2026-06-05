@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { cashBalanceApi, dashboardApi, extractErrorMessage } from "../../../service/api";
+import { cashBalanceApi, financialApi, extractErrorMessage } from "../../../service/api";
 import type { FinancialDashboardData, FinancialMonthlyPoint } from "../../../service/types";
 import { formatMoney, parseMoney } from "../../../service/formatters";
 import { useToast } from "../../../component/notification/ToastProvider";
@@ -8,6 +8,13 @@ import { useToast } from "../../../component/notification/ToastProvider";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MONTH_ABR = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function defaultDateRange(): { startDate: string; endDate: string } {
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  return { startDate: fmt(start), endDate: fmt(today) };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -147,24 +154,29 @@ export default function DashboardTab() {
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<FinancialDashboardData | null>(null);
 
+  const [dateRange, setDateRange] = useState(defaultDateRange);
+
   const [editingCash, setEditingCash] = useState(false);
   const [cashDraft, setCashDraft] = useState("");
 
-  const fetchDashboard = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await dashboardApi.getFinancialDashboard();
-      setData(res.data.data);
-    } catch (err) {
-      showToast(extractErrorMessage(err), "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+  const fetchDashboard = useCallback(
+    async (startDate: string, endDate: string) => {
+      try {
+        setLoading(true);
+        const res = await financialApi.getFinancialDashboard(startDate, endDate);
+        setData(res.data.data);
+      } catch (err) {
+        showToast(extractErrorMessage(err), "error");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showToast]
+  );
 
   useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+    fetchDashboard(dateRange.startDate, dateRange.endDate);
+  }, [fetchDashboard, dateRange]);
 
   // ── Cash editing ─────────────────────────────────────────────────────────────
 
@@ -180,7 +192,7 @@ export default function DashboardTab() {
       setSaving(true);
       await cashBalanceApi.update(next);
       setEditingCash(false);
-      await fetchDashboard();
+      await fetchDashboard(dateRange.startDate, dateRange.endDate);
     } catch (err) {
       showToast(extractErrorMessage(err), "error");
     } finally {
@@ -209,6 +221,41 @@ export default function DashboardTab() {
 
   return (
     <div className="space-y-5">
+      {/* Date range filter */}
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-slate-500">
+            {t("payments.dashboard.periodStart")}
+          </label>
+          <input
+            type="date"
+            value={dateRange.startDate}
+            max={dateRange.endDate}
+            onChange={(e) => setDateRange((prev) => ({ ...prev, startDate: e.target.value }))}
+            className="rounded border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-slate-500">
+            {t("payments.dashboard.periodEnd")}
+          </label>
+          <input
+            type="date"
+            value={dateRange.endDate}
+            min={dateRange.startDate}
+            onChange={(e) => setDateRange((prev) => ({ ...prev, endDate: e.target.value }))}
+            className="rounded border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setDateRange(defaultDateRange())}
+          className="self-end rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm hover:bg-slate-100"
+        >
+          {t("payments.dashboard.resetPeriod")}
+        </button>
+      </div>
+
       {/* Row 1: Valor em Caixa + Patrimônio */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Valor em Caixa */}

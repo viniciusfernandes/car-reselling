@@ -16,8 +16,6 @@ public final class PaymentListMapper {
             summary.paymentDate(),
             summary.vehicleId(),
             summary.vehicleLicensePlate(),
-            summary.referenceYear(),
-            summary.referenceMonth(),
             summary.notes(),
             summary.createdAt(),
             summary.updatedAt()

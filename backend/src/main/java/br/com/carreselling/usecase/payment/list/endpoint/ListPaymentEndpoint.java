@@ -24,11 +24,11 @@ public class ListPaymentEndpoint {
     @GetMapping
     public ResponseEntity<ApiResponse<PaymentListResponse>> list(
             @RequestParam(required = false) PaymentType paymentType,
-            @RequestParam(required = false) String referenceMonth,
+            @RequestParam(required = false) String paymentMonth,
             @RequestParam(required = false) String licensePlate) {
-        String[] referenceDates = referenceMonth != null ? referenceMonth.split("-") : null;
-        Integer year = referenceDates != null ? Integer.parseInt(referenceDates[0]) : null;
-        Integer month = referenceDates != null ? Integer.parseInt(referenceDates[1]) : null;
+        String[] paymentDates = paymentMonth != null ? paymentMonth.split("-") : null;
+        Integer year = paymentDates != null ? Integer.parseInt(paymentDates[0]) : null;
+        Integer month = paymentDates != null ? Integer.parseInt(paymentDates[1]) : null;
         var payments = paymentService.listPayments(paymentType, year, month, licensePlate)
                 .stream()
                 .map(PaymentListMapper::toItem)

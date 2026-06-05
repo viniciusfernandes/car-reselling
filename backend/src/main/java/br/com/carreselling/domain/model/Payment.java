@@ -14,8 +14,6 @@ public class Payment {
     public LocalDate paymentDate;
     public UUID vehicleId;
     public String vehicleLicensePlate;
-    public Integer referenceYear;
-    public Integer referenceMonth;
     public String notes;
     public Instant createdAt;
     public Instant updatedAt;
@@ -26,8 +24,6 @@ public class Payment {
                    BigDecimal amount,
                    LocalDate paymentDate,
                    UUID vehicleId,
-                   Integer referenceYear,
-                   Integer referenceMonth,
                    String notes,
                    Instant createdAt,
                    Instant updatedAt) {
@@ -37,8 +33,6 @@ public class Payment {
         this.amount = amount;
         this.paymentDate = paymentDate;
         this.vehicleId = vehicleId;
-        this.referenceYear = referenceYear;
-        this.referenceMonth = referenceMonth;
         this.notes = notes;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -49,16 +43,12 @@ public class Payment {
                        BigDecimal amount,
                        LocalDate paymentDate,
                        UUID vehicleId,
-                       Integer referenceYear,
-                       Integer referenceMonth,
                        String notes) {
         this.paymentType = paymentType;
         this.description = description;
         this.amount = amount;
         this.paymentDate = paymentDate;
         this.vehicleId = vehicleId;
-        this.referenceYear = referenceYear;
-        this.referenceMonth = referenceMonth;
         this.notes = notes;
     }
 }

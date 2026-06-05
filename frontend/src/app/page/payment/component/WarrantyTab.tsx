@@ -28,7 +28,7 @@ export default function WarrantyTab() {
       const res = await paymentsApi.list({
         paymentType: "WARRANTY",
         licensePlate: filterPlate || undefined,
-        referenceMonth: filterMonth || undefined,
+        paymentMonth: filterMonth || undefined,
       });
       setPayments(res.data.data.payments);
     } catch (error) {
@@ -135,7 +135,6 @@ export default function WarrantyTab() {
                 <th className="px-4 py-3">{t("payments.table.description")}</th>
                 <th className="px-4 py-3 text-right">{t("payments.table.amount")}</th>
                 <th className="px-4 py-3">{t("payments.table.date")}</th>
-                <th className="px-4 py-3">{t("payments.table.referenceMonth")}</th>
                 <th className="px-4 py-3">{t("payments.table.notes")}</th>
                 <th className="px-4 py-3 text-center">{t("payments.table.docs")}</th>
                 <th className="px-4 py-3">{t("vehicles.table.actions")}</th>
@@ -152,7 +151,6 @@ export default function WarrantyTab() {
                     {formatMoney(p.amount)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{formatDate(p.paymentDate)}</td>
-                  <td className="px-4 py-3">{p.referenceMonth ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-500 max-w-[140px] truncate">
                     {p.notes ?? "—"}
                   </td>

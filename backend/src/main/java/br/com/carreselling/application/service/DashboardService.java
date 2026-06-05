@@ -7,6 +7,7 @@ import br.com.carreselling.domain.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,15 +32,20 @@ public class DashboardService implements IDashboardService {
     }
 
     @Override
-    public FinancialDashboard getFinancialDashboard() {
+    public FinancialDashboard getFinancialDashboard(LocalDate startDate, LocalDate endDate) {
+        LocalDate today = LocalDate.now();
+        LocalDate start = startDate != null ? startDate : today.minusMonths(12).withDayOfMonth(1);
+        LocalDate end = endDate != null ? endDate : today;
+
         BigDecimal cashBalance = cashBalanceRepository.findCashBalance().amount;
 
-        List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(new DistributedVehiclesFilter(null, null, null, null, null));
+        List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(
+                new DistributedVehiclesFilter(start, end, null, null, null));
         SoldVehiclesReport soldReport = salesCalculator.buildReport(soldVehicles);
 
         VehiclesTotalCost vehicleCost = vehicleRepository.findVehicleTotalCost();
-        BigDecimal totalPayments = paymentRepository.findTotalPaymentsAmount();
-        List<MonthlyPaymentTotal> monthlyPayments = paymentRepository.findMonthlyPaymentTotals();
+        BigDecimal totalPayments = paymentRepository.findTotalPaymentsAmount(start, end);
+        List<MonthlyPaymentTotal> monthlyPayments = paymentRepository.findMonthlyPaymentTotals(start, end);
 
         BigDecimal lucroVendas = soldReport.profit();
         BigDecimal valorEmCaixa = cashBalance
@@ -96,11 +102,8 @@ public class DashboardService implements IDashboardService {
         List<String> sortedKeys = new ArrayList<>(combined.keySet());
         sortedKeys.sort(String::compareTo);
 
-        int startIdx = Math.max(0, sortedKeys.size() - 12);
-        List<String> last12 = sortedKeys.subList(startIdx, sortedKeys.size());
-
         List<FinancialMonthlyPoint> result = new ArrayList<>();
-        for (String key : last12) {
+        for (String key : sortedKeys) {
             String[] parts = key.split("-");
             int year = Integer.parseInt(parts[0]);
             int month = Integer.parseInt(parts[1]);

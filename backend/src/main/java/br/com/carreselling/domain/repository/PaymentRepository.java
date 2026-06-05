@@ -5,6 +5,7 @@ import br.com.carreselling.domain.model.Payment;
 import br.com.carreselling.domain.model.PaymentType;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,7 +16,7 @@ public interface PaymentRepository {
 
     Optional<Payment> findPaymentById(UUID id);
 
-    List<Payment> findPayments(PaymentType paymentType, Integer referenceYear, Integer referenceMonth, String licensePlate);
+    List<Payment> findPayments(PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate);
 
     List<String> findDistinctDescriptions(PaymentType paymentType);
 
@@ -23,7 +24,7 @@ public interface PaymentRepository {
 
     void deletePayment(UUID id);
 
-    BigDecimal findTotalPaymentsAmount();
+    BigDecimal findTotalPaymentsAmount(LocalDate startDate, LocalDate endDate);
 
-    List<MonthlyPaymentTotal> findMonthlyPaymentTotals();
+    List<MonthlyPaymentTotal> findMonthlyPaymentTotals(LocalDate startDate, LocalDate endDate);
 }

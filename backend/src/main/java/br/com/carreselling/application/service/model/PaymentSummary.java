@@ -15,8 +15,6 @@ public record PaymentSummary(
     LocalDate paymentDate,
     UUID vehicleId,
     String vehicleLicensePlate,
-    Integer referenceYear,
-    Integer referenceMonth,
     String notes,
     Instant createdAt,
     Instant updatedAt

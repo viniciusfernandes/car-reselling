@@ -22,7 +22,6 @@ type Props = {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
-const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function PaymentFormModal({
   mode,
@@ -52,7 +51,6 @@ export default function PaymentFormModal({
   const [vehicleLookupNotSold, setVehicleLookupNotSold] = useState(false);
   const [vehicleLookupError, setVehicleLookupError] = useState<string | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
-  const [referenceMonth, setReferenceMonth] = useState(item?.referenceMonth ?? currentMonth());
   const [notes, setNotes] = useState(item?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -149,7 +147,6 @@ export default function PaymentFormModal({
         paymentType === PaymentType.WARRANTY && vehiclePlate.trim()
           ? vehiclePlate.trim().toUpperCase()
           : undefined,
-      referenceMonth: referenceMonth || undefined,
       notes: notes || undefined,
     };
 
@@ -329,14 +326,6 @@ export default function PaymentFormModal({
               error={errors.paymentDate}
             />
           </div>
-
-          {/* Reference month — calendar picker */}
-          <DateInput
-            label={t("payments.form.referenceMonth")}
-            type="month"
-            value={referenceMonth}
-            onChange={(e) => setReferenceMonth(e.target.value)}
-          />
 
           <label className="block text-sm">
             <span className="font-medium text-slate-700">{t("payments.form.notes")}</span>

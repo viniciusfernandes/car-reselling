@@ -102,7 +102,7 @@ function AppLayout() {
                       `${linkClass} ${isActive ? activeClass : ""}`
                     }
                   >
-                    {t("nav.payments")}
+                    {t("nav.finances")}
                   </NavLink>
                   <NavLink
                     to="/partners"

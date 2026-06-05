@@ -12,6 +12,5 @@ public record CreatePaymentRequest(
     @NotNull @DecimalMin("0.01") BigDecimal amount,
     @NotNull LocalDate paymentDate,
     String vehicleLicensePlate,
-    @NotBlank String referenceMonth,
     String notes
 ) {}

@@ -14,8 +14,8 @@ export default function PaymentsPage() {
   const tabs: { key: TabKey; label: string; description: string }[] = [
     {
       key: "dashboard",
-      label: t("payments.tabs.dashboard"),
-      description: t("payments.tabs.dashboardDesc"),
+      label: t("payments.tabs.financial"),
+      description: t("payments.tabs.financialDesc"),
     },
     {
       key: "warranty",

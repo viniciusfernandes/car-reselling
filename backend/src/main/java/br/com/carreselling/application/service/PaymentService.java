@@ -46,21 +46,19 @@ public class PaymentService implements IPaymentService {
                               BigDecimal amount,
                               LocalDate paymentDate,
                               String vehicleLicensePlate,
-                              Integer referenceYear,
-                              Integer referenceMonth,
                               String notes) {
         UUID resolvedVehicleId = resolveVehicleForWarranty(paymentType, vehicleLicensePlate);
         String normalizedDescription = description != null ? description.toUpperCase().trim() : null;
         UUID id = UuidGenerator.generate();
         Payment payment = new Payment(id, paymentType, normalizedDescription, amount, paymentDate,
-                resolvedVehicleId, referenceYear, referenceMonth, notes, Instant.now(), null);
+                resolvedVehicleId, notes, Instant.now(), null);
         paymentRepository.savePayment(payment);
         return id;
     }
 
     @Override
-    public List<PaymentSummary> listPayments(PaymentType paymentType, Integer referenceYear, Integer referenceMonth, String licensePlate) {
-        return paymentRepository.findPayments(paymentType, referenceYear, referenceMonth, licensePlate)
+    public List<PaymentSummary> listPayments(PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate) {
+        return paymentRepository.findPayments(paymentType, paymentYear, paymentMonth, licensePlate)
                 .stream()
                 .map(this::toSummary)
                 .toList();
@@ -80,14 +78,12 @@ public class PaymentService implements IPaymentService {
                               BigDecimal amount,
                               LocalDate paymentDate,
                               String vehicleLicensePlate,
-                              Integer referenceYear,
-                              Integer referenceMonth,
                               String notes) {
         Payment payment = paymentRepository.findPaymentById(id)
                 .orElseThrow(() -> new NotFoundException("Payment not found"));
         UUID resolvedVehicleId = resolveVehicleForWarranty(paymentType, vehicleLicensePlate);
         String normalizedDescription = description != null ? description.toUpperCase().trim() : null;
-        payment.update(paymentType, normalizedDescription, amount, paymentDate, resolvedVehicleId, referenceYear, referenceMonth, notes);
+        payment.update(paymentType, normalizedDescription, amount, paymentDate, resolvedVehicleId, notes);
         paymentRepository.updatePayment(payment);
     }
 
@@ -202,8 +198,6 @@ public class PaymentService implements IPaymentService {
                 payment.paymentDate,
                 payment.vehicleId,
                 payment.vehicleLicensePlate,
-                payment.referenceYear,
-                payment.referenceMonth,
                 payment.notes,
                 payment.createdAt,
                 payment.updatedAt

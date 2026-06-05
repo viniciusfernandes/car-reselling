@@ -19,11 +19,9 @@ public interface IPaymentService {
                        BigDecimal amount,
                        LocalDate paymentDate,
                        String vehicleLicensePlate,
-                       Integer referenceYear,
-                       Integer referenceMonth,
                        String notes);
 
-    List<PaymentSummary> listPayments(PaymentType paymentType, Integer referenceYear, Integer referenceMonth, String licensePlate);
+    List<PaymentSummary> listPayments(PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate);
 
     PaymentSummary getPayment(UUID id);
 
@@ -33,8 +31,6 @@ public interface IPaymentService {
                        BigDecimal amount,
                        LocalDate paymentDate,
                        String vehicleLicensePlate,
-                       Integer referenceYear,
-                       Integer referenceMonth,
                        String notes);
 
     void deletePayment(UUID id);

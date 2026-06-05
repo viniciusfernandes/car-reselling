@@ -34,8 +34,6 @@ public class UpdatePaymentEndpoint {
             request.amount(),
             request.paymentDate(),
             request.vehicleLicensePlate(),
-            request.referenceYear(),
-            request.referenceMonth(),
             request.notes()
         );
         return ResponseEntity.ok(new ApiResponse<>(null));

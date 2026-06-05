@@ -238,7 +238,6 @@ export type PaymentItem = {
   paymentDate: string;
   vehicleId?: string | null;
   vehicleLicensePlate?: string | null;
-  referenceMonth?: string | null;
   notes?: string | null;
   createdAt: string;
   updatedAt?: string | null;
@@ -293,7 +292,6 @@ export type CreatePaymentRequest = {
   amount: number;
   paymentDate: string;
   vehicleLicensePlate?: string;
-  referenceMonth?: string;
   notes?: string;
 };
 
