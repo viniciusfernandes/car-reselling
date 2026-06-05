@@ -98,7 +98,7 @@ class VehicleSalesCalculatorTest {
             new BigDecimal("0.05")      // saleCommissionRate
         );
 
-        SoldVehiclesReport report = calculator.buildReport(List.of(vehicle));
+        SoldVehiclesReport report = calculator.buildSoldVehicles(List.of(vehicle));
 
         assertThat(report.totalVehiclesSold()).isEqualTo(1);
         assertThat(report.totalSoldValue()).isEqualByComparingTo("120000.00");
@@ -129,7 +129,7 @@ class VehicleSalesCalculatorTest {
             null                        // saleCommissionRate
         );
 
-        SoldVehiclesReport report = calculator.buildReport(List.of(vehicle));
+        SoldVehiclesReport report = calculator.buildSoldVehicles(List.of(vehicle));
 
         // ICMS = 100,000 × 0.05 × 0.12 = 600.00
         assertThat(report.totalTaxesValue()).isEqualByComparingTo("600.00");
@@ -139,7 +139,7 @@ class VehicleSalesCalculatorTest {
 
     @Test
     void testBuildReport_emptyList_returnsZeroTotals() {
-        SoldVehiclesReport report = calculator.buildReport(List.of());
+        SoldVehiclesReport report = calculator.buildSoldVehicles(List.of());
 
         assertThat(report.totalVehiclesSold()).isZero();
         assertThat(report.totalSoldValue()).isEqualByComparingTo("0.00");

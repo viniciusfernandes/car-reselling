@@ -13,11 +13,11 @@ import br.com.carreselling.domain.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ReportService implements IReportService {
+public class SalesDashboardService implements IReportService {
     private final VehicleRepository vehicleRepository;
     private final VehicleSalesCalculator salesCalculator;
 
-    public ReportService(VehicleRepository vehicleRepository, VehicleSalesCalculator salesCalculator) {
+    public SalesDashboardService(VehicleRepository vehicleRepository, VehicleSalesCalculator salesCalculator) {
         this.vehicleRepository = vehicleRepository;
         this.salesCalculator = salesCalculator;
     }
@@ -68,7 +68,7 @@ public class ReportService implements IReportService {
     @Override
     public SoldVehiclesReport soldVehiclesReport(DistributedVehiclesFilter filter) {
         List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(filter);
-        return salesCalculator.buildReport(soldVehicles);
+        return salesCalculator.buildSoldVehicles(soldVehicles);
     }
 
 

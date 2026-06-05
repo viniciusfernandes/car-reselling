@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class VehicleSalesCalculator {
 
-    public SoldVehiclesReport buildReport(List<SoldVehicle> vehicles) {
+    public SoldVehiclesReport buildSoldVehicles(List<SoldVehicle> vehicles) {
         List<SoldVehicleItem> items = new ArrayList<>();
         BigDecimal totalSold = BigDecimal.ZERO;
         BigDecimal totalTaxes = BigDecimal.ZERO;
@@ -35,11 +35,12 @@ public class VehicleSalesCalculator {
             BigDecimal commissionIr = purchaseCommission
                     .multiply(TaxRate.IR_COMMISSION.value())
                     .setScale(2, RoundingMode.HALF_UP);
-            BigDecimal vehicleProfit = baseProfit
-                .subtract(taxes.totalTaxes())
+            BigDecimal profitNoTaxes = baseProfit
                 .subtract(vehicle.freightCost())
                 .subtract(servicesTotal)
                 .subtract(commissionIr);
+
+            BigDecimal profit = profitNoTaxes.subtract(taxes.totalTaxes());
             items.add(new SoldVehicleItem(
                 vehicle.vehicleId(),
                 vehicle.licensePlate(),
@@ -47,11 +48,13 @@ public class VehicleSalesCalculator {
                 vehicle.model(),
                 vehicle.year(),
                 vehicle.soldAt(),
+                vehicle.purchasePrice(),
                 sellingPrice,
                 taxes.totalTaxes(),
                 servicesTotal,
                 purchaseCommission,
-                vehicleProfit,
+                profit,
+                profitNoTaxes,
                 vehicle.saleCommissionRate()
             ));
             totalSold = totalSold.add(sellingPrice);
@@ -59,7 +62,7 @@ public class VehicleSalesCalculator {
             totalServices = totalServices.add(servicesTotal);
             totalCommission = totalCommission.add(purchaseCommission);
             totalCommissionIr = totalCommissionIr.add(commissionIr);
-            totalProfit = totalProfit.add(vehicleProfit);
+            totalProfit = totalProfit.add(profit);
         }
 
         return new SoldVehiclesReport(

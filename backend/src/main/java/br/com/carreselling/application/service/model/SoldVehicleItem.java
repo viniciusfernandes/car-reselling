@@ -10,10 +10,12 @@ public record SoldVehicleItem(UUID vehicleId,
                               String model,
                               int year,
                               LocalDate soldAt,
+                              BigDecimal purchasePrice,
                               BigDecimal sellingPrice,
                               BigDecimal totalTaxes,
                               BigDecimal servicesTotal,
                               BigDecimal purchaseCommission,
                               BigDecimal profit,
+                              BigDecimal profitBeforeTaxes,
                               BigDecimal commissionRate) {
 }

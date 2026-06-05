@@ -283,36 +283,47 @@
       "subtitle": "Visão geral dos veículos vendidos e lucratividade.",
       "loading": "Carregando dados de vendas...",
       "empty": "Nenhum veículo vendido encontrado.",
+      "periodStart": "Início do período",
+      "periodEnd": "Fim do período",
+      "resetPeriod": "Limpar",
+      "vehiclesSold": "veículos vendidos",
       "totals": {
         "vehicles": "Total de veículos vendidos",
-        "soldValue": "Valor total vendido",
-        "taxes": "Total de impostos",
-        "services": "Total de serviços",
-        "commission": "Total de comissão",
-        "profit": "Lucro"
+        "soldValue": "Valor Total Vendido",
+        "taxes": "Total de Impostos",
+        "taxesDesc": "ICMS, PIS, COFINS, CSLL, IRPJ",
+        "services": "Total de Serviços",
+        "commission": "Total de Comissão",
+        "profit": "Lucro Vendas",
+        "profitBeforeTaxes": "Líquido s/ impostos",
+        "profitAfterTaxes": "Líquido c/ impostos"
       },
       "table": {
         "plate": "Placa",
         "brand": "Marca",
         "model": "Modelo",
         "year": "Ano",
+        "purchasePrice": "Valor de compra",
         "soldAt": "Data de venda",
         "sellingPrice": "Preço de venda",
         "totalTaxes": "Total de impostos",
         "servicesTotal": "Total de serviços",
         "commission": "Comissão",
         "commissionRate": "Taxa de comissão",
-        "profit": "Lucro"
+        "profit": "Lucro",
+        "profitBeforeTaxes": "Sem Imposto"
       },
       "histogram": {
-        "title": "Evolução mensal das vendas",
-        "subtitle": "Total de vendas por mês.",
+        "title": "Evolução do Lucro Mês a Mês",
+        "subtitle": "Lucro líquido por mês no período selecionado.",
         "show": "Mostrar gráfico",
         "hide": "Ocultar gráfico",
         "startMonth": "Início",
         "endMonth": "Fim",
-        "empty": "Selecione um intervalo válido para ver o histograma.",
-        "maxMonth": "Maior mês: {{value}}"
+        "empty": "Nenhum dado de lucro no período selecionado.",
+        "maxMonth": "Maior mês: {{value}}",
+        "legendPositive": "Lucro positivo",
+        "legendNegative": "Lucro negativo"
       }
     }
   },

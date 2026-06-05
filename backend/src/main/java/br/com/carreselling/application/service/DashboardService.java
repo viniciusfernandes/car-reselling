@@ -41,7 +41,7 @@ public class DashboardService implements IDashboardService {
 
         List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(
                 new DistributedVehiclesFilter(start, end, null, null, null));
-        SoldVehiclesReport soldReport = salesCalculator.buildReport(soldVehicles);
+        SoldVehiclesReport soldReport = salesCalculator.buildSoldVehicles(soldVehicles);
 
         VehiclesTotalCost vehicleCost = vehicleRepository.findVehicleTotalCost();
         BigDecimal totalPayments = paymentRepository.findTotalPaymentsAmount(start, end);
@@ -53,7 +53,7 @@ public class DashboardService implements IDashboardService {
                 .add(lucroVendas)
                 .subtract(vehicleCost.totalCost())
                 .subtract(totalPayments);
-        BigDecimal patrimonio = cashBalance.add(vehicleCost.totalPurchasePrice());
+        BigDecimal patrimonio = valorEmCaixa.add(vehicleCost.totalPurchasePrice());
         BigDecimal lucroCompras = soldReport.totalCommissionValue()
                 .add(vehicleCost.totalPurchaseCommission());
         int totalAcquired = vehicleCost.totalVehicles() + soldReport.totalVehiclesSold();

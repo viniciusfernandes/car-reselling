@@ -7,7 +7,7 @@
     "reports": "Distributed vehicles",
     "sales": "Sales",
     "payments": "Payments",
-    "finances": "Finanças",
+    "finances": "Finances",
     "partners": "Partners",
     "logout": "Logout"
   },
@@ -283,36 +283,47 @@
       "subtitle": "Overview of sold vehicles and profitability.",
       "loading": "Loading sales data...",
       "empty": "No sold vehicles found.",
+      "periodStart": "Period start",
+      "periodEnd": "Period end",
+      "resetPeriod": "Reset",
+      "vehiclesSold": "vehicles sold",
       "totals": {
         "vehicles": "Total vehicles sold",
-        "soldValue": "Total sold value",
-        "taxes": "Total taxes value",
-        "services": "Total service value",
-        "commission": "Total commission",
-        "profit": "Profit"
+        "soldValue": "Total Sold Value",
+        "taxes": "Total Taxes",
+        "taxesDesc": "ICMS, PIS, COFINS, CSLL, IRPJ",
+        "services": "Total Services",
+        "commission": "Total Commission",
+        "profit": "Sales Profit",
+        "profitBeforeTaxes": "Net before taxes",
+        "profitAfterTaxes": "Net after taxes"
       },
       "table": {
         "plate": "Plate",
         "brand": "Brand",
         "model": "Model",
         "year": "Year",
+        "purchasePrice": "Purchase price",
         "soldAt": "Sold date",
         "sellingPrice": "Selling price",
         "totalTaxes": "Total taxes",
         "servicesTotal": "Services total",
         "commission": "Commission",
         "commissionRate": "Commission rate",
-        "profit": "Profit"
+        "profit": "Profit",
+        "profitBeforeTaxes": "No Taxes"
       },
       "histogram": {
-        "title": "Monthly selling progress",
-        "subtitle": "Total selling price per month.",
+        "title": "Monthly Profit Evolution",
+        "subtitle": "Net profit per month in the selected period.",
         "show": "Show chart",
         "hide": "Hide chart",
         "startMonth": "Start",
         "endMonth": "End",
-        "empty": "Select a valid month range to see the histogram.",
-        "maxMonth": "Max month: {{value}}"
+        "empty": "No profit data in the selected period.",
+        "maxMonth": "Max month: {{value}}",
+        "legendPositive": "Positive profit",
+        "legendNegative": "Negative profit"
       }
     }
   },
