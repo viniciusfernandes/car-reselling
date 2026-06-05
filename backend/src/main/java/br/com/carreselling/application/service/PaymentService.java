@@ -122,6 +122,19 @@ public class PaymentService implements IPaymentService {
     }
 
     @Override
+    public void deletePaymentsByVehicleId(UUID vehicleId) {
+        List<Payment> payments = paymentRepository.findPaymentsByVehicleId(vehicleId);
+        for (Payment payment : payments) {
+            List<PaymentDocument> documents = paymentDocumentRepository.findPaymentDocumentsByPaymentId(payment.id);
+            for (PaymentDocument doc : documents) {
+                paymentDocumentStorage.delete(doc.storageKey);
+            }
+            paymentDocumentRepository.deletePaymentDocumentsByPaymentId(payment.id);
+        }
+        paymentRepository.deletePaymentsByVehicleId(vehicleId);
+    }
+
+    @Override
     public UUID uploadPaymentDocument(UUID paymentId, MultipartFile file) {
         paymentRepository.findPaymentById(paymentId)
                 .orElseThrow(() -> new NotFoundException("Payment not found"));

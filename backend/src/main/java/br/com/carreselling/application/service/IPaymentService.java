@@ -35,6 +35,8 @@ public interface IPaymentService {
 
     void deletePayment(UUID id);
 
+    void deletePaymentsByVehicleId(UUID vehicleId);
+
     List<String> listDescriptions(PaymentType paymentType);
 
     UUID uploadPaymentDocument(UUID paymentId, MultipartFile file);

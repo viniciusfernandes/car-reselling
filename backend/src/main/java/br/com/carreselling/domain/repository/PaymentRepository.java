@@ -24,6 +24,10 @@ public interface PaymentRepository {
 
     void deletePayment(UUID id);
 
+    List<Payment> findPaymentsByVehicleId(UUID vehicleId);
+
+    void deletePaymentsByVehicleId(UUID vehicleId);
+
     BigDecimal findTotalPaymentsAmount(LocalDate startDate, LocalDate endDate);
 
     List<MonthlyPaymentTotal> findMonthlyPaymentTotals(LocalDate startDate, LocalDate endDate);

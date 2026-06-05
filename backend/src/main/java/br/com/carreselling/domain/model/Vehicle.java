@@ -5,6 +5,8 @@ import br.com.carreselling.domain.exception.InvalidStateException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -295,6 +297,19 @@ public class Vehicle {
 
     public boolean isSold() {
         return status == VehicleStatus.SOLD;
+    }
+
+    public int calulatePurchaseTime() {
+        if (createdAt == null) {
+            return 0;
+        }
+        LocalDate now = LocalDate.now();
+        LocalDate startDate = createdAt
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+        LocalDate endDate = soldAt != null ? soldAt : now;
+        return (int) ChronoUnit.DAYS.between(startDate, endDate);
+
     }
 
     @Override

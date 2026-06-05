@@ -134,6 +134,24 @@ public class PaymentJdbcRepository implements PaymentRepository {
     }
 
     @Override
+    public List<Payment> findPaymentsByVehicleId(UUID vehicleId) {
+        return jdbcTemplate.query("""
+                        SELECT p.*, v.license_plate
+                        FROM payments p
+                        LEFT JOIN vehicles v ON v.id = p.vehicle_id
+                        WHERE p.vehicle_id = ?
+                        ORDER BY p.payment_date DESC, p.created_at DESC
+                        """,
+                new PaymentRowMapper(),
+                vehicleId.toString());
+    }
+
+    @Override
+    public void deletePaymentsByVehicleId(UUID vehicleId) {
+        jdbcTemplate.update("DELETE FROM payments WHERE vehicle_id = ?", vehicleId.toString());
+    }
+
+    @Override
     public BigDecimal findTotalPaymentsAmount(LocalDate startDate, LocalDate endDate) {
         StringBuilder sql = new StringBuilder("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE 1=1");
         List<Object> params = new ArrayList<>();

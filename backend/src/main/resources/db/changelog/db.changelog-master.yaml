@@ -66,31 +66,6 @@ databaseChangeLog:
               );
 
   - changeSet:
-      id: vinicius-20260123-02
-      author: vinicius
-      changes:
-        - sql:
-            sql: |
-              INSERT INTO partners (id, name, city, commission_rate, created_at)
-              VALUES
-                (UUID(), 'Partner A', 'Sao Paulo', NULL, NOW()),
-                (UUID(), 'Partner B', 'Rio de Janeiro', NULL, NOW());
-
-  - changeSet:
-      id: vinicius-20260123-03
-      author: vinicius
-      validCheckSum: ANY
-      changes:
-        - sql:
-            sql: |
-              INSERT INTO vehicles (
-                id, license_plate, year, color, model, brand, supplier_source,
-                purchase_price, freight_cost, status, created_at, updated_at
-              ) VALUES (
-                UUID(), 'ABC1234', 2019, 'Black', 'Civic', 'Honda',
-                'INTERNET', 85000.00, 0, 'IN_LOT', NOW(), NOW()
-              );
-  - changeSet:
       id: vinicius-20260130-01
       author: vinicius
       changes:
@@ -142,25 +117,6 @@ databaseChangeLog:
                 ADD KEY idx_vehicles_brand (brand_id),
                 ADD KEY idx_vehicles_model (model_id);
 
-              INSERT INTO brands (id, name, created_at)
-              SELECT UUID(), v.brand, NOW()
-              FROM (SELECT DISTINCT brand FROM vehicles) v
-              LEFT JOIN brands b ON b.name = v.brand
-              WHERE b.id IS NULL;
-
-              INSERT INTO models (id, brand_id, name, created_at)
-              SELECT UUID(), b.id, v.model, NOW()
-              FROM (SELECT DISTINCT brand, model FROM vehicles) v
-              JOIN brands b ON b.name = v.brand
-              LEFT JOIN models m ON m.brand_id = b.id AND m.name = v.model
-              WHERE m.id IS NULL;
-
-              UPDATE vehicles v
-              JOIN brands b ON b.name = v.brand
-              JOIN models m ON m.brand_id = b.id AND m.name = v.model
-              SET v.brand_id = b.id,
-                  v.model_id = m.id;
-
               ALTER TABLE vehicles
                 MODIFY brand_id CHAR(36) NOT NULL,
                 MODIFY model_id CHAR(36) NOT NULL,
@@ -179,11 +135,6 @@ databaseChangeLog:
                 updated_at DATETIME NULL
               );
 
-              INSERT INTO colors (id, name, created_at)
-              SELECT UUID(), UPPER(TRIM(v.color)), NOW()
-              FROM (SELECT DISTINCT color FROM vehicles WHERE color IS NOT NULL AND TRIM(color) <> '') v
-              LEFT JOIN colors c ON c.name = UPPER(TRIM(v.color))
-              WHERE c.id IS NULL;
   - changeSet:
       id: vinicius-20260222-01
       author: vinicius
@@ -256,10 +207,6 @@ databaseChangeLog:
                 KEY idx_on_service_history_vehicle (vehicle_id),
                 CONSTRAINT fk_on_service_history_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
               );
-
-              INSERT INTO vehicle_on_service_history (id, vehicle_id, on_service, changed_at)
-              SELECT UUID(), id, TRUE, created_at
-              FROM vehicles;
 
   - changeSet:
       id: vinicius-20260211-07
@@ -382,4 +329,14 @@ databaseChangeLog:
                 DROP INDEX idx_payments_year_month,
                 DROP COLUMN reference_year,
                 DROP COLUMN reference_month;
+
+  - changeSet:
+      id: vinicius-20260605-02
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE payments
+                ADD CONSTRAINT fk_payments_vehicle
+                  FOREIGN KEY (vehicle_id) REFERENCES vehicles(id);
 

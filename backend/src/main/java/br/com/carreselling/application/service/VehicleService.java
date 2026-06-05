@@ -48,6 +48,7 @@ public class VehicleService implements IVehicleService {
     private final VehicleModelRepository vehicleModelRepository;
     private final VehicleSalesCalculator salesCalculator;
     private final ServiceOnVehicleService serviceOnVehicleService;
+    private final IPaymentService paymentService;
 
     public VehicleService(VehicleRepository vehicleRepository, VehicleOnServiceHistoryRepository vehicleOnServiceHistoryRepository,
                           DocumentRepository documentRepository,
@@ -57,7 +58,9 @@ public class VehicleService implements IVehicleService {
                           BrandRepository brandRepository,
                           ColorRepository colorRepository,
                           VehicleModelRepository vehicleModelRepository,
-                          VehicleSalesCalculator salesCalculator, ServiceOnVehicleService serviceOnVehicleService) {
+                          VehicleSalesCalculator salesCalculator,
+                          ServiceOnVehicleService serviceOnVehicleService,
+                          IPaymentService paymentService) {
         this.vehicleRepository = vehicleRepository;
         this.vehicleOnServiceHistoryRepository = vehicleOnServiceHistoryRepository;
         this.documentRepository = documentRepository;
@@ -69,6 +72,7 @@ public class VehicleService implements IVehicleService {
         this.vehicleModelRepository = vehicleModelRepository;
         this.salesCalculator = salesCalculator;
         this.serviceOnVehicleService = serviceOnVehicleService;
+        this.paymentService = paymentService;
     }
 
     @Override
@@ -277,13 +281,7 @@ public class VehicleService implements IVehicleService {
                     BigDecimal profitMargin = sellingPrice == null
                             ? null
                             : sellingPrice.subtract(totalCost);
-                    Integer purchaseTimeDays = null;
-                    if (vehicle.getSoldAt() != null && vehicle.getCreatedAt() != null) {
-                        LocalDate purchaseDate = vehicle.getCreatedAt()
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate();
-                        purchaseTimeDays = (int) ChronoUnit.DAYS.between(purchaseDate, vehicle.getSoldAt());
-                    }
+                    Integer purchaseTimeDays = vehicle.calulatePurchaseTime();
 
                     boolean serviceOpened = serviceRepository.existsOpenServiceByVehicleId(vehicle.getId());
                     return new VehicleSummary(
@@ -427,6 +425,7 @@ public class VehicleService implements IVehicleService {
 
         List<String> storageKeys = documentRepository.findStorageKeyByVehicleId(vehicleId);
         deleteFormStorage(vehicleId, storageKeys);
+        paymentService.deletePaymentsByVehicleId(vehicleId);
         vehicleOnServiceHistoryRepository.deleteByVehicleId(vehicleId);
         serviceRepository.deleteServicesByVehicleId(vehicleId);
         vehicleRepository.deleteVehicle(vehicleId);
