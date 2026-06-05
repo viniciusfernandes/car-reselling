@@ -11,10 +11,10 @@ public record VehicleListItem(UUID id,
                               int year,
                               VehicleStatus status,
                               boolean onService,
-                              BigDecimal purchasePrice,
-                              BigDecimal purchaseCommission,
-                              BigDecimal servicesTotal,
+                              BigDecimal sellingPrice,
                               BigDecimal totalCost,
-                              String assignedPartnerName,
-                              double yardDays) {
+                              BigDecimal profitMargin,
+                              Integer purchaseTimeDays,
+                              BigDecimal servicesTotal,
+                              double daysOnService) {
 }

@@ -89,6 +89,14 @@ export default function VehicleListPage() {
     SOLD: "bg-green-100 text-green-700",
   };
 
+  const formatProfitMargin = (value?: number | null) => {
+    if (value == null) return "-";
+    const formatted = formatMoney(value);
+    if (value > 0) return <span className="text-green-700">{formatted}</span>;
+    if (value < 0) return <span className="text-red-700">{formatted}</span>;
+    return formatted;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -144,22 +152,20 @@ export default function VehicleListPage() {
                 <th className="px-3 py-2">{t("vehicles.table.plate")}</th>
                 <th className="px-3 py-2">{t("vehicles.table.model")}</th>
                 <th className="px-3 py-2">{t("vehicles.table.year")}</th>
-                <th className="px-3 py-2 text-right">{t("vehicles.table.purchasePrice")}</th>
-                <th className="px-3 py-2 text-right">
-                  {t("vehicles.table.purchaseCommission")}
-                </th>
-                <th className="px-3 py-2 text-right">{t("vehicles.table.servicesTotal")}</th>
+                <th className="px-3 py-2 text-right">{t("vehicles.table.sellingPrice")}</th>
                 <th className="px-3 py-2 text-right">{t("vehicles.table.totalCost")}</th>
-                <th className="px-3 py-2">{t("vehicles.table.partner")}</th>
+                <th className="px-3 py-2 text-right">{t("vehicles.table.profitMargin")}</th>
                 <th className="px-3 py-2">{t("vehicles.table.status")}</th>
-                <th className="px-3 py-2">{t("vehicles.table.yardTime")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.purchaseTime")}</th>
+                <th className="px-3 py-2 text-right">{t("vehicles.table.servicesTotal")}</th>
+                <th className="px-3 py-2">{t("vehicles.table.daysOnService")}</th>
                 <th className="px-3 py-2 text-center">{t("vehicles.table.onService")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-6 text-center">
+                  <td colSpan={9} className="px-3 py-6 text-center">
                     {t("vehicles.loading")}
                   </td>
                 </tr>
@@ -173,22 +179,22 @@ export default function VehicleListPage() {
                     <td className="px-3 py-2 font-medium">
                       {vehicle.licensePlate}
                     </td>
-                    <td className="px-3 py-2">{vehicle.model}</td>
-                    <td className="px-3 py-2">{vehicle.year}</td>
-                    <td className="px-3 py-2 text-right">
-                      {formatMoney(vehicle.purchasePrice)}
+                    <td className="px-3 py-2 font-medium">
+                      {vehicle.model}
+                    </td>
+                    <td className="px-3 py-2 font-medium">
+                      {vehicle.year}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatMoney(vehicle.purchaseCommission)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatMoney(vehicle.servicesTotal)}
+                      {vehicle.sellingPrice != null
+                        ? formatMoney(vehicle.sellingPrice)
+                        : "-"}
                     </td>
                     <td className="px-3 py-2 text-right">
                       {formatMoney(vehicle.totalCost)}
                     </td>
-                    <td className="px-3 py-2">
-                      {vehicle.assignedPartnerName ?? "-"}
+                    <td className="px-3 py-2 text-right font-medium">
+                      {formatProfitMargin(vehicle.profitMargin)}
                     </td>
                     <td className="px-3 py-2">
                       <span
@@ -198,9 +204,17 @@ export default function VehicleListPage() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-center">
-                      {vehicle.yardDays !== null && vehicle.yardDays !== undefined
-                        ? `${vehicle.yardDays} d`
+                      {vehicle.purchaseTimeDays != null
+                        ? `${vehicle.purchaseTimeDays} d`
                         : "-"}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {formatMoney(vehicle.servicesTotal)}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      {vehicle.daysOnService !== null && vehicle.daysOnService !== undefined
+                          ? `${vehicle.daysOnService} d`
+                          : "-"}
                     </td>
                     <td className="px-3 py-2 text-center">
                       <button
@@ -227,7 +241,7 @@ export default function VehicleListPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={11} className="px-3 py-6 text-center text-slate-500">
+                  <td colSpan={9} className="px-3 py-6 text-center text-slate-500">
                     {t("vehicles.empty")}
                   </td>
                 </tr>

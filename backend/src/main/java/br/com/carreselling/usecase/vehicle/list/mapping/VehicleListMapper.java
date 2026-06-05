@@ -17,12 +17,12 @@ public class VehicleListMapper {
             summary.year(),
             summary.status(),
             summary.onService(),
-            summary.purchasePrice(),
-            summary.purchaseCommission(),
-            summary.servicesTotal(),
+            summary.sellingPrice(),
             summary.totalCost(),
-            summary.assignedPartnerName(),
-            summary.yardDays()
+            summary.profitMargin(),
+            summary.purchaseTimeDays(),
+            summary.servicesTotal(),
+            summary.daysOnService()
         );
     }
 }

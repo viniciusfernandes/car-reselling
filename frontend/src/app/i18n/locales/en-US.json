@@ -89,9 +89,12 @@
       "purchasePrice": "Purchase price",
       "purchaseCommission": "Commission",
       "servicesTotal": "Services total",
+      "sellingPrice": "Selling price",
       "totalCost": "Total cost",
+      "profitMargin": "Profit margin",
       "partner": "Assigned partner",
-      "yardTime": "Service time",
+      "daysOnService": "Service time",
+      "purchaseTime": "Purchase time",
       "onService": "In service",
       "actions": "Actions"
     },

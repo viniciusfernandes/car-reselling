@@ -89,9 +89,12 @@
       "purchasePrice": "Preço de compra",
       "purchaseCommission": "Comissão",
       "servicesTotal": "Total de serviços",
+      "sellingPrice": "Preço de venda",
       "totalCost": "Custo total",
+      "profitMargin": "Margem de lucro",
       "partner": "Parceiro",
-      "yardTime": "Tempo Serviço",
+      "daysOnService": "Tempo Serviço",
+      "purchaseTime": "Tempo de compra",
       "onService": "Em serviço",
       "actions": "Ações"
     },

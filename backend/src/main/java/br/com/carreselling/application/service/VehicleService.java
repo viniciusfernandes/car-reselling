@@ -20,6 +20,8 @@ import br.com.carreselling.infrastructure.storage.DocumentStorage;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -271,10 +273,17 @@ public class VehicleService implements IVehicleService {
                     BigDecimal totalCost = vehicle.getPurchasePrice()
                             .add(vehicle.getFreightCost())
                             .add(servicesTotal);
-                    String partnerName = resolvePartnerName(vehicle.getAssignedPartnerId());
-                    BigDecimal purchaseCommission = vehicle.getPurchaseCommission() == null
-                            ? BigDecimal.ZERO
-                            : vehicle.getPurchaseCommission();
+                    BigDecimal sellingPrice = vehicle.getSellingPrice();
+                    BigDecimal profitMargin = sellingPrice == null
+                            ? null
+                            : sellingPrice.subtract(totalCost);
+                    Integer purchaseTimeDays = null;
+                    if (vehicle.getSoldAt() != null && vehicle.getCreatedAt() != null) {
+                        LocalDate purchaseDate = vehicle.getCreatedAt()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate();
+                        purchaseTimeDays = (int) ChronoUnit.DAYS.between(purchaseDate, vehicle.getSoldAt());
+                    }
 
                     boolean serviceOpened = serviceRepository.existsOpenServiceByVehicleId(vehicle.getId());
                     return new VehicleSummary(
@@ -285,11 +294,11 @@ public class VehicleService implements IVehicleService {
                             vehicle.getYear(),
                             vehicle.getStatus(),
                             serviceOpened,
-                            vehicle.getPurchasePrice(),
-                            purchaseCommission,
-                            servicesTotal,
+                            sellingPrice,
                             totalCost,
-                            partnerName,
+                            profitMargin,
+                            purchaseTimeDays,
+                            servicesTotal,
                             serviceOnVehicleService.calculateTotalServiceDays(vehicle.getId())
                     );
                 })

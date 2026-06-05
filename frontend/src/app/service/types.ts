@@ -28,12 +28,12 @@ export type VehicleListItem = {
   year: number;
   status: VehicleStatus;
   onService: boolean;
-  purchasePrice: number;
-  purchaseCommission: number;
-  servicesTotal: number;
+  sellingPrice?: number | null;
   totalCost: number;
-  assignedPartnerName?: string | null;
-  yardDays?: number | null;
+  profitMargin?: number | null;
+  purchaseTimeDays?: number | null;
+  servicesTotal: number;
+  daysOnService?: number | null;
 };
 
 export type VehicleListResponse = {
