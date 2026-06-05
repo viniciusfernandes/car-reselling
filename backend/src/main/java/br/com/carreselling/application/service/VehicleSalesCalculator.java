@@ -69,7 +69,8 @@ public class VehicleSalesCalculator {
             totalTaxes,
             totalServices,
             totalCommission,
-            totalProfit
+            totalProfit,
+            totalProfit.add(totalTaxes)
         );
     }
 

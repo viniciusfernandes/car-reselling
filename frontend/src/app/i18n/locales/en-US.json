@@ -363,6 +363,8 @@
       "vehicleCountUnit": "Total Vehicles",
       "vehicleValue": "Total inventory value",
       "salesProfit": "Sales Profit",
+      "salesProfitBeforeTaxes": "Net excl. taxes",
+      "salesProfitAfterTaxes": "Net incl. taxes",
       "vehiclesSold": "vehicles sold",
       "purchaseProfit": "Purchase Profit",
       "totalAcquired": "Total acquired",

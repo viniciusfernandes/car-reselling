@@ -275,6 +275,7 @@ export type FinancialDashboardData = {
   activeVehiclesCount: number;
   activeVehiclesTotalCost: number;
   lucroVendas: number;
+  lucroVendasSemImpostos: number;
   totalVehiclesSold: number;
   lucroCompras: number;
   totalVehiclesAcquired: number;

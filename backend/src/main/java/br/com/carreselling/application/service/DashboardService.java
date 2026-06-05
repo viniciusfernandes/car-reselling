@@ -48,11 +48,12 @@ public class DashboardService implements IDashboardService {
         List<MonthlyPaymentTotal> monthlyPayments = paymentRepository.findMonthlyPaymentTotals(start, end);
 
         BigDecimal lucroVendas = soldReport.profit();
+        BigDecimal lucroVendasSemImpostos = soldReport.profitBeforeTaxes();
         BigDecimal valorEmCaixa = cashBalance
                 .add(lucroVendas)
                 .subtract(vehicleCost.totalCost())
                 .subtract(totalPayments);
-        BigDecimal patrimonio = valorEmCaixa.add(vehicleCost.totalPurchasePrice());
+        BigDecimal patrimonio = cashBalance.add(vehicleCost.totalPurchasePrice());
         BigDecimal lucroCompras = soldReport.totalCommissionValue()
                 .add(vehicleCost.totalPurchaseCommission());
         int totalAcquired = vehicleCost.totalVehicles() + soldReport.totalVehiclesSold();
@@ -67,6 +68,7 @@ public class DashboardService implements IDashboardService {
                 vehicleCost.totalVehicles(),
                 vehicleCost.totalPurchasePrice(),
                 lucroVendas,
+                lucroVendasSemImpostos,
                 soldReport.totalVehiclesSold(),
                 lucroCompras,
                 totalAcquired,

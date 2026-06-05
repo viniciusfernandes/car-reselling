@@ -363,6 +363,8 @@
       "vehicleCountUnit": "Total carros",
       "vehicleValue": "Valor total do estoque",
       "salesProfit": "Lucro Vendas",
+      "salesProfitBeforeTaxes": "Líquido s/ impostos",
+      "salesProfitAfterTaxes": "Líquido c/ impostos",
       "vehiclesSold": "carros vendidos",
       "purchaseProfit": "Lucro Compras",
       "totalAcquired": "Total adquirido",

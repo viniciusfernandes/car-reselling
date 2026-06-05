@@ -365,10 +365,25 @@ export default function DashboardTab() {
           <span className="text-xs font-medium uppercase tracking-wide text-green-700">
             {t("payments.dashboard.salesProfit")}
           </span>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-green-900">
-            {formatMoney(data.lucroVendas)}
-          </p>
-          <p className="mt-1 text-xs text-green-600">
+          <div className="mt-2 flex flex-wrap items-end gap-x-4 gap-y-1">
+            <div>
+              <p className="text-2xl font-semibold tabular-nums text-green-900">
+                {formatMoney(data.lucroVendasSemImpostos)}
+              </p>
+              <p className="mt-0.5 text-xs text-green-600">
+                {t("payments.dashboard.salesProfitBeforeTaxes")}
+              </p>
+            </div>
+            <div className="border-l border-green-200 pl-4">
+              <p className="text-base font-semibold tabular-nums text-green-700">
+                {formatMoney(data.lucroVendas)}
+              </p>
+              <p className="mt-0.5 text-xs text-green-600">
+                {t("payments.dashboard.salesProfitAfterTaxes")}
+              </p>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-green-600">
             {data.totalVehiclesSold} {t("payments.dashboard.vehiclesSold")}
           </p>
         </div>
