@@ -50,10 +50,10 @@ public class DashboardService implements IDashboardService {
         BigDecimal lucroVendas = soldReport.profit();
         BigDecimal lucroVendasSemImpostos = soldReport.profitBeforeTaxes();
         BigDecimal valorEmCaixa = cashBalance
-                .add(lucroVendas)
+                .add(lucroVendasSemImpostos)
                 .subtract(vehicleCost.totalCost())
                 .subtract(totalPayments);
-        BigDecimal patrimonio = valorEmCaixa.add(vehicleCost.totalPurchasePrice());
+        BigDecimal patrimonio = cashBalance.add(vehicleCost.totalPurchasePrice());
         BigDecimal lucroCompras = soldReport.totalCommissionValue()
                 .add(vehicleCost.totalPurchaseCommission());
         int totalAcquired = vehicleCost.totalVehicles() + soldReport.totalVehiclesSold();
