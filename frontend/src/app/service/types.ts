@@ -278,6 +278,7 @@ export type FinancialDashboardData = {
   totalVehiclesSold: number;
   lucroCompras: number;
   totalVehiclesAcquired: number;
+  totalPayments: number;
   monthlyEvolution: FinancialMonthlyPoint[];
 };
 

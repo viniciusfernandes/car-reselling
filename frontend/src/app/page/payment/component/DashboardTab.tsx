@@ -345,21 +345,18 @@ export default function DashboardTab() {
         </div>
       </div>
 
-      {/* Row 2: Qtd Carros + Lucro Vendas + Lucro Compras */}
+      {/* Row 2: Custo Operacional + Lucro Vendas + Lucro Compras */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {/* Quantidade de Carros */}
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
-          <span className="text-xs font-medium uppercase tracking-wide text-amber-700">
-            {t("payments.dashboard.vehicleCount")}
+        {/* Custo Total das Operações */}
+        <div className="rounded-lg border border-red-200 bg-red-50 px-5 py-4 shadow-sm">
+          <span className="text-xs font-medium uppercase tracking-wide text-red-700">
+            {t("payments.dashboard.totalOperationsCost")}
           </span>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-amber-900">
-            {data.activeVehiclesCount}
-            <span className="ml-1.5 text-sm font-normal text-amber-700">
-              {t("payments.dashboard.vehicleCountUnit")}
-            </span>
+          <p className="mt-2 text-2xl font-semibold tabular-nums text-red-900">
+            {formatMoney(data.totalPayments)}
           </p>
-          <p className="mt-1 text-xs text-amber-600">
-            {t("payments.dashboard.vehicleValue")}: {formatMoney(data.activeVehiclesTotalCost)}
+          <p className="mt-1 text-xs text-red-600">
+            {t("payments.dashboard.totalOperationsCostDesc")}
           </p>
         </div>
 

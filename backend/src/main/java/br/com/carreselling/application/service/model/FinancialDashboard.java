@@ -12,5 +12,6 @@ public record FinancialDashboard(BigDecimal cashBalanceAmount,
                                  int totalVehiclesSold,
                                  BigDecimal lucroCompras,
                                  int totalVehiclesAcquired,
+                                 BigDecimal totalPayments,
                                  List<FinancialMonthlyPoint> monthlyEvolution) {
 }

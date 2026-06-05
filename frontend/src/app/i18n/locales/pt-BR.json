@@ -372,7 +372,9 @@
       "legendNegative": "Resultado negativo",
       "periodStart": "Data início",
       "periodEnd": "Data fim",
-      "resetPeriod": "Últimos 12 meses"
+      "resetPeriod": "Últimos 12 meses",
+      "totalOperationsCost": "Custo Total das Operações",
+      "totalOperationsCostDesc": "Soma de todos os pagamentos no período"
     },
     "types": {
       "WARRANTY": "Garantia",

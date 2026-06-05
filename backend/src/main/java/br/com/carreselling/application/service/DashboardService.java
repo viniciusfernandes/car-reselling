@@ -70,6 +70,7 @@ public class DashboardService implements IDashboardService {
                 soldReport.totalVehiclesSold(),
                 lucroCompras,
                 totalAcquired,
+                totalPayments,
                 monthlyEvolution
         );
     }
