@@ -360,7 +360,7 @@
       "cashIn": "Caixa",
       "vehiclesIn": "Veículos em estoque",
       "vehicleCount": "Quantidade de Carros",
-      "vehicleCountUnit": "carros",
+      "vehicleCountUnit": "Total carros",
       "vehicleValue": "Valor total do estoque",
       "salesProfit": "Lucro Vendas",
       "vehiclesSold": "carros vendidos",

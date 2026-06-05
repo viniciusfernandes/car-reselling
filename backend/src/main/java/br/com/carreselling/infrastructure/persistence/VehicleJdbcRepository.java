@@ -362,6 +362,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                             COUNT(*) AS total_vehicles,
                             COALESCE(SUM(v.purchase_price + v.freight_cost + v.purchase_commission
                                 + COALESCE(svc.services_total, 0)), 0) AS total_cost,
+                            COALESCE(SUM(v.purchase_price), 0) AS total_purchase_price,
                             COALESCE(SUM(v.purchase_commission), 0) AS total_purchase_commission
                         FROM vehicles v
                         LEFT JOIN (
@@ -374,6 +375,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 (rs, rowNum) -> new VehiclesTotalCost(
                         rs.getInt("total_vehicles"),
                         rs.getBigDecimal("total_cost"),
+                        rs.getBigDecimal("total_purchase_price"),
                         rs.getBigDecimal("total_purchase_commission")
                 )
         );

@@ -335,9 +335,9 @@ export default function DashboardTab() {
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-violet-600">
             <span>
-              {t("payments.dashboard.cashIn")}: {formatMoney(data.valorEmCaixa)}
+              {t("payments.dashboard.vehicleCountUnit")}: {data.activeVehiclesCount}
             </span>
-            <span className="text-violet-400">+</span>
+            <span className="text-violet-400"> </span>
             <span>
               {t("payments.dashboard.vehiclesIn")}: {formatMoney(data.activeVehiclesTotalCost)}
             </span>

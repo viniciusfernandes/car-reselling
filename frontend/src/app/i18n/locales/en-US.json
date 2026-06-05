@@ -360,7 +360,7 @@
       "cashIn": "Cash",
       "vehiclesIn": "Vehicle inventory",
       "vehicleCount": "Vehicle Count",
-      "vehicleCountUnit": "vehicles",
+      "vehicleCountUnit": "Total Vehicles",
       "vehicleValue": "Total inventory value",
       "salesProfit": "Sales Profit",
       "vehiclesSold": "vehicles sold",

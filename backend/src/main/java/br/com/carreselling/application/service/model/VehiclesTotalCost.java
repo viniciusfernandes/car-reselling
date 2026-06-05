@@ -4,5 +4,6 @@ import java.math.BigDecimal;
 
 public record VehiclesTotalCost(int totalVehicles,
                                 BigDecimal totalCost,
+                                BigDecimal totalPurchasePrice,
                                 BigDecimal totalPurchaseCommission) {
 }
