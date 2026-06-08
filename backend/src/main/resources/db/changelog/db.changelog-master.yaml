@@ -340,3 +340,12 @@ databaseChangeLog:
                 ADD CONSTRAINT fk_payments_vehicle
                   FOREIGN KEY (vehicle_id) REFERENCES vehicles(id);
 
+  - changeSet:
+      id: vinicius-20260607-01
+      author: vinicius
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE vehicles
+                ADD COLUMN valor_fipe DECIMAL(13,2) NULL AFTER selling_price;
+

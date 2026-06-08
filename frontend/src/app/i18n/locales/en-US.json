@@ -187,6 +187,7 @@
     "sellingPrice": "Selling price",
     "saveSellingPrice": "Save selling price",
     "freightCost": "Freight cost",
+    "valorFipe": "FIPE value",
     "partnerRequired": "Partner (required for distribution)",
     "selectPartner": "Select partner",
     "invoiceDocument": "Invoice document",

@@ -34,6 +34,7 @@ public class Vehicle {
     private Instant distributedAt;
     private LocalDate soldAt;
     private BigDecimal saleCommissionRate;
+    private BigDecimal valorFipe;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -52,6 +53,7 @@ public class Vehicle {
                    BigDecimal freightCost,
                    BigDecimal purchaseCommission,
                    BigDecimal sellingPrice,
+                   BigDecimal valorFipe,
                    UUID purchasePaymentReceiptDocumentId,
                    UUID purchaseInvoiceDocumentId,
                    VehicleStatus status,
@@ -76,6 +78,7 @@ public class Vehicle {
         this.freightCost = freightCost;
         this.purchaseCommission = purchaseCommission;
         this.sellingPrice = sellingPrice;
+        this.valorFipe = valorFipe;
         this.purchasePaymentReceiptDocumentId = purchasePaymentReceiptDocumentId;
         this.purchaseInvoiceDocumentId = purchaseInvoiceDocumentId;
         this.status = status;
@@ -289,6 +292,14 @@ public class Vehicle {
 
     public void setSaleCommissionRate(BigDecimal saleCommissionRate) {
         this.saleCommissionRate = saleCommissionRate;
+    }
+
+    public BigDecimal getValorFipe() {
+        return valorFipe;
+    }
+
+    public void setValorFipe(BigDecimal valorFipe) {
+        this.valorFipe = valorFipe;
     }
 
     public boolean isStatusTransitionAllowed(VehicleStatus target) {

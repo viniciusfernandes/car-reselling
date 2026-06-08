@@ -86,7 +86,8 @@ public class VehicleService implements IVehicleService {
                               SupplierSource supplierSource,
                               BigDecimal purchasePrice,
                               BigDecimal freightCost,
-                              BigDecimal purchaseCommission) {
+                              BigDecimal purchaseCommission,
+                              BigDecimal valorFipe) {
         String normalizedPlate = normalizePlate(licensePlate);
         String normalizedRenavam = normalizeOptionalText(renavam);
         String normalizedVin = normalizeOptionalText(vin);
@@ -122,6 +123,7 @@ public class VehicleService implements IVehicleService {
             );
             existingVehicle.setBrandId(brandEntity.getId());
             existingVehicle.setModelId(modelEntity.getId());
+            existingVehicle.setValorFipe(valorFipe);
             existingVehicle.setUpdatedAt(now);
             existingVehicle.ensureDistributionInvariant();
             vehicleRepository.updateVehicle(existingVehicle);
@@ -143,6 +145,7 @@ public class VehicleService implements IVehicleService {
                 normalizedFreight,
                 normalizedCommission,
                 null,
+                valorFipe,
                 null,
                 null,
                 VehicleStatus.IN_LOT,
@@ -205,6 +208,7 @@ public class VehicleService implements IVehicleService {
                 vehicle.getFreightCost(),
                 purchaseCommission,
                 vehicle.getSellingPrice(),
+                vehicle.getValorFipe(),
                 vehicle.getPurchaseInvoiceDocumentId(),
                 vehicle.getPurchasePaymentReceiptDocumentId(),
                 vehicle.getStatus(),
@@ -320,7 +324,8 @@ public class VehicleService implements IVehicleService {
                               BigDecimal freightCost,
                               BigDecimal purchaseCommission,
                               UUID invoiceDocumentId,
-                              UUID paymentReceiptDocumentId) {
+                              UUID paymentReceiptDocumentId,
+                              BigDecimal valorFipe) {
         validateRequiredMoney(purchasePrice, "purchasePrice");
         BigDecimal normalizedFreight = freightCost == null ? BigDecimal.ZERO : freightCost;
         validateOptionalMoney(normalizedFreight, "freightCost");
@@ -349,6 +354,7 @@ public class VehicleService implements IVehicleService {
         vehicle.updateLinkedDocuments(invoiceDocumentId, paymentReceiptDocumentId);
         vehicle.setBrandId(brandEntity.getId());
         vehicle.setModelId(modelEntity.getId());
+        vehicle.setValorFipe(valorFipe);
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
         stampCommissionRate(vehicle);

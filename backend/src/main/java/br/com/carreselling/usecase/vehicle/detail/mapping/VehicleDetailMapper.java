@@ -23,6 +23,7 @@ public class VehicleDetailMapper {
             detail.freightCost(),
             detail.purchaseCommission(),
             detail.sellingPrice(),
+            detail.valorFipe(),
             detail.purchaseInvoiceDocumentId(),
             detail.purchasePaymentReceiptDocumentId(),
             detail.status(),

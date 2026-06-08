@@ -1,180 +1,42 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import TextInput from "../../component/input/TextInput";
-import NumberInput from "../../component/input/NumberInput";
-import SelectInput from "../../component/input/SelectInput";
-import MoneyInput from "../../component/input/MoneyInput";
-import ComboboxInput from "../../component/input/ComboboxInput";
 import { api, extractErrorMessage, extractFieldErrors } from "../../service/api";
-import {
-  ApiResponse,
-  BrandItem,
-  ColorItem,
-  ModelItem,
-  SupplierSource,
-} from "../../service/types";
+import { ApiResponse, BrandItem, ColorItem } from "../../service/types";
 import { useToast } from "../../component/notification/ToastProvider";
-import { fetchBrands, fetchColors, fetchModelsByBrand } from "../../service/brandModels";
-import { formatNumber, parseMoney } from "../../service/formatters";
+import { fetchBrands, fetchColors } from "../../service/brandModels";
+import { parseMoney } from "../../service/formatters";
+import TextInput from "../../component/input/TextInput";
+import VehicleFormFields, { VehicleFormValues } from "./component/VehicleFormFields";
 
-const SUPPLIER_OPTIONS: { value: SupplierSource; labelKey: string }[] = [
-  { value: "INTERNET", labelKey: "supplier.internet" },
-  { value: "PERSONAL_CONTACT", labelKey: "supplier.personalContact" },
-];
+const PLATE_REGEX = /^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
 
-const PLATE_REGEX =
-  /^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
+const EMPTY_FORM_VALUES: VehicleFormValues = {
+  year: new Date().getFullYear().toString(),
+  color: "",
+  model: "",
+  brand: "",
+  supplierSource: "INTERNET",
+  purchasePrice: "",
+  freightCost: "0,00",
+  purchaseCommission: "0,00",
+  valorFipe: "",
+};
 
 export default function NewVehiclePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const currentYear = new Date().getFullYear().toString();
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [colorOptions, setColorOptions] = useState<ColorItem[]>([]);
   const [brandOptions, setBrandOptions] = useState<BrandItem[]>([]);
-  const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
-  const [form, setForm] = useState({
-    licensePlate: "",
-    renavam: "",
-    vin: "",
-    year: currentYear,
-    color: "",
-    model: "",
-    brand: "",
-    supplierSource: "INTERNET" as SupplierSource,
-    purchasePrice: "",
-    freightCost: formatNumber(0),
-    purchaseCommission: formatNumber(0),
-  });
 
-  const handleChange = (field: keyof typeof form, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  // Ref so the model effect can read the current typed value without
-  // being listed as a dependency (avoids re-fetching on every keystroke).
-  const formModelRef = useRef(form.model);
-  formModelRef.current = form.model;
-
-  const getMoneyError = (value: string, required = false) => {
-    if (!value && required) {
-      return t("validation.required");
-    }
-    if (!value) {
-      return "";
-    }
-    const numeric = parseMoney(value);
-    if (Number.isNaN(numeric) || numeric < 0) {
-      return t("validation.invalidValue");
-    }
-    return "";
-  };
-
-  const validateField = (field: keyof typeof form, value?: string) => {
-    const nextErrors = { ...errors };
-    if (field === "licensePlate") {
-      const plate = (value ?? form.licensePlate).trim().toUpperCase();
-      if (!plate) {
-        nextErrors.licensePlate = t("validation.required");
-      } else if (!PLATE_REGEX.test(plate)) {
-        nextErrors.licensePlate = t("validation.invalidPlate");
-      } else {
-        delete nextErrors.licensePlate;
-      }
-    }
-    if (field === "year") {
-      if (!(value ?? form.year)) {
-        nextErrors.year = t("validation.required");
-      } else {
-        delete nextErrors.year;
-      }
-    }
-    if (field === "color") {
-      if (!(value ?? form.color)) {
-        nextErrors.color = t("validation.required");
-      } else {
-        delete nextErrors.color;
-      }
-    }
-    if (field === "model") {
-      if (!(value ?? form.model)) {
-        nextErrors.model = t("validation.required");
-      } else {
-        delete nextErrors.model;
-      }
-    }
-    if (field === "brand") {
-      if (!(value ?? form.brand)) {
-        nextErrors.brand = t("validation.required");
-      } else {
-        delete nextErrors.brand;
-      }
-    }
-    if (field === "purchasePrice") {
-      const error = getMoneyError(value ?? form.purchasePrice, true);
-      if (error) {
-        nextErrors.purchasePrice = error;
-      } else {
-        delete nextErrors.purchasePrice;
-      }
-    }
-    if (field === "freightCost") {
-      const error = getMoneyError(value ?? form.freightCost);
-      if (error) {
-        nextErrors.freightCost = error;
-      } else {
-        delete nextErrors.freightCost;
-      }
-    }
-    if (field === "purchaseCommission") {
-      const error = getMoneyError(value ?? form.purchaseCommission);
-      if (error) {
-        nextErrors.purchaseCommission = error;
-      } else {
-        delete nextErrors.purchaseCommission;
-      }
-    }
-    setErrors(nextErrors);
-  };
-
-  const validate = () => {
-    const nextErrors: Record<string, string> = {};
-    const plate = form.licensePlate.trim().toUpperCase();
-    if (!plate) {
-      nextErrors.licensePlate = t("validation.required");
-    } else if (!PLATE_REGEX.test(plate)) {
-      nextErrors.licensePlate = t("validation.invalidPlate");
-    }
-    if (!form.year) {
-      nextErrors.year = t("validation.required");
-    }
-    if (!form.color) {
-      nextErrors.color = t("validation.required");
-    }
-    if (!form.model) {
-      nextErrors.model = t("validation.required");
-    }
-    if (!form.brand) {
-      nextErrors.brand = t("validation.required");
-    }
-    const purchasePriceError = getMoneyError(form.purchasePrice, true);
-    if (purchasePriceError) {
-      nextErrors.purchasePrice = purchasePriceError;
-    }
-    const freightCostError = getMoneyError(form.freightCost);
-    if (freightCostError) {
-      nextErrors.freightCost = freightCostError;
-    }
-    const commissionError = getMoneyError(form.purchaseCommission);
-    if (commissionError) {
-      nextErrors.purchaseCommission = commissionError;
-    }
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
+  const [licensePlate, setLicensePlate] = useState("");
+  const [renavam, setRenavam] = useState("");
+  const [vin, setVin] = useState("");
+  const [formValues, setFormValues] = useState<VehicleFormValues>(EMPTY_FORM_VALUES);
 
   useEffect(() => {
     const loadLookupData = async () => {
@@ -189,62 +51,107 @@ export default function NewVehiclePage() {
     loadLookupData();
   }, [showToast]);
 
-  useEffect(() => {
-    const selectedBrand = brandOptions.find((brand) => brand.name === form.brand);
-    if (!selectedBrand) {
-      setModelOptions([]);
-      return;
+  const getMoneyError = (value: string, required = false) => {
+    if (!value && required) return t("validation.required");
+    if (!value) return "";
+    const numeric = parseMoney(value);
+    if (Number.isNaN(numeric) || numeric < 0) return t("validation.invalidValue");
+    return "";
+  };
+
+  const handleFormChange = (field: keyof VehicleFormValues, value: string) => {
+    setFormValues((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFormBlur = (field: keyof VehicleFormValues, currentValue: string) => {
+    const nextErrors = { ...errors };
+    let val = currentValue;
+
+    if (field === "brand" || field === "model" || field === "color") {
+      val = currentValue.trim().toUpperCase();
+      setFormValues((prev) => ({ ...prev, [field]: val }));
     }
-    const loadModels = async () => {
-      try {
-        const models = await fetchModelsByBrand(selectedBrand.id);
-        setModelOptions(models);
-        // Clear the model only when the brand changes and the previously
-        // selected model no longer belongs to the new brand. Reading the
-        // value through a ref avoids adding form.model to the deps array,
-        // which would re-trigger this effect on every keystroke.
-        if (formModelRef.current && !models.some((m) => m.name === formModelRef.current)) {
-          handleChange("model", "");
-        }
-      } catch (error) {
-        showToast(extractErrorMessage(error), "error");
+
+    switch (field) {
+      case "year":
+        if (!val) nextErrors.year = t("validation.required");
+        else delete nextErrors.year;
+        break;
+      case "color":
+      case "model":
+      case "brand":
+        if (!val) nextErrors[field] = t("validation.required");
+        else delete nextErrors[field];
+        break;
+      case "purchasePrice": {
+        const e = getMoneyError(val, true);
+        if (e) nextErrors.purchasePrice = e;
+        else delete nextErrors.purchasePrice;
+        break;
       }
-    };
-    loadModels();
-  }, [brandOptions, form.brand, showToast]);
+      case "freightCost": {
+        const e = getMoneyError(val);
+        if (e) nextErrors.freightCost = e;
+        else delete nextErrors.freightCost;
+        break;
+      }
+      case "purchaseCommission": {
+        const e = getMoneyError(val);
+        if (e) nextErrors.purchaseCommission = e;
+        else delete nextErrors.purchaseCommission;
+        break;
+      }
+    }
+    setErrors(nextErrors);
+  };
+
+  const validate = () => {
+    const nextErrors: Record<string, string> = {};
+    const plate = licensePlate.trim().toUpperCase();
+    if (!plate) nextErrors.licensePlate = t("validation.required");
+    else if (!PLATE_REGEX.test(plate)) nextErrors.licensePlate = t("validation.invalidPlate");
+    if (!formValues.year) nextErrors.year = t("validation.required");
+    if (!formValues.color) nextErrors.color = t("validation.required");
+    if (!formValues.model) nextErrors.model = t("validation.required");
+    if (!formValues.brand) nextErrors.brand = t("validation.required");
+    const purchasePriceError = getMoneyError(formValues.purchasePrice, true);
+    if (purchasePriceError) nextErrors.purchasePrice = purchasePriceError;
+    const freightCostError = getMoneyError(formValues.freightCost);
+    if (freightCostError) nextErrors.freightCost = freightCostError;
+    const commissionError = getMoneyError(formValues.purchaseCommission);
+    if (commissionError) nextErrors.purchaseCommission = commissionError;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
     try {
-      const normalizedColor = form.color.trim().toUpperCase();
-      const normalizedBrand = form.brand.trim().toUpperCase();
-      const normalizedModel = form.model.trim().toUpperCase();
-      setForm((prev) => ({
+      const normalizedColor = formValues.color.trim().toUpperCase();
+      const normalizedBrand = formValues.brand.trim().toUpperCase();
+      const normalizedModel = formValues.model.trim().toUpperCase();
+      setFormValues((prev) => ({
         ...prev,
         color: normalizedColor,
         brand: normalizedBrand,
         model: normalizedModel,
       }));
       setIsSubmitting(true);
-      const response = await api.post<ApiResponse<{ vehicleId: string }>>(
-        "/vehicles",
-        {
-          licensePlate: form.licensePlate.trim().toUpperCase(),
-          renavam: form.renavam || null,
-          vin: form.vin || null,
-          year: Number(form.year),
-          color: normalizedColor,
-          model: normalizedModel,
-          brand: normalizedBrand,
-          supplierSource: form.supplierSource,
-          purchasePrice: parseMoney(form.purchasePrice),
-          freightCost: parseMoney(form.freightCost || "0"),
-          purchaseCommission: parseMoney(form.purchaseCommission),
-        }
-      );
+      const response = await api.post<ApiResponse<{ vehicleId: string }>>("/vehicles", {
+        licensePlate: licensePlate.trim().toUpperCase(),
+        renavam: renavam || null,
+        vin: vin || null,
+        year: Number(formValues.year),
+        color: normalizedColor,
+        model: normalizedModel,
+        brand: normalizedBrand,
+        supplierSource: formValues.supplierSource,
+        purchasePrice: parseMoney(formValues.purchasePrice),
+        freightCost: parseMoney(formValues.freightCost || "0"),
+        purchaseCommission: parseMoney(formValues.purchaseCommission),
+        valorFipe: formValues.valorFipe ? parseMoney(formValues.valorFipe) : null,
+      });
       showToast(t("vehicles.created"), "success");
       navigate(`/vehicles/${response.data.data.vehicleId}`);
     } catch (error) {
@@ -261,9 +168,7 @@ export default function NewVehiclePage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">{t("newVehicle.title")}</h2>
-        <p className="text-sm text-slate-500">
-          {t("newVehicle.subtitle")}
-        </p>
+        <p className="text-sm text-slate-500">{t("newVehicle.subtitle")}</p>
       </div>
       <form
         className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
@@ -272,112 +177,43 @@ export default function NewVehiclePage() {
         <div className="grid gap-4 md:grid-cols-2">
           <TextInput
             label={t("newVehicle.licensePlate")}
-            value={form.licensePlate}
+            value={licensePlate}
             required
-            onChange={(event) => handleChange("licensePlate", event.target.value)}
+            onChange={(e) => setLicensePlate(e.target.value)}
             onBlur={() => {
-              const normalizedPlate = form.licensePlate.trim().toUpperCase();
-              handleChange("licensePlate", normalizedPlate);
-              validateField("licensePlate", normalizedPlate);
+              const normalized = licensePlate.trim().toUpperCase();
+              setLicensePlate(normalized);
+              const nextErrors = { ...errors };
+              if (!normalized) nextErrors.licensePlate = t("validation.required");
+              else if (!PLATE_REGEX.test(normalized)) nextErrors.licensePlate = t("validation.invalidPlate");
+              else delete nextErrors.licensePlate;
+              setErrors(nextErrors);
             }}
             error={errors.licensePlate}
           />
           <TextInput
             label={t("newVehicle.renavam")}
-            value={form.renavam}
-            onChange={(event) => handleChange("renavam", event.target.value)}
+            value={renavam}
+            onChange={(e) => setRenavam(e.target.value)}
             error={errors.renavam}
           />
           <TextInput
             label={t("newVehicle.vin")}
-            value={form.vin}
-            onChange={(event) => handleChange("vin", event.target.value)}
+            value={vin}
+            onChange={(e) => setVin(e.target.value)}
             error={errors.vin}
           />
-          <NumberInput
-            label={t("newVehicle.year")}
-            value={form.year}
-            required
-            min={1900}
-            max={new Date().getFullYear() + 1}
-            onChange={(event) => handleChange("year", event.target.value)}
-            onBlur={() => validateField("year")}
-            error={errors.year}
-          />
-          <ComboboxInput
-                      label={t("newVehicle.brand")}
-                      value={form.brand}
-                      required
-                      suggestions={brandOptions.map((brand) => brand.name)}
-                      onChange={(event) => handleChange("brand", event.target.value)}
-                      onBlur={() => {
-                        const normalized = form.brand.trim().toUpperCase();
-                        handleChange("brand", normalized);
-                        validateField("brand", normalized);
-                      }}
-                      error={errors.brand}
-                    />
-          <ComboboxInput
-            label={t("newVehicle.model")}
-            value={form.model}
-            required
-            suggestions={modelOptions.map((model) => model.name)}
-            onChange={(event) => handleChange("model", event.target.value)}
-            onBlur={() => {
-              const normalized = form.model.trim().toUpperCase();
-              handleChange("model", normalized);
-              validateField("model", normalized);
-            }}
-            error={errors.model}
-          />
-          <ComboboxInput
-                      label={t("newVehicle.color")}
-                      value={form.color}
-                      required
-                      suggestions={colorOptions.map((color) => color.name)}
-                      onChange={(event) => handleChange("color", event.target.value)}
-                      onBlur={() => {
-                        const normalized = form.color.trim().toUpperCase();
-                        handleChange("color", normalized);
-                        validateField("color", normalized);
-                      }}
-                      error={errors.color}
-                    />
-          <SelectInput
-            label={t("newVehicle.supplierSource")}
-            value={form.supplierSource}
-            options={SUPPLIER_OPTIONS.map((option) => ({
-              value: option.value,
-              label: t(option.labelKey),
-            }))}
-            required
-            onChange={(event) =>
-              handleChange("supplierSource", event.target.value)
-            }
-          />
-          <MoneyInput
-            label={t("newVehicle.purchasePrice")}
-            value={form.purchasePrice}
-            required
-            onValueChange={(value) => handleChange("purchasePrice", value)}
-            onBlur={() => validateField("purchasePrice")}
-            error={errors.purchasePrice}
-          />
-          <MoneyInput
-            label={t("newVehicle.freightCost")}
-            value={form.freightCost}
-            onValueChange={(value) => handleChange("freightCost", value)}
-            onBlur={() => validateField("freightCost")}
-            error={errors.freightCost}
-          />
-          <MoneyInput
-            label={t("newVehicle.purchaseCommission")}
-            value={form.purchaseCommission}
-            onValueChange={(value) => handleChange("purchaseCommission", value)}
-            onBlur={() => validateField("purchaseCommission")}
-            error={errors.purchaseCommission}
+
+          <VehicleFormFields
+            values={formValues}
+            errors={errors}
+            brandOptions={brandOptions}
+            colorOptions={colorOptions}
+            onChange={handleFormChange}
+            onBlur={handleFormBlur}
           />
         </div>
+
         <div className="flex justify-end gap-3">
           <button
             type="button"

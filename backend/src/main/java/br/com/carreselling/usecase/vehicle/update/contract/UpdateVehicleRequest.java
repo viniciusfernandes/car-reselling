@@ -17,6 +17,7 @@ public record UpdateVehicleRequest(
     @PositiveOrZero BigDecimal freightCost,
     @NotNull @PositiveOrZero BigDecimal purchaseCommission,
     UUID purchaseInvoiceDocumentId,
-    UUID purchasePaymentReceiptDocumentId
+    UUID purchasePaymentReceiptDocumentId,
+    @PositiveOrZero BigDecimal valorFipe
 ) {
 }

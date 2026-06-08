@@ -57,6 +57,7 @@ export type VehicleDetail = {
   freightCost: number;
   purchaseCommission: number;
   sellingPrice?: number | null;
+  valorFipe?: number | null;
   purchaseInvoiceDocumentId?: string | null;
   purchasePaymentReceiptDocumentId?: string | null;
   status: VehicleStatus;

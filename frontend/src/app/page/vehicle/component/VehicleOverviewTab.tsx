@@ -1,23 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, extractErrorMessage, extractFieldErrors } from "../../../service/api";
 import {
   BrandItem,
   ColorItem,
   DocumentItem,
-  ModelItem,
   PartnerItem,
   VehicleDetail,
   VehicleStatus,
 } from "../../../service/types";
-import TextInput from "../../../component/input/TextInput";
-import NumberInput from "../../../component/input/NumberInput";
-import SelectInput from "../../../component/input/SelectInput";
-import MoneyInput from "../../../component/input/MoneyInput";
-import ComboboxInput from "../../../component/input/ComboboxInput";
 import { useToast } from "../../../component/notification/ToastProvider";
-import { fetchModelsByBrand } from "../../../service/brandModels";
+import MoneyInput from "../../../component/input/MoneyInput";
+import SelectInput from "../../../component/input/SelectInput";
+import TextInput from "../../../component/input/TextInput";
 import { formatNumber, parseMoney } from "../../../service/formatters";
+import VehicleFormFields, { VehicleFormValues } from "./VehicleFormFields";
 
 interface Props {
   vehicleId: string;
@@ -35,20 +32,18 @@ export default function VehicleOverviewTab({
   partners,
   brandOptions,
   colorOptions,
-  documents,
   onRefresh,
 }: Props) {
   const { t } = useTranslation();
   const { showToast } = useToast();
 
-  const [modelOptions, setModelOptions] = useState<ModelItem[]>([]);
   const [isUpdatingVehicle, setIsUpdatingVehicle] = useState(false);
   const [statusTarget, setStatusTarget] = useState<VehicleStatus>(vehicle.status);
   const [partnerId, setPartnerId] = useState(vehicle.assignedPartnerId ?? "");
   const [sellingPrice, setSellingPrice] = useState(
     vehicle.sellingPrice != null ? formatNumber(vehicle.sellingPrice) : ""
   );
-  const [updateForm, setUpdateForm] = useState({
+  const [formValues, setFormValues] = useState<VehicleFormValues>({
     year: vehicle.year.toString(),
     color: vehicle.color,
     model: vehicle.model,
@@ -57,26 +52,9 @@ export default function VehicleOverviewTab({
     purchasePrice: formatNumber(vehicle.purchasePrice),
     freightCost: formatNumber(vehicle.freightCost),
     purchaseCommission: formatNumber(vehicle.purchaseCommission ?? 0),
-
-    purchasePaymentReceiptDocumentId: vehicle.purchasePaymentReceiptDocumentId ?? "",
+    valorFipe: vehicle.valorFipe != null ? formatNumber(vehicle.valorFipe) : "",
   });
-  const [updateErrors, setUpdateErrors] = useState<Record<string, string>>({});
-
-  const documentTypeLabels: Record<string, string> = {
-    INVOICE: t("documentTypes.INVOICE"),
-    RECEIPT: t("documentTypes.RECEIPT"),
-    SERVICE_ORDER: t("documentTypes.SERVICE_ORDER"),
-    OTHER: t("documentTypes.OTHER"),
-  };
-
-  const documentOptions = useMemo(
-    () =>
-      documents.map((doc) => ({
-        value: doc.id,
-        label: `${documentTypeLabels[doc.documentType] ?? doc.documentType} - ${doc.originalFileName}`,
-      })),
-    [documents, t]
-  );
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const statusOptions: Array<{ value: VehicleStatus; label: string }> = [
     { value: "IN_LOT", label: t("status.IN_LOT") },
@@ -86,7 +64,7 @@ export default function VehicleOverviewTab({
   ];
 
   useEffect(() => {
-    setUpdateForm({
+    setFormValues({
       year: vehicle.year.toString(),
       color: vehicle.color,
       model: vehicle.model,
@@ -95,38 +73,12 @@ export default function VehicleOverviewTab({
       purchasePrice: formatNumber(vehicle.purchasePrice),
       freightCost: formatNumber(vehicle.freightCost),
       purchaseCommission: formatNumber(vehicle.purchaseCommission ?? 0),
-      purchasePaymentReceiptDocumentId: vehicle.purchasePaymentReceiptDocumentId ?? "",
+      valorFipe: vehicle.valorFipe != null ? formatNumber(vehicle.valorFipe) : "",
     });
     setPartnerId(vehicle.assignedPartnerId ?? "");
     setStatusTarget(vehicle.status);
     setSellingPrice(vehicle.sellingPrice != null ? formatNumber(vehicle.sellingPrice) : "");
   }, [vehicle]);
-
-  const updateFormModelRef = useRef(updateForm.model);
-  updateFormModelRef.current = updateForm.model;
-
-  useEffect(() => {
-    const selectedBrand = brandOptions.find((b) => b.name === updateForm.brand);
-    if (!selectedBrand) {
-      setModelOptions([]);
-      return;
-    }
-    const loadModels = async () => {
-      try {
-        const models = await fetchModelsByBrand(selectedBrand.id);
-        setModelOptions(models);
-        if (
-          updateFormModelRef.current &&
-          !models.some((m) => m.name === updateFormModelRef.current)
-        ) {
-          setUpdateForm((prev) => ({ ...prev, model: "" }));
-        }
-      } catch (error) {
-        showToast(extractErrorMessage(error), "error");
-      }
-    };
-    loadModels();
-  }, [brandOptions, updateForm.brand, showToast]);
 
   const getMoneyError = (value: string, required = false) => {
     if (!value && required) return t("validation.required");
@@ -136,56 +88,66 @@ export default function VehicleOverviewTab({
     return "";
   };
 
-  const validateUpdateForm = () => {
-    const nextErrors: Record<string, string> = {};
-    if (!updateForm.year) nextErrors.year = t("validation.required");
-    if (!updateForm.color) nextErrors.color = t("validation.required");
-    if (!updateForm.model) nextErrors.model = t("validation.required");
-    if (!updateForm.brand) nextErrors.brand = t("validation.required");
-    const purchaseError = getMoneyError(updateForm.purchasePrice, true);
-    if (purchaseError) nextErrors.purchasePrice = purchaseError;
-    const freightError = getMoneyError(updateForm.freightCost);
-    if (freightError) nextErrors.freightCost = freightError;
-    const commissionError = getMoneyError(updateForm.purchaseCommission, true);
-    if (commissionError) nextErrors.purchaseCommission = commissionError;
-    setUpdateErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+  const handleFormChange = (field: keyof VehicleFormValues, value: string) => {
+    setFormValues((prev) => ({ ...prev, [field]: value }));
   };
 
-  const validateUpdateField = (field: keyof typeof updateForm, value?: string) => {
-    const nextErrors = { ...updateErrors };
-    if (field === "year") {
-      if (!(value ?? updateForm.year)) nextErrors.year = t("validation.required");
-      else delete nextErrors.year;
-    }
+  const handleFormBlur = (field: keyof VehicleFormValues, currentValue: string) => {
+    const nextErrors = { ...formErrors };
+    let val = currentValue;
+
     if (field === "color") {
-      if (!(value ?? updateForm.color)) nextErrors.color = t("validation.required");
-      else delete nextErrors.color;
+      val = currentValue.trim().toUpperCase();
+      setFormValues((prev) => ({ ...prev, color: val }));
     }
-    if (field === "model") {
-      if (!(value ?? updateForm.model)) nextErrors.model = t("validation.required");
-      else delete nextErrors.model;
+
+    switch (field) {
+      case "year":
+        if (!val) nextErrors.year = t("validation.required");
+        else delete nextErrors.year;
+        break;
+      case "color":
+      case "model":
+      case "brand":
+        if (!val) nextErrors[field] = t("validation.required");
+        else delete nextErrors[field];
+        break;
+      case "purchasePrice": {
+        const e = getMoneyError(val, true);
+        if (e) nextErrors.purchasePrice = e;
+        else delete nextErrors.purchasePrice;
+        break;
+      }
+      case "freightCost": {
+        const e = getMoneyError(val);
+        if (e) nextErrors.freightCost = e;
+        else delete nextErrors.freightCost;
+        break;
+      }
+      case "purchaseCommission": {
+        const e = getMoneyError(val, true);
+        if (e) nextErrors.purchaseCommission = e;
+        else delete nextErrors.purchaseCommission;
+        break;
+      }
     }
-    if (field === "brand") {
-      if (!(value ?? updateForm.brand)) nextErrors.brand = t("validation.required");
-      else delete nextErrors.brand;
-    }
-    if (field === "purchasePrice") {
-      const error = getMoneyError(value ?? updateForm.purchasePrice, true);
-      if (error) nextErrors.purchasePrice = error;
-      else delete nextErrors.purchasePrice;
-    }
-    if (field === "freightCost") {
-      const error = getMoneyError(value ?? updateForm.freightCost);
-      if (error) nextErrors.freightCost = error;
-      else delete nextErrors.freightCost;
-    }
-    if (field === "purchaseCommission") {
-      const error = getMoneyError(value ?? updateForm.purchaseCommission, true);
-      if (error) nextErrors.purchaseCommission = error;
-      else delete nextErrors.purchaseCommission;
-    }
-    setUpdateErrors(nextErrors);
+    setFormErrors(nextErrors);
+  };
+
+  const validateForm = () => {
+    const nextErrors: Record<string, string> = {};
+    if (!formValues.year) nextErrors.year = t("validation.required");
+    if (!formValues.color) nextErrors.color = t("validation.required");
+    if (!formValues.model) nextErrors.model = t("validation.required");
+    if (!formValues.brand) nextErrors.brand = t("validation.required");
+    const purchaseError = getMoneyError(formValues.purchasePrice, true);
+    if (purchaseError) nextErrors.purchasePrice = purchaseError;
+    const freightError = getMoneyError(formValues.freightCost);
+    if (freightError) nextErrors.freightCost = freightError;
+    const commissionError = getMoneyError(formValues.purchaseCommission, true);
+    if (commissionError) nextErrors.purchaseCommission = commissionError;
+    setFormErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleUpdateVehicle = async () => {
@@ -200,18 +162,19 @@ export default function VehicleOverviewTab({
         return;
       }
     }
-    if (!validateUpdateForm()) return;
+    if (!validateForm()) return;
     try {
       setIsUpdatingVehicle(true);
       await api.put(`/vehicles/${vehicleId}`, {
-        year: Number(updateForm.year),
-        color: updateForm.color,
-        model: updateForm.model,
-        brand: updateForm.brand,
-        supplierSource: updateForm.supplierSource,
-        purchasePrice: parseMoney(updateForm.purchasePrice),
-        freightCost: parseMoney(updateForm.freightCost),
-        purchaseCommission: parseMoney(updateForm.purchaseCommission)
+        year: Number(formValues.year),
+        color: formValues.color,
+        model: formValues.model,
+        brand: formValues.brand,
+        supplierSource: formValues.supplierSource,
+        purchasePrice: parseMoney(formValues.purchasePrice),
+        freightCost: parseMoney(formValues.freightCost),
+        purchaseCommission: parseMoney(formValues.purchaseCommission),
+        valorFipe: formValues.valorFipe ? parseMoney(formValues.valorFipe) : null,
       });
       if ((statusTarget === "DISTRIBUTED" || statusTarget === "SOLD") && sellingPrice) {
         await api.put(`/vehicles/${vehicleId}/selling-price`, {
@@ -226,11 +189,11 @@ export default function VehicleOverviewTab({
             : null,
       });
       showToast(t("vehicleDetail.updated"), "success");
-      setUpdateErrors({});
+      setFormErrors({});
       await onRefresh();
     } catch (error: any) {
       if (error?.response?.data?.errors) {
-        setUpdateErrors(extractFieldErrors(error.response.data.errors));
+        setFormErrors(extractFieldErrors(error.response.data.errors));
       }
       showToast(extractErrorMessage(error), "error");
     } finally {
@@ -249,110 +212,41 @@ export default function VehicleOverviewTab({
           disabled={vehicle.status === "SOLD"}
           onChange={(e) => setStatusTarget(e.target.value as VehicleStatus)}
         />
-        <SelectInput
-          label={t("vehicleDetail.supplierSource")}
-          value={updateForm.supplierSource}
-          options={[
-            { value: "INTERNET", label: t("supplier.internet") },
-            { value: "PERSONAL_CONTACT", label: t("supplier.personalContact") },
-          ]}
-          required
-          onChange={(e) => setUpdateForm((prev) => ({ ...prev, supplierSource: e.target.value }))}
+
+        <VehicleFormFields
+          values={formValues}
+          errors={formErrors}
+          brandOptions={brandOptions}
+          colorOptions={colorOptions}
+          onChange={handleFormChange}
+          onBlur={handleFormBlur}
         />
-        <NumberInput
-          label={t("vehicleDetail.year")}
-          value={updateForm.year}
-          required
-          min={1900}
-          max={new Date().getFullYear() + 1}
-          onChange={(e) => setUpdateForm((prev) => ({ ...prev, year: e.target.value }))}
-          onBlur={() => validateUpdateField("year")}
-          error={updateErrors.year}
-        />
-        <ComboboxInput
-          label={t("vehicleDetail.brand")}
-          value={updateForm.brand}
-          required
-          suggestions={brandOptions.map((b) => b.name)}
-          onChange={(e) => setUpdateForm((prev) => ({ ...prev, brand: e.target.value }))}
-          onBlur={() => validateUpdateField("brand")}
-          error={updateErrors.brand}
-        />
-        <ComboboxInput
-          label={t("vehicleDetail.model")}
-          value={updateForm.model}
-          required
-          suggestions={modelOptions.map((m) => m.name)}
-          onChange={(e) => setUpdateForm((prev) => ({ ...prev, model: e.target.value }))}
-          onBlur={() => validateUpdateField("model")}
-          error={updateErrors.model}
-        />
-        <ComboboxInput
-          label={t("vehicleDetail.color")}
-          value={updateForm.color}
-          required
-          suggestions={colorOptions.map((c) => c.name)}
-          onChange={(e) => setUpdateForm((prev) => ({ ...prev, color: e.target.value }))}
-          onBlur={() => {
-            const normalized = updateForm.color.trim().toUpperCase();
-            setUpdateForm((prev) => ({ ...prev, color: normalized }));
-            validateUpdateField("color", normalized);
-          }}
-          error={updateErrors.color}
-        />
-        <MoneyInput
-          label={t("vehicleDetail.purchasePrice")}
-          value={updateForm.purchasePrice}
-          required
-          onValueChange={(value) => setUpdateForm((prev) => ({ ...prev, purchasePrice: value }))}
-          onBlur={() => validateUpdateField("purchasePrice")}
-          error={updateErrors.purchasePrice}
-        />
-        <MoneyInput
-          label={t("vehicleDetail.purchaseCommission")}
-          value={updateForm.purchaseCommission}
-          required
-          onValueChange={(value) =>
-            setUpdateForm((prev) => ({ ...prev, purchaseCommission: value }))
-          }
-          onBlur={() => validateUpdateField("purchaseCommission")}
-          error={updateErrors.purchaseCommission}
-        />
+
         {vehicle.status === "DISTRIBUTED" ||
         vehicle.status === "SOLD" ||
         statusTarget === "SOLD" ? (
-          <div className="space-y-2">
-            <MoneyInput
-              label={t("vehicleDetail.sellingPrice")}
-              value={sellingPrice}
-              onValueChange={setSellingPrice}
-              required={vehicle.status === "DISTRIBUTED" || statusTarget === "SOLD"}
-              disabled={vehicle.status === "SOLD"}
-            />
-          </div>
+          <MoneyInput
+            label={t("vehicleDetail.sellingPrice")}
+            value={sellingPrice}
+            onValueChange={setSellingPrice}
+            required={vehicle.status === "DISTRIBUTED" || statusTarget === "SOLD"}
+            disabled={vehicle.status === "SOLD"}
+          />
         ) : null}
-        <MoneyInput
-          label={t("vehicleDetail.freightCost")}
-          value={updateForm.freightCost}
-          onValueChange={(value) => setUpdateForm((prev) => ({ ...prev, freightCost: value }))}
-          onBlur={() => validateUpdateField("freightCost")}
-          error={updateErrors.freightCost}
-        />
-        <div className="space-y-3">
-          {statusTarget === "DISTRIBUTED" || statusTarget === "SOLD" ? (
-            <SelectInput
-              label={t("vehicleDetail.partnerRequired")}
-              value={partnerId}
-              options={[
-                { value: "", label: t("vehicleDetail.selectPartner") },
-                ...partners.map((p) => ({ value: p.id, label: p.name })),
-              ]}
-              onChange={(e) => setPartnerId(e.target.value)}
-            />
-          ) : null}
-        </div>
 
+        {statusTarget === "DISTRIBUTED" || statusTarget === "SOLD" ? (
+          <SelectInput
+            label={t("vehicleDetail.partnerRequired")}
+            value={partnerId}
+            options={[
+              { value: "", label: t("vehicleDetail.selectPartner") },
+              ...partners.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            onChange={(e) => setPartnerId(e.target.value)}
+          />
+        ) : null}
       </div>
+
       <div className="flex justify-end">
         <button
           type="button"

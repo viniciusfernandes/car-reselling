@@ -36,7 +36,8 @@ public class UpdateVehicleEndpoint {
             request.freightCost(),
             request.purchaseCommission(),
             request.purchaseInvoiceDocumentId(),
-            request.purchasePaymentReceiptDocumentId()
+            request.purchasePaymentReceiptDocumentId(),
+            request.valorFipe()
         );
         return new ApiResponse<>(null);
     }

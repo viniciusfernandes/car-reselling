@@ -37,10 +37,11 @@ public class VehicleJdbcRepository implements VehicleRepository {
         jdbcTemplate.update("""
                         INSERT INTO vehicles
                         (id, license_plate, renavam, vin, year, color, model, brand, brand_id, model_id, supplier_source,
-                         purchase_price, freight_cost, purchase_commission, selling_price, purchase_payment_receipt_document_id,
+                         purchase_price, freight_cost, purchase_commission, selling_price, valor_fipe,
+                         purchase_payment_receipt_document_id,
                          purchase_invoice_document_id, status, assigned_partner_id, distributed_at, sold_at,
                          sale_commission_rate, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 vehicle.getId().toString(),
                 vehicle.getLicensePlate(),
@@ -57,6 +58,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 vehicle.getFreightCost(),
                 vehicle.getPurchaseCommission(),
                 vehicle.getSellingPrice(),
+                vehicle.getValorFipe(),
                 optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
                 optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
                 vehicle.getStatus().name(),
@@ -175,7 +177,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
         jdbcTemplate.update("""
                         UPDATE vehicles
                         SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, brand_id = ?, model_id = ?, supplier_source = ?,
-                            purchase_price = ?, freight_cost = ?, purchase_commission = ?, selling_price = ?,
+                            purchase_price = ?, freight_cost = ?, purchase_commission = ?, selling_price = ?, valor_fipe = ?,
                             purchase_payment_receipt_document_id = ?, purchase_invoice_document_id = ?,
                             status = ?, assigned_partner_id = ?, distributed_at = ?, sold_at = ?,
                             sale_commission_rate = ?, updated_at = ?
@@ -194,6 +196,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 vehicle.getFreightCost(),
                 vehicle.getPurchaseCommission(),
                 vehicle.getSellingPrice(),
+                vehicle.getValorFipe(),
                 optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
                 optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
                 vehicle.getStatus().name(),
@@ -447,6 +450,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
             BigDecimal freightCost = rs.getBigDecimal("freight_cost");
             BigDecimal purchaseCommission = rs.getBigDecimal("purchase_commission");
             BigDecimal sellingPrice = rs.getBigDecimal("selling_price");
+            BigDecimal valorFipe = rs.getBigDecimal("valor_fipe");
             UUID paymentReceiptId = optionalUuid(rs.getString("purchase_payment_receipt_document_id"));
             UUID invoiceId = optionalUuid(rs.getString("purchase_invoice_document_id"));
             VehicleStatus status = VehicleStatus.valueOf(rs.getString("status"));
@@ -472,6 +476,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                     freightCost == null ? BigDecimal.ZERO : freightCost,
                     purchaseCommission == null ? BigDecimal.ZERO : purchaseCommission,
                     sellingPrice,
+                    valorFipe,
                     paymentReceiptId,
                     invoiceId,
                     status,

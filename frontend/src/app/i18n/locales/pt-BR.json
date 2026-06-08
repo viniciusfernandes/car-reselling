@@ -187,6 +187,7 @@
     "sellingPrice": "Preço de venda",
     "saveSellingPrice": "Salvar preço de venda",
     "freightCost": "Frete",
+    "valorFipe": "Valor FIPE",
     "partnerRequired": "Parceiro (obrigatório para distribuição)",
     "selectPartner": "Selecione um parceiro",
     "invoiceDocument": "Documento da nota fiscal",

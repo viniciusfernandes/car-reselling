@@ -21,7 +21,8 @@ public interface IVehicleService {
                        SupplierSource supplierSource,
                        BigDecimal purchasePrice,
                        BigDecimal freightCost,
-                       BigDecimal purchaseCommission);
+                       BigDecimal purchaseCommission,
+                       BigDecimal valorFipe);
 
     VehicleDetail getVehicle(UUID vehicleId);
 
@@ -39,7 +40,8 @@ public interface IVehicleService {
                        BigDecimal freightCost,
                        BigDecimal purchaseCommission,
                        UUID invoiceDocumentId,
-                       UUID paymentReceiptDocumentId);
+                       UUID paymentReceiptDocumentId,
+                       BigDecimal valorFipe);
 
     void updateSellingPrice(UUID vehicleId, BigDecimal sellingPrice);
 

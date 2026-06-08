@@ -18,6 +18,7 @@ public record CreateVehicleRequest(
     @NotNull SupplierSource supplierSource,
     @NotNull @PositiveOrZero BigDecimal purchasePrice,
     @PositiveOrZero BigDecimal freightCost,
-    @NotNull @PositiveOrZero BigDecimal purchaseCommission
+    @NotNull @PositiveOrZero BigDecimal purchaseCommission,
+    @PositiveOrZero BigDecimal valorFipe
 ) {
 }
