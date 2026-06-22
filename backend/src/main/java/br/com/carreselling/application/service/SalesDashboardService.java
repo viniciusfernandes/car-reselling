@@ -23,8 +23,8 @@ public class SalesDashboardService implements IReportService {
     }
 
     @Override
-    public DistributedVehiclesReport distributedVehiclesReport(DistributedVehiclesFilter filter) {
-        List<DistribuitedVehicle> distributedVehicles = vehicleRepository.distributedVehiclesReport(filter);
+    public DistributedVehiclesReport distributedVehiclesReport(int companyId, DistributedVehiclesFilter filter) {
+        List<DistribuitedVehicle> distributedVehicles = vehicleRepository.distributedVehiclesReport(companyId, filter);
 
         Map<UUID, PartnerAccumulator> grouped = new LinkedHashMap<>();
         for (DistribuitedVehicle row : distributedVehicles) {
@@ -66,8 +66,8 @@ public class SalesDashboardService implements IReportService {
     }
 
     @Override
-    public SoldVehiclesReport soldVehiclesReport(DistributedVehiclesFilter filter) {
-        List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(filter);
+    public SoldVehiclesReport soldVehiclesReport(int companyId, DistributedVehiclesFilter filter) {
+        List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(companyId, filter);
         return salesCalculator.buildSoldVehicles(soldVehicles);
     }
 

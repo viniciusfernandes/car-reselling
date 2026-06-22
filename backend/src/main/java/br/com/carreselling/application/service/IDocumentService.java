@@ -9,13 +9,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface IDocumentService {
 
-    UUID uploadDocument(UUID vehicleId, DocumentType documentType, MultipartFile file);
+    UUID uploadDocument(int companyId, UUID vehicleId, DocumentType documentType, MultipartFile file);
 
-    List<DocumentSummary> listDocuments(UUID vehicleId);
+    List<DocumentSummary> listDocuments(int companyId, UUID vehicleId);
 
-    Resource downloadDocument(UUID vehicleId, UUID documentId);
+    Resource downloadDocument(int companyId, UUID vehicleId, UUID documentId);
 
-    DocumentSummary getDocument(UUID vehicleId, UUID documentId);
+    DocumentSummary getDocument(int companyId, UUID vehicleId, UUID documentId);
 
-    void deleteDocument(UUID vehicleId, UUID documentId);
+    void deleteDocument(int companyId, UUID vehicleId, UUID documentId);
 }

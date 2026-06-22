@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.payment.update.endpoint;
 
 import br.com.carreselling.application.service.IPaymentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.payment.update.contract.UpdatePaymentRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -20,14 +21,18 @@ public class UpdatePaymentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public UpdatePaymentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public UpdatePaymentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> update(@PathVariable UUID id,
                                                     @Valid @RequestBody UpdatePaymentRequest request) {
-        paymentService.updatePayment(
+        int companyId = tenantContext.getCurrentCompanyId();
+        paymentService.updatePayment(companyId, 
             id,
             request.paymentType(),
             request.description(),

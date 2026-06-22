@@ -33,17 +33,18 @@ public class VehicleJdbcRepository implements VehicleRepository {
     }
 
     @Override
-    public Vehicle saveVehicle(Vehicle vehicle) {
+    public Vehicle saveVehicle(int companyId, Vehicle vehicle) {
         jdbcTemplate.update("""
                         INSERT INTO vehicles
-                        (id, license_plate, renavam, vin, year, color, model, brand, brand_id, model_id, supplier_source,
+                        (id, company_id, license_plate, renavam, vin, year, color, model, brand, brand_id, model_id, supplier_source,
                          purchase_price, freight_cost, purchase_commission, selling_price, valor_fipe,
                          purchase_payment_receipt_document_id,
                          purchase_invoice_document_id, status, assigned_partner_id, distributed_at, sold_at,
                          sale_commission_rate, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 vehicle.getId().toString(),
+                companyId,
                 vehicle.getLicensePlate(),
                 vehicle.getRenavam(),
                 vehicle.getVin(),
@@ -73,58 +74,65 @@ public class VehicleJdbcRepository implements VehicleRepository {
     }
 
     @Override
-    public Optional<Vehicle> findVehicleById(UUID id) {
+    public Optional<Vehicle> findVehicleById(int companyId, UUID id) {
         List<Vehicle> result = jdbcTemplate.query("""
-                        SELECT * FROM vehicles WHERE id = ?
+                        SELECT * FROM vehicles WHERE id = ? AND company_id = ?
                         """,
                 new VehicleRowMapper(),
-                id.toString());
+                id.toString(),
+                companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public Optional<Vehicle> findVehicleByLicensePlate(String licensePlate) {
+    public Optional<Vehicle> findVehicleByLicensePlate(int companyId, String licensePlate) {
         List<Vehicle> result = jdbcTemplate.query("""
-                        SELECT * FROM vehicles WHERE license_plate = ?
+                        SELECT * FROM vehicles WHERE license_plate = ? AND company_id = ?
                         """,
                 new VehicleRowMapper(),
-                licensePlate);
+                licensePlate,
+                companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public Optional<Vehicle> findVehicleByRenavam(String renavam) {
+    public Optional<Vehicle> findVehicleByRenavam(int companyId, String renavam) {
         List<Vehicle> result = jdbcTemplate.query("""
-                        SELECT * FROM vehicles WHERE renavam = ?
+                        SELECT * FROM vehicles WHERE renavam = ? AND company_id = ?
                         """,
                 new VehicleRowMapper(),
-                renavam);
+                renavam,
+                companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public Optional<Vehicle> findVehicleByVin(String vin) {
+    public Optional<Vehicle> findVehicleByVin(int companyId, String vin) {
         List<Vehicle> result = jdbcTemplate.query("""
-                        SELECT * FROM vehicles WHERE vin = ?
+                        SELECT * FROM vehicles WHERE vin = ? AND company_id = ?
                         """,
                 new VehicleRowMapper(),
-                vin);
+                vin,
+                companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public List<Vehicle> findVehicleByFilter(VehicleStatus status, String query, Boolean onService, int offset, int size) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM vehicles v WHERE 1=1 ");
+    public List<Vehicle> findVehicleByFilter(int companyId, VehicleStatus status, String query, Boolean onService, int offset, int size) {
+        StringBuilder sql = new StringBuilder("SELECT * FROM vehicles v WHERE v.company_id = ? ");
         List<Object> params = new ArrayList<>();
+        params.add(companyId);
         if (status != null) {
             sql.append("AND v.status = ? ");
             params.add(status.name());
         }
         if (onService != null) {
             if (Boolean.TRUE.equals(onService)) {
-                sql.append("AND EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+                sql.append("AND EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.company_id = ? AND s.end_date IS NULL) ");
+                params.add(companyId);
             } else {
-                sql.append("AND NOT EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+                sql.append("AND NOT EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.company_id = ? AND s.end_date IS NULL) ");
+                params.add(companyId);
             }
         }
         if (query != null && !query.isBlank()) {
@@ -143,18 +151,21 @@ public class VehicleJdbcRepository implements VehicleRepository {
     }
 
     @Override
-    public long countVehicleByFilter(VehicleStatus status, String query, Boolean onService) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM vehicles v WHERE 1=1 ");
+    public long countVehicleByFilter(int companyId, VehicleStatus status, String query, Boolean onService) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM vehicles v WHERE v.company_id = ? ");
         List<Object> params = new ArrayList<>();
+        params.add(companyId);
         if (status != null) {
             sql.append("AND v.status = ? ");
             params.add(status.name());
         }
         if (onService != null) {
             if (Boolean.TRUE.equals(onService)) {
-                sql.append("AND EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+                sql.append("AND EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.company_id = ? AND s.end_date IS NULL) ");
+                params.add(companyId);
             } else {
-                sql.append("AND NOT EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.end_date IS NULL) ");
+                sql.append("AND NOT EXISTS (SELECT 1 FROM services s WHERE s.vehicle_id = v.id AND s.company_id = ? AND s.end_date IS NULL) ");
+                params.add(companyId);
             }
         }
         if (query != null && !query.isBlank()) {
@@ -173,7 +184,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
     }
 
     @Override
-    public Vehicle updateVehicle(Vehicle vehicle) {
+    public Vehicle updateVehicle(int companyId, Vehicle vehicle) {
         jdbcTemplate.update("""
                         UPDATE vehicles
                         SET renavam = ?, vin = ?, year = ?, color = ?, model = ?, brand = ?, brand_id = ?, model_id = ?, supplier_source = ?,
@@ -181,7 +192,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                             purchase_payment_receipt_document_id = ?, purchase_invoice_document_id = ?,
                             status = ?, assigned_partner_id = ?, distributed_at = ?, sold_at = ?,
                             sale_commission_rate = ?, updated_at = ?
-                        WHERE id = ?
+                        WHERE id = ? AND company_id = ?
                         """,
                 vehicle.getRenavam(),
                 vehicle.getVin(),
@@ -205,38 +216,41 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 vehicle.getSoldAt(),
                 vehicle.getSaleCommissionRate(),
                 vehicle.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(vehicle.getUpdatedAt()),
-                vehicle.getId().toString()
+                vehicle.getId().toString(),
+                companyId
         );
         return vehicle;
     }
 
     @Override
-    public void deleteVehicle(UUID id) {
-        jdbcTemplate.update("DELETE FROM vehicles WHERE id = ?", id.toString());
+    public void deleteVehicle(int companyId, UUID id) {
+        jdbcTemplate.update("DELETE FROM vehicles WHERE id = ? AND company_id = ?", id.toString(), companyId);
     }
 
     @Override
-    public BigDecimal findVehicleServicesTotalByVehicleId(UUID vehicleId) {
+    public BigDecimal findVehicleServicesTotalByVehicleId(int companyId, UUID vehicleId) {
         BigDecimal total = jdbcTemplate.queryForObject("""
-                        SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ?
+                        SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ? AND company_id = ?
                         """,
                 BigDecimal.class,
-                vehicleId.toString());
+                vehicleId.toString(),
+                companyId);
         return total == null ? BigDecimal.ZERO : total;
     }
 
     @Override
-    public int countVehicleDocumentsByVehicleId(UUID vehicleId) {
+    public int countVehicleDocumentsByVehicleId(int companyId, UUID vehicleId) {
         Integer count = jdbcTemplate.queryForObject("""
-                        SELECT COUNT(*) FROM documents WHERE vehicle_id = ?
+                        SELECT COUNT(*) FROM documents WHERE vehicle_id = ? AND company_id = ?
                         """,
                 Integer.class,
-                vehicleId.toString());
+                vehicleId.toString(),
+                companyId);
         return count == null ? 0 : count;
     }
 
     @Override
-    public List<DistribuitedVehicle> distributedVehiclesReport(DistributedVehiclesFilter filter) {
+    public List<DistribuitedVehicle> distributedVehiclesReport(int companyId, DistributedVehiclesFilter filter) {
         StringBuilder sql = new StringBuilder("""
                 SELECT p.id AS partner_id,
                        p.name AS partner_name,
@@ -251,16 +265,19 @@ public class VehicleJdbcRepository implements VehicleRepository {
                        v.freight_cost,
                        COALESCE(s.services_total, 0) AS services_total
                 FROM vehicles v
-                INNER JOIN partners p ON p.id = v.assigned_partner_id
+                INNER JOIN partners p ON p.id = v.assigned_partner_id AND p.company_id = v.company_id
                 LEFT JOIN (
                     SELECT vehicle_id, SUM(service_value) AS services_total
                     FROM services
+                    WHERE company_id = ?
                     GROUP BY vehicle_id
                 ) s ON s.vehicle_id = v.id
-                WHERE v.status = 'DISTRIBUTED'
+                WHERE v.status = 'DISTRIBUTED' AND v.company_id = ?
                 """);
 
         List<Object> params = new ArrayList<>();
+        params.add(companyId);
+        params.add(companyId);
 
         if (filter != null) {
             LocalDate startDate = filter.startDate();
@@ -299,7 +316,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
     }
 
     @Override
-    public List<SoldVehicle> findTotalServicesFromSoldVehicles(DistributedVehiclesFilter filter) {
+    public List<SoldVehicle> findTotalServicesFromSoldVehicles(int companyId, DistributedVehiclesFilter filter) {
         StringBuilder sql = new StringBuilder("""
                 SELECT v.id AS vehicle_id,
                        v.license_plate,
@@ -317,12 +334,15 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 LEFT JOIN (
                     SELECT vehicle_id, SUM(service_value) AS services_total
                     FROM services
+                    WHERE company_id = ?
                     GROUP BY vehicle_id
                 ) s ON s.vehicle_id = v.id
-                WHERE v.status = 'SOLD' AND v.selling_price IS NOT NULL
+                WHERE v.status = 'SOLD' AND v.selling_price IS NOT NULL AND v.company_id = ?
                 """);
 
         List<Object> params = new ArrayList<>();
+        params.add(companyId);
+        params.add(companyId);
         if (filter != null) {
             LocalDate startDate = filter.startDate();
             LocalDate endDate = filter.endDate();
@@ -359,7 +379,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
     }
 
     @Override
-    public VehiclesTotalCost findVehicleTotalCost() {
+    public VehiclesTotalCost findVehicleTotalCost(int companyId) {
         return jdbcTemplate.queryForObject("""
                         SELECT
                             COUNT(*) AS total_vehicles,
@@ -371,16 +391,19 @@ public class VehicleJdbcRepository implements VehicleRepository {
                         LEFT JOIN (
                             SELECT vehicle_id, SUM(service_value) AS services_total
                             FROM services
+                            WHERE company_id = ?
                             GROUP BY vehicle_id
                         ) svc ON svc.vehicle_id = v.id
-                        WHERE v.status != 'SOLD'
+                        WHERE v.status != 'SOLD' AND v.company_id = ?
                         """,
                 (rs, rowNum) -> new VehiclesTotalCost(
                         rs.getInt("total_vehicles"),
                         rs.getBigDecimal("total_cost"),
                         rs.getBigDecimal("total_purchase_price"),
                         rs.getBigDecimal("total_purchase_commission")
-                )
+                ),
+                companyId,
+                companyId
         );
     }
 
@@ -436,6 +459,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
         @Override
         public Vehicle mapRow(@org.springframework.lang.NonNull ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
+            int companyId = rs.getInt("company_id");
             String licensePlate = rs.getString("license_plate");
             String renavam = rs.getString("renavam");
             String vin = rs.getString("vin");
@@ -462,6 +486,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
             Timestamp updatedAt = rs.getTimestamp("updated_at");
             return new Vehicle(
                     id,
+                    companyId,
                     licensePlate,
                     renavam,
                     vin,

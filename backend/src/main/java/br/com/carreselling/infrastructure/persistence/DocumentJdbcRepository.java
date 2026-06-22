@@ -25,14 +25,15 @@ public class DocumentJdbcRepository implements DocumentRepository {
     }
 
     @Override
-    public Document saveDocument(Document document) {
+    public Document saveDocument(int companyId, Document document) {
         jdbcTemplate.update("""
                         INSERT INTO documents
-                        (id, vehicle_id, document_type, original_file_name, content_type, size_bytes,
+                        (id, company_id, vehicle_id, document_type, original_file_name, content_type, size_bytes,
                          storage_key, uploaded_at, uploaded_by)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 document.getId().toString(),
+                companyId,
                 document.getVehicleId().toString(),
                 document.getDocumentType().name(),
                 document.getOriginalFileName(),
@@ -46,40 +47,43 @@ public class DocumentJdbcRepository implements DocumentRepository {
     }
 
     @Override
-    public Optional<Document> findDocumentById(UUID id) {
+    public Optional<Document> findDocumentById(int companyId, UUID id) {
         List<Document> result = jdbcTemplate.query("""
-                        SELECT * FROM documents WHERE id = ?
+                        SELECT * FROM documents WHERE id = ? AND company_id = ?
                         """,
                 new DocumentRowMapper(),
-                id.toString());
+                id.toString(),
+                companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public List<Document> findDocumentByVehicleId(UUID vehicleId) {
+    public List<Document> findDocumentByVehicleId(int companyId, UUID vehicleId) {
         return jdbcTemplate.query("""
-                        SELECT * FROM documents WHERE vehicle_id = ? ORDER BY uploaded_at DESC
+                        SELECT * FROM documents WHERE vehicle_id = ? AND company_id = ? ORDER BY uploaded_at DESC
                         """,
                 new DocumentRowMapper(),
-                vehicleId.toString());
+                vehicleId.toString(),
+                companyId);
     }
 
     @Override
-    public List<String> findStorageKeyByVehicleId(UUID vehicleId) {
+    public List<String> findStorageKeyByVehicleId(int companyId, UUID vehicleId) {
         return jdbcTemplate.queryForList("""
-                        SELECT storage_key FROM documents WHERE vehicle_id = ?""",
+                        SELECT storage_key FROM documents WHERE vehicle_id = ? AND company_id = ?""",
                 String.class,
-                vehicleId.toString());
+                vehicleId.toString(),
+                companyId);
     }
 
     @Override
-    public void deleteDocument(UUID id) {
-        jdbcTemplate.update("DELETE FROM documents WHERE id = ?", id.toString());
+    public void deleteDocument(int companyId, UUID id) {
+        jdbcTemplate.update("DELETE FROM documents WHERE id = ? AND company_id = ?", id.toString(), companyId);
     }
 
     @Override
-    public void deleteDocumentByVEhicleId(UUID vehicleId) {
-        jdbcTemplate.update("DELETE FROM documents WHERE vehicle_id = ?", vehicleId.toString());
+    public void deleteDocumentByVEhicleId(int companyId, UUID vehicleId) {
+        jdbcTemplate.update("DELETE FROM documents WHERE vehicle_id = ? AND company_id = ?", vehicleId.toString(), companyId);
     }
 
     private static class DocumentRowMapper implements RowMapper<Document> {
@@ -87,6 +91,7 @@ public class DocumentJdbcRepository implements DocumentRepository {
         @Override
         public Document mapRow(ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
+            int companyId = rs.getInt("company_id");
             UUID vehicleId = UUID.fromString(rs.getString("vehicle_id"));
             DocumentType documentType = DocumentType.valueOf(rs.getString("document_type"));
             String originalFileName = rs.getString("original_file_name");
@@ -95,7 +100,7 @@ public class DocumentJdbcRepository implements DocumentRepository {
             String storageKey = rs.getString("storage_key");
             Instant uploadedAt = rs.getTimestamp("uploaded_at").toInstant();
             String uploadedBy = rs.getString("uploaded_by");
-            return new Document(id, vehicleId, documentType, originalFileName, contentType, sizeBytes, storageKey, uploadedAt, uploadedBy);
+            return new Document(id, companyId, vehicleId, documentType, originalFileName, contentType, sizeBytes, storageKey, uploadedAt, uploadedBy);
         }
     }
 }

@@ -2,9 +2,12 @@ package br.com.carreselling.usecase.vehicle.selling.endpoint;
 
 import br.com.carreselling.application.service.IVehicleService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.vehicle.selling.contract.UpdateSellingPriceRequest;
 import jakarta.validation.Valid;
+
 import java.util.UUID;
+
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,14 +22,18 @@ public class UpdateSellingPriceEndpoint {
 
     private final IVehicleService vehicleService;
 
-    public UpdateSellingPriceEndpoint(IVehicleService vehicleService) {
+    private final TenantContext tenantContext;
+
+    public UpdateSellingPriceEndpoint(IVehicleService vehicleService, TenantContext tenantContext) {
         this.vehicleService = vehicleService;
+        this.tenantContext = tenantContext;
     }
 
     @PutMapping("/{vehicleId}/selling-price")
     public ApiResponse<Void> update(@PathVariable UUID vehicleId,
                                     @Valid @RequestBody UpdateSellingPriceRequest request) {
-        vehicleService.updateSellingPrice(vehicleId, request.sellingPrice());
+        int companyId = tenantContext.getCurrentCompanyId();
+        vehicleService.updateSellingPrice(companyId, vehicleId, request.sellingPrice());
         return new ApiResponse<>(null);
     }
 }

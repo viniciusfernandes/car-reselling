@@ -3,6 +3,7 @@ package br.com.carreselling.usecase.document.list.endpoint;
 import br.com.carreselling.application.service.IDocumentService;
 import br.com.carreselling.application.service.model.DocumentSummary;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.document.list.contract.DocumentItem;
 import br.com.carreselling.usecase.document.list.contract.DocumentListResponse;
 import br.com.carreselling.usecase.document.list.mapping.DocumentListMapper;
@@ -21,13 +22,17 @@ public class ListDocumentEndpoint {
 
     private final IDocumentService documentService;
 
-    public ListDocumentEndpoint(IDocumentService documentService) {
+    private final TenantContext tenantContext;
+
+    public ListDocumentEndpoint(IDocumentService documentService, TenantContext tenantContext) {
         this.documentService = documentService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{vehicleId}/documents")
     public ApiResponse<DocumentListResponse> list(@PathVariable UUID vehicleId) {
-        List<DocumentSummary> documents = documentService.listDocuments(vehicleId);
+        int companyId = tenantContext.getCurrentCompanyId();
+        List<DocumentSummary> documents = documentService.listDocuments(companyId, vehicleId);
         List<DocumentItem> items = documents.stream()
             .map(DocumentListMapper::toItem)
             .toList();

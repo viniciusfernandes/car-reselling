@@ -10,18 +10,20 @@ import java.util.UUID;
 
 public interface IServiceEntryService {
 
-    UUID addService(UUID vehicleId,
+    UUID addService(int companyId,
+                    UUID vehicleId,
                     ServiceType serviceType,
                     BigDecimal serviceValue,
                     String description,
                     LocalDate startDate,
                     LocalDate endDate);
 
-    List<ServiceSummary> listServices(UUID vehicleId);
+    List<ServiceSummary> listServices(int companyId, UUID vehicleId);
 
-    BigDecimal totalServices(UUID vehicleId);
+    BigDecimal totalServices(int companyId, UUID vehicleId);
 
-    void updateService(UUID vehicleId,
+    void updateService(int companyId,
+                       UUID vehicleId,
                        UUID serviceId,
                        ServiceType serviceType,
                        BigDecimal serviceValue,
@@ -29,9 +31,9 @@ public interface IServiceEntryService {
                        LocalDate startDate,
                        LocalDate endDate);
 
-    void deleteService(UUID vehicleId, UUID serviceId);
+    void deleteService(int companyId, UUID vehicleId, UUID serviceId);
 
-    long calculateTotalServiceDays(List<ServiceOnVehicle> services);
+    long calculateTotalServiceDays(int companyId, List<ServiceOnVehicle> services);
 
-    double calculateTotalServiceDays(UUID vehicleId);
+    double calculateTotalServiceDays(int companyId, UUID vehicleId);
 }

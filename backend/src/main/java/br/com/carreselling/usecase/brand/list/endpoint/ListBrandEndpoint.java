@@ -3,6 +3,7 @@ package br.com.carreselling.usecase.brand.list.endpoint;
 import br.com.carreselling.application.service.IBrandService;
 import br.com.carreselling.application.service.model.BrandSummary;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.brand.list.contract.BrandItem;
 import br.com.carreselling.usecase.brand.list.contract.BrandListResponse;
 import br.com.carreselling.usecase.brand.list.mapping.BrandListMapper;
@@ -19,13 +20,17 @@ public class ListBrandEndpoint {
 
     private final IBrandService brandService;
 
-    public ListBrandEndpoint(IBrandService brandService) {
+    private final TenantContext tenantContext;
+
+    public ListBrandEndpoint(IBrandService brandService, TenantContext tenantContext) {
         this.brandService = brandService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping
     public ApiResponse<BrandListResponse> list() {
-        List<BrandSummary> brands = brandService.listBrands();
+        int companyId = tenantContext.getCurrentCompanyId();
+        List<BrandSummary> brands = brandService.listBrands(companyId);
         List<BrandItem> items = brands.stream()
             .map(BrandListMapper::toItem)
             .toList();

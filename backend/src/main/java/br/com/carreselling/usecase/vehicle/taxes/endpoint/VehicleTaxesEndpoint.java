@@ -3,6 +3,7 @@ package br.com.carreselling.usecase.vehicle.taxes.endpoint;
 import br.com.carreselling.application.service.IVehicleService;
 import br.com.carreselling.application.service.model.VehicleTaxes;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.vehicle.taxes.contract.VehicleTaxesResponse;
 import br.com.carreselling.usecase.vehicle.taxes.mapping.VehicleTaxesMapper;
 import java.util.UUID;
@@ -19,13 +20,17 @@ public class VehicleTaxesEndpoint {
 
     private final IVehicleService vehicleService;
 
-    public VehicleTaxesEndpoint(IVehicleService vehicleService) {
+    private final TenantContext tenantContext;
+
+    public VehicleTaxesEndpoint(IVehicleService vehicleService, TenantContext tenantContext) {
         this.vehicleService = vehicleService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{vehicleId}/taxes")
     public ApiResponse<VehicleTaxesResponse> getTaxes(@PathVariable UUID vehicleId) {
-        VehicleTaxes taxes = vehicleService.getVehicleTaxes(vehicleId);
+        int companyId = tenantContext.getCurrentCompanyId();
+        VehicleTaxes taxes = vehicleService.getVehicleTaxes(companyId, vehicleId);
         return new ApiResponse<>(VehicleTaxesMapper.toResponse(taxes));
     }
 }

@@ -34,8 +34,8 @@ public class DocumentService implements IDocumentService {
     }
 
     @Override
-    public UUID uploadDocument(UUID vehicleId, DocumentType documentType, MultipartFile file) {
-        vehicleRepository.findVehicleById(vehicleId)
+    public UUID uploadDocument(int companyId, UUID vehicleId, DocumentType documentType, MultipartFile file) {
+        vehicleRepository.findVehicleById(companyId, vehicleId)
             .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
             throw new IllegalArgumentException("File exceeds maximum size.");
@@ -56,6 +56,7 @@ public class DocumentService implements IDocumentService {
         }
         Document document = new Document(
             documentId,
+            companyId,
             vehicleId,
             documentType,
             originalFileName,
@@ -65,15 +66,15 @@ public class DocumentService implements IDocumentService {
             Instant.now(),
             "system"
         );
-        documentRepository.saveDocument(document);
+        documentRepository.saveDocument(companyId, document);
         return documentId;
     }
 
     @Override
-    public List<DocumentSummary> listDocuments(UUID vehicleId) {
-        vehicleRepository.findVehicleById(vehicleId)
+    public List<DocumentSummary> listDocuments(int companyId, UUID vehicleId) {
+        vehicleRepository.findVehicleById(companyId, vehicleId)
             .orElseThrow(() -> new NotFoundException("Vehicle not found"));
-        return documentRepository.findDocumentByVehicleId(vehicleId)
+        return documentRepository.findDocumentByVehicleId(companyId, vehicleId)
             .stream()
             .map(doc -> new DocumentSummary(
                 doc.getId(),
@@ -88,14 +89,14 @@ public class DocumentService implements IDocumentService {
     }
 
     @Override
-    public Resource downloadDocument(UUID vehicleId, UUID documentId) {
-        Document document = getDocumentEntity(vehicleId, documentId);
+    public Resource downloadDocument(int companyId, UUID vehicleId, UUID documentId) {
+        Document document = getDocumentEntity(companyId, vehicleId, documentId);
         return documentStorage.load(document.getStorageKey());
     }
 
     @Override
-    public DocumentSummary getDocument(UUID vehicleId, UUID documentId) {
-        Document document = getDocumentEntity(vehicleId, documentId);
+    public DocumentSummary getDocument(int companyId, UUID vehicleId, UUID documentId) {
+        Document document = getDocumentEntity(companyId, vehicleId, documentId);
         return new DocumentSummary(
             document.getId(),
             document.getVehicleId(),
@@ -108,14 +109,14 @@ public class DocumentService implements IDocumentService {
     }
 
     @Override
-    public void deleteDocument(UUID vehicleId, UUID documentId) {
-        Document document = getDocumentEntity(vehicleId, documentId);
+    public void deleteDocument(int companyId, UUID vehicleId, UUID documentId) {
+        Document document = getDocumentEntity(companyId, vehicleId, documentId);
         documentStorage.delete(document.getStorageKey());
-        documentRepository.deleteDocument(documentId);
+        documentRepository.deleteDocument(companyId, documentId);
     }
 
-    private Document getDocumentEntity(UUID vehicleId, UUID documentId) {
-        Document document = documentRepository.findDocumentById(documentId)
+    private Document getDocumentEntity(int companyId, UUID vehicleId, UUID documentId) {
+        Document document = documentRepository.findDocumentById(companyId, documentId)
             .orElseThrow(() -> new NotFoundException("Document not found"));
         if (!document.getVehicleId().equals(vehicleId)) {
             throw new NotFoundException("Document not found for vehicle");

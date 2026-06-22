@@ -1,11 +1,14 @@
 package br.com.carreselling.security;
 
+import br.com.carreselling.config.ApiErrorResponseWriter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -25,36 +28,53 @@ public class BearerTokenAuthFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(@org.springframework.lang.NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
         return !path.startsWith("/api/")
-            || path.startsWith("/api/auth")
-            || path.startsWith("/actuator")
-            || path.startsWith("/v3/api-docs")
-            || path.startsWith("/swagger-ui");
+                || path.startsWith("/api/auth")
+                || path.startsWith("/actuator")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui");
     }
 
     @Override
     protected void doFilterInternal(@org.springframework.lang.NonNull HttpServletRequest request,
                                     @org.springframework.lang.NonNull HttpServletResponse response,
                                     @org.springframework.lang.NonNull FilterChain filterChain)
-        throws ServletException, IOException {
+            throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (header == null || !header.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            writeUnauthorized(response, request, "Authorization header is required.");
             return;
         }
+
         String token = header.substring(7);
         if (!tokenValidator.isValid(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            writeUnauthorized(response, request, "Invalid or expired token.");
             return;
         }
 
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            String username = tokenValidator.extractUsername(token);
-            UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(username, null, java.util.List.of());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                String username = tokenValidator.extractUsername(token);
+                int companyId = tokenValidator.extractCompanyId(token);
+                UserPrincipal principal = new UserPrincipal(username, companyId);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(principal, null, java.util.List.of());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+            filterChain.doFilter(request, response);
+        } catch (AuthTokenException ex) {
+            writeUnauthorized(response, request, ex.getMessage());
         }
+    }
 
-        filterChain.doFilter(request, response);
+    private static void writeUnauthorized(HttpServletResponse response,
+                                          HttpServletRequest request,
+                                          String message) throws IOException {
+        ApiErrorResponseWriter.write(
+                response,
+                HttpStatus.UNAUTHORIZED.value(),
+                List.of(message),
+                request
+        );
     }
 }

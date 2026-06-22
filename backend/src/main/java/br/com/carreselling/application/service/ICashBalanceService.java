@@ -5,7 +5,7 @@ import br.com.carreselling.usecase.UseCaseException;
 
 public interface ICashBalanceService {
 
-    CashBalance getCashBalance();
+    CashBalance getCashBalance(int companyId);
 
-    void updateCashBalance(double amount, String changedBy) throws UseCaseException;
+    void updateCashBalance(int companyId, double amount, String changedBy) throws UseCaseException;
 }

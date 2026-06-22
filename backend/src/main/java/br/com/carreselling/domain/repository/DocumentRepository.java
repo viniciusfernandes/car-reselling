@@ -7,15 +7,15 @@ import java.util.UUID;
 
 public interface DocumentRepository {
 
-    Document saveDocument(Document document);
+    Document saveDocument(int companyId, Document document);
 
-    Optional<Document> findDocumentById(UUID id);
+    Optional<Document> findDocumentById(int companyId, UUID id);
 
-    List<Document> findDocumentByVehicleId(UUID vehicleId);
+    List<Document> findDocumentByVehicleId(int companyId, UUID vehicleId);
 
-    List<String> findStorageKeyByVehicleId(UUID vehicleId);
+    List<String> findStorageKeyByVehicleId(int companyId, UUID vehicleId);
 
-    void deleteDocument(UUID id);
+    void deleteDocument(int companyId, UUID id);
 
-    void deleteDocumentByVEhicleId(UUID vehicleId);
+    void deleteDocumentByVEhicleId(int companyId, UUID vehicleId);
 }

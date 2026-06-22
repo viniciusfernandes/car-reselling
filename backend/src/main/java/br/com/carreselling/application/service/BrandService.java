@@ -15,8 +15,8 @@ public class BrandService implements IBrandService {
     }
 
     @Override
-    public List<BrandSummary> listBrands() {
-        return brandRepository.findBrands()
+    public List<BrandSummary> listBrands(int companyId) {
+        return brandRepository.findBrands(companyId)
             .stream()
             .map(brand -> new BrandSummary(brand.getId(), brand.getName()))
             .toList();

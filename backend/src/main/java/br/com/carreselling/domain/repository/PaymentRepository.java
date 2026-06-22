@@ -12,23 +12,23 @@ import java.util.UUID;
 
 public interface PaymentRepository {
 
-    Payment savePayment(Payment payment);
+    Payment savePayment(int companyId, Payment payment);
 
-    Optional<Payment> findPaymentById(UUID id);
+    Optional<Payment> findPaymentById(int companyId, UUID id);
 
-    List<Payment> findPayments(PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate);
+    List<Payment> findPayments(int companyId, PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate);
 
-    List<String> findDistinctDescriptions(PaymentType paymentType);
+    List<String> findDistinctDescriptions(int companyId, PaymentType paymentType);
 
-    Payment updatePayment(Payment payment);
+    Payment updatePayment(int companyId, Payment payment);
 
-    void deletePayment(UUID id);
+    void deletePayment(int companyId, UUID id);
 
-    List<Payment> findPaymentsByVehicleId(UUID vehicleId);
+    List<Payment> findPaymentsByVehicleId(int companyId, UUID vehicleId);
 
-    void deletePaymentsByVehicleId(UUID vehicleId);
+    void deletePaymentsByVehicleId(int companyId, UUID vehicleId);
 
-    BigDecimal findTotalPaymentsAmount(LocalDate startDate, LocalDate endDate);
+    BigDecimal findTotalPaymentsAmount(int companyId, LocalDate startDate, LocalDate endDate);
 
-    List<MonthlyPaymentTotal> findMonthlyPaymentTotals(LocalDate startDate, LocalDate endDate);
+    List<MonthlyPaymentTotal> findMonthlyPaymentTotals(int companyId, LocalDate startDate, LocalDate endDate);
 }

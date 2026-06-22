@@ -7,11 +7,11 @@ import java.util.UUID;
 
 public interface BrandRepository {
 
-    Brand saveBrand(Brand brand);
+    Brand saveBrand(int companyId, Brand brand);
 
-    List<Brand> findBrands();
+    List<Brand> findBrands(int companyId);
 
-    Optional<Brand> findBrandById(UUID id);
+    Optional<Brand> findBrandById(int companyId, UUID id);
 
-    Optional<Brand> findBrandByName(String name);
+    Optional<Brand> findBrandByName(int companyId, String name);
 }

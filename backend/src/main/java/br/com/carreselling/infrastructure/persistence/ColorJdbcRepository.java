@@ -23,12 +23,13 @@ public class ColorJdbcRepository implements ColorRepository {
     }
 
     @Override
-    public Color saveColor(Color color) {
+    public Color saveColor(int companyId, Color color) {
         jdbcTemplate.update("""
-                INSERT INTO colors (id, name, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO colors (id, company_id, name, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
                 """,
             color.getId().toString(),
+            companyId,
             color.getName(),
             Timestamp.from(color.getCreatedAt()),
             color.getUpdatedAt() == null ? null : Timestamp.from(color.getUpdatedAt())
@@ -37,20 +38,22 @@ public class ColorJdbcRepository implements ColorRepository {
     }
 
     @Override
-    public List<Color> findColors() {
+    public List<Color> findColors(int companyId) {
         return jdbcTemplate.query("""
-                SELECT * FROM colors ORDER BY name ASC
+                SELECT * FROM colors WHERE company_id = ? ORDER BY name ASC
                 """,
-            new ColorRowMapper());
+            new ColorRowMapper(),
+            companyId);
     }
 
     @Override
-    public Optional<Color> findColorByName(String name) {
+    public Optional<Color> findColorByName(int companyId, String name) {
         List<Color> result = jdbcTemplate.query("""
-                SELECT * FROM colors WHERE name = ?
+                SELECT * FROM colors WHERE name = ? AND company_id = ?
                 """,
             new ColorRowMapper(),
-            name);
+            name,
+            companyId);
         return result.stream().findFirst();
     }
 
@@ -59,11 +62,13 @@ public class ColorJdbcRepository implements ColorRepository {
         @Override
         public Color mapRow(ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
+            int companyId = rs.getInt("company_id");
             String name = rs.getString("name");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
             return new Color(
                 id,
+                companyId,
                 name,
                 createdAt,
                 updatedAt == null ? null : updatedAt.toInstant()

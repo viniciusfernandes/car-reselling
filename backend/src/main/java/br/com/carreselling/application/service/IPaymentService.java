@@ -14,18 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface IPaymentService {
 
-    UUID createPayment(PaymentType paymentType,
-                       String description,
-                       BigDecimal amount,
-                       LocalDate paymentDate,
-                       String vehicleLicensePlate,
-                       String notes);
-
-    List<PaymentSummary> listPayments(PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate);
-
-    PaymentSummary getPayment(UUID id);
-
-    void updatePayment(UUID id,
+    UUID createPayment(int companyId,
                        PaymentType paymentType,
                        String description,
                        BigDecimal amount,
@@ -33,17 +22,30 @@ public interface IPaymentService {
                        String vehicleLicensePlate,
                        String notes);
 
-    void deletePayment(UUID id);
+    List<PaymentSummary> listPayments(int companyId, PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate);
 
-    void deletePaymentsByVehicleId(UUID vehicleId);
+    PaymentSummary getPayment(int companyId, UUID id);
 
-    List<String> listDescriptions(PaymentType paymentType);
+    void updatePayment(int companyId,
+                       UUID id,
+                       PaymentType paymentType,
+                       String description,
+                       BigDecimal amount,
+                       LocalDate paymentDate,
+                       String vehicleLicensePlate,
+                       String notes);
 
-    UUID uploadPaymentDocument(UUID paymentId, MultipartFile file);
+    void deletePayment(int companyId, UUID id);
 
-    List<PaymentDocumentSummary> listPaymentDocuments(UUID paymentId);
+    void deletePaymentsByVehicleId(int companyId, UUID vehicleId);
 
-    Resource downloadPaymentDocument(UUID paymentId, UUID documentId);
+    List<String> listDescriptions(int companyId, PaymentType paymentType);
 
-    void deletePaymentDocument(UUID paymentId, UUID documentId);
+    UUID uploadPaymentDocument(int companyId, UUID paymentId, MultipartFile file);
+
+    List<PaymentDocumentSummary> listPaymentDocuments(int companyId, UUID paymentId);
+
+    Resource downloadPaymentDocument(int companyId, UUID paymentId, UUID documentId);
+
+    void deletePaymentDocument(int companyId, UUID paymentId, UUID documentId);
 }

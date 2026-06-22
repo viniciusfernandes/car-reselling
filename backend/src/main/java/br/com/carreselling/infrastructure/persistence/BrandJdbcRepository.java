@@ -23,12 +23,13 @@ public class BrandJdbcRepository implements BrandRepository {
     }
 
     @Override
-    public Brand saveBrand(Brand brand) {
+    public Brand saveBrand(int companyId, Brand brand) {
         jdbcTemplate.update("""
-                INSERT INTO brands (id, name, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO brands (id, company_id, name, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
                 """,
             brand.getId().toString(),
+            companyId,
             brand.getName(),
             Timestamp.from(brand.getCreatedAt()),
             brand.getUpdatedAt() == null ? null : Timestamp.from(brand.getUpdatedAt())
@@ -37,30 +38,33 @@ public class BrandJdbcRepository implements BrandRepository {
     }
 
     @Override
-    public List<Brand> findBrands() {
+    public List<Brand> findBrands(int companyId) {
         return jdbcTemplate.query("""
-                SELECT * FROM brands ORDER BY name ASC
+                SELECT * FROM brands WHERE company_id = ? ORDER BY name ASC
                 """,
-            new BrandRowMapper());
+            new BrandRowMapper(),
+            companyId);
     }
 
     @Override
-    public Optional<Brand> findBrandById(UUID id) {
+    public Optional<Brand> findBrandById(int companyId, UUID id) {
         List<Brand> result = jdbcTemplate.query("""
-                SELECT * FROM brands WHERE id = ?
+                SELECT * FROM brands WHERE id = ? AND company_id = ?
                 """,
             new BrandRowMapper(),
-            id.toString());
+            id.toString(),
+            companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public Optional<Brand> findBrandByName(String name) {
+    public Optional<Brand> findBrandByName(int companyId, String name) {
         List<Brand> result = jdbcTemplate.query("""
-                SELECT * FROM brands WHERE name = ?
+                SELECT * FROM brands WHERE name = ? AND company_id = ?
                 """,
             new BrandRowMapper(),
-            name);
+            name,
+            companyId);
         return result.stream().findFirst();
     }
 
@@ -69,11 +73,13 @@ public class BrandJdbcRepository implements BrandRepository {
         @Override
         public Brand mapRow(ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
+            int companyId = rs.getInt("company_id");
             String name = rs.getString("name");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
             return new Brand(
                 id,
+                companyId,
                 name,
                 createdAt,
                 updatedAt == null ? null : updatedAt.toInstant()

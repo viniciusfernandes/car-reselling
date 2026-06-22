@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.vehicle.distribution.endpoint;
 
 import br.com.carreselling.application.service.IVehicleService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.vehicle.distribution.contract.AssignPartnerRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -19,14 +20,18 @@ public class AssignPartnerEndpoint {
 
     private final IVehicleService vehicleService;
 
-    public AssignPartnerEndpoint(IVehicleService vehicleService) {
+    private final TenantContext tenantContext;
+
+    public AssignPartnerEndpoint(IVehicleService vehicleService, TenantContext tenantContext) {
         this.vehicleService = vehicleService;
+        this.tenantContext = tenantContext;
     }
 
     @PostMapping("/{vehicleId}/distribution")
     public ApiResponse<Void> assign(@PathVariable UUID vehicleId,
                                     @Valid @RequestBody AssignPartnerRequest request) {
-        vehicleService.assignPartner(vehicleId, request.partnerId());
+        int companyId = tenantContext.getCurrentCompanyId();
+        vehicleService.assignPartner(companyId, vehicleId, request.partnerId());
         return new ApiResponse<>(null);
     }
 }

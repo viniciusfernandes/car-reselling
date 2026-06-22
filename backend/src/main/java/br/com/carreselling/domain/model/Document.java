@@ -6,6 +6,7 @@ import java.util.UUID;
 public class Document {
 
     private final UUID id;
+    private final int companyId;
     private final UUID vehicleId;
     private final DocumentType documentType;
     private final String originalFileName;
@@ -16,6 +17,7 @@ public class Document {
     private final String uploadedBy;
 
     public Document(UUID id,
+                    int companyId,
                     UUID vehicleId,
                     DocumentType documentType,
                     String originalFileName,
@@ -25,6 +27,7 @@ public class Document {
                     Instant uploadedAt,
                     String uploadedBy) {
         this.id = id;
+        this.companyId = companyId;
         this.vehicleId = vehicleId;
         this.documentType = documentType;
         this.originalFileName = originalFileName;
@@ -37,6 +40,10 @@ public class Document {
 
     public UUID getId() {
         return id;
+    }
+
+    public int getCompanyId() {
+        return companyId;
     }
 
     public UUID getVehicleId() {

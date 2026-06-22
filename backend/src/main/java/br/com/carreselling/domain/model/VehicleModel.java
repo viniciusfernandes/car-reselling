@@ -6,13 +6,15 @@ import java.util.UUID;
 public class VehicleModel {
 
     private final UUID id;
+    private final int companyId;
     private final UUID brandId;
     private final String name;
     private final Instant createdAt;
     private final Instant updatedAt;
 
-    public VehicleModel(UUID id, UUID brandId, String name, Instant createdAt, Instant updatedAt) {
+    public VehicleModel(UUID id, int companyId, UUID brandId, String name, Instant createdAt, Instant updatedAt) {
         this.id = id;
+        this.companyId = companyId;
         this.brandId = brandId;
         this.name = name;
         this.createdAt = createdAt;
@@ -21,6 +23,10 @@ public class VehicleModel {
 
     public UUID getId() {
         return id;
+    }
+
+    public int getCompanyId() {
+        return companyId;
     }
 
     public UUID getBrandId() {

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import br.com.carreselling.tenant.TenantContext;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -14,14 +15,18 @@ public class DeletePaymentDocumentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public DeletePaymentDocumentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public DeletePaymentDocumentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @DeleteMapping("/{paymentId}/documents/{documentId}")
     public ResponseEntity<Void> delete(@PathVariable UUID paymentId,
                                        @PathVariable UUID documentId) {
-        paymentService.deletePaymentDocument(paymentId, documentId);
+        int companyId = tenantContext.getCurrentCompanyId();
+        paymentService.deletePaymentDocument(companyId, paymentId, documentId);
         return ResponseEntity.noContent().build();
     }
 }

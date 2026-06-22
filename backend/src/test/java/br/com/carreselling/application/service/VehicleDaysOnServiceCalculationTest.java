@@ -18,70 +18,71 @@ public class VehicleDaysOnServiceCalculationTest {
     ServiceOnVehicleService serviceOnVehicleService;
     private final UUID serviceId = UUID.randomUUID();
     private final UUID vehicleId = UUID.randomUUID();
+    private static final int COMPANY_ID = 1;
 
     @Test
     void testDaysFromASingleIntervalOneDayAheadToday() {
         List<ServiceOnVehicle> services = buildServicesOneDayAheadToday();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(1L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(1L);
     }
 
     @Test
     void testDaysFromTwoDisjoinedIntervalsAndDaysAheadToday() {
         List<ServiceOnVehicle> services = buildServicesDisjoinedWithAllAheadDates();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(2L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(2L);
     }
 
     @Test
     void testDaysFromTwoJoinedIntervalsAndDaysAhead() {
         List<ServiceOnVehicle> services = buildServicesOnVehicleJoinedAheadDates();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(2L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(2L);
     }
 
     @Test
     void testDaysFromFinishedService() {
         List<ServiceOnVehicle> services = buildWithFinishedServices();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(2L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(2L);
     }
 
     @Test
     void testDaysFromFinishedServiceWithJoinedDates() {
         List<ServiceOnVehicle> services = buildWithFinishedServicesWithJoinedDates();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(15L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(15L);
     }
 
     @Test
     void testDaysFromServiceWithNoEndDate() {
         List<ServiceOnVehicle> services = buildServiceWithNoEndDate();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(10L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(10L);
     }
 
     @Test
     void testDaysFromTwoServiceWithNoEndDate() {
         List<ServiceOnVehicle> services = buildTwoServiceWithNoEndDate();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(25L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(25L);
     }
 
     @Test
     void testDaysFromTwoServiceWithOnlyOneWithNoEndDate() {
         List<ServiceOnVehicle> services = buildTwoServiceWithOnlyOneWithNoEndDate();
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(services)).isEqualByComparingTo(30L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,services)).isEqualByComparingTo(30L);
     }
 
     @Test
     void testDaysFromNullLlist() {
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays((List<ServiceOnVehicle>) null)).isEqualByComparingTo(0L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,(List<ServiceOnVehicle>) null)).isEqualByComparingTo(0L);
     }
 
     @Test
     void testDaysFromEmptyList() {
-        assertThat(serviceOnVehicleService.calculateTotalServiceDays(List.of())).isEqualByComparingTo(0L);
+        assertThat(serviceOnVehicleService.calculateTotalServiceDays(COMPANY_ID,List.of())).isEqualByComparingTo(0L);
     }
 
     private List<ServiceOnVehicle> buildServicesOneDayAheadToday() {
         LocalDate now = LocalDate.now();
         LocalDate start = now.minusDays(1L);
         LocalDate end = now.plusDays(1L);
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, end);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, end);
         return List.of(service);
     }
 
@@ -95,8 +96,8 @@ public class VehicleDaysOnServiceCalculationTest {
         LocalDate start2 = now.plusDays(2L);
         LocalDate end2 = now.plusDays(3L);
 
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, end);
-        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, vehicleId, start2, end2);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, end);
+        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start2, end2);
         return List.of(service, service2);
     }
 
@@ -110,8 +111,8 @@ public class VehicleDaysOnServiceCalculationTest {
         LocalDate start2 = now.plusDays(2L);
         LocalDate end2 = now.plusDays(4L);
 
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, end);
-        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, vehicleId, start2, end2);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, end);
+        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start2, end2);
         return List.of(service, service2);
     }
 
@@ -121,7 +122,7 @@ public class VehicleDaysOnServiceCalculationTest {
         LocalDate start = now.minusDays(10L);
         LocalDate end = now.minusDays(8L);
 
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, end);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, end);
         return List.of(service);
     }
 
@@ -135,8 +136,8 @@ public class VehicleDaysOnServiceCalculationTest {
         LocalDate start2 = now.minusDays(25L);
         LocalDate end2 = now.minusDays(15L);
 
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, end);
-        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, vehicleId, start2, end2);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, end);
+        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start2, end2);
         return List.of(service, service2);
     }
 
@@ -144,7 +145,7 @@ public class VehicleDaysOnServiceCalculationTest {
         LocalDate now = LocalDate.now();
         LocalDate start = now.minusDays(10L);
 
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, null);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, null);
         return List.of(service);
     }
 
@@ -153,8 +154,8 @@ public class VehicleDaysOnServiceCalculationTest {
         LocalDate start = now.minusDays(10L);
         LocalDate start2 = now.minusDays(25L);
 
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, null);
-        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, vehicleId, start2, null);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, null);
+        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start2, null);
         return List.of(service, service2);
     }
 
@@ -165,8 +166,8 @@ public class VehicleDaysOnServiceCalculationTest {
 
         LocalDate start2 = now.minusDays(30L);
 
-        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, vehicleId, start, end);
-        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, vehicleId, start2, null);
+        ServiceOnVehicle service = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start, end);
+        ServiceOnVehicle service2 = new ServiceOnVehicle(serviceId, COMPANY_ID, vehicleId, start2, null);
         return List.of(service, service2);
     }
 }

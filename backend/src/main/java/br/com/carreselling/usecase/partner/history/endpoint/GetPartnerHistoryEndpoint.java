@@ -3,6 +3,7 @@ package br.com.carreselling.usecase.partner.history.endpoint;
 import br.com.carreselling.application.service.IPartnerService;
 import br.com.carreselling.application.service.model.PartnerHistorySummary;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.partner.history.contract.PartnerHistoryItem;
 import br.com.carreselling.usecase.partner.history.contract.PartnerHistoryResponse;
 import java.util.List;
@@ -20,13 +21,17 @@ public class GetPartnerHistoryEndpoint {
 
     private final IPartnerService partnerService;
 
-    public GetPartnerHistoryEndpoint(IPartnerService partnerService) {
+    private final TenantContext tenantContext;
+
+    public GetPartnerHistoryEndpoint(IPartnerService partnerService, TenantContext tenantContext) {
         this.partnerService = partnerService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{id}/history")
     public ApiResponse<PartnerHistoryResponse> history(@PathVariable UUID id) {
-        List<PartnerHistorySummary> summaries = partnerService.getPartnerHistory(id);
+        int companyId = tenantContext.getCurrentCompanyId();
+        List<PartnerHistorySummary> summaries = partnerService.getPartnerHistory(companyId, id);
         List<PartnerHistoryItem> items = summaries.stream()
             .map(s -> new PartnerHistoryItem(
                 s.id(),

@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.document.upload.endpoint;
 
 import br.com.carreselling.application.service.IDocumentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.domain.model.DocumentType;
 import br.com.carreselling.usecase.document.upload.contract.UploadDocumentResponse;
 import java.util.UUID;
@@ -23,15 +24,19 @@ public class UploadDocumentEndpoint {
 
     private final IDocumentService documentService;
 
-    public UploadDocumentEndpoint(IDocumentService documentService) {
+    private final TenantContext tenantContext;
+
+    public UploadDocumentEndpoint(IDocumentService documentService, TenantContext tenantContext) {
         this.documentService = documentService;
+        this.tenantContext = tenantContext;
     }
 
     @PostMapping(value = "/{vehicleId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UploadDocumentResponse>> upload(@PathVariable UUID vehicleId,
                                                                       @RequestParam DocumentType documentType,
                                                                       @RequestParam("file") MultipartFile file) {
-        UUID documentId = documentService.uploadDocument(vehicleId, documentType, file);
+        int companyId = tenantContext.getCurrentCompanyId();
+        UUID documentId = documentService.uploadDocument(companyId, vehicleId, documentType, file);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(new UploadDocumentResponse(documentId)));
     }

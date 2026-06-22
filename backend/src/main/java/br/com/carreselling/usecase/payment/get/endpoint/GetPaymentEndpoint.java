@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.payment.get.endpoint;
 
 import br.com.carreselling.application.service.IPaymentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.payment.list.contract.PaymentItem;
 import br.com.carreselling.usecase.payment.list.mapping.PaymentListMapper;
 import java.util.UUID;
@@ -17,13 +18,17 @@ public class GetPaymentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public GetPaymentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public GetPaymentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PaymentItem>> get(@PathVariable UUID id) {
-        PaymentItem item = PaymentListMapper.toItem(paymentService.getPayment(id));
+        int companyId = tenantContext.getCurrentCompanyId();
+        PaymentItem item = PaymentListMapper.toItem(paymentService.getPayment(companyId, id));
         return ResponseEntity.ok(new ApiResponse<>(item));
     }
 }

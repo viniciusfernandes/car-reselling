@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.service.update.endpoint;
 
 import br.com.carreselling.application.service.IServiceEntryService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.service.update.contract.UpdateServiceRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -19,15 +20,19 @@ public class UpdateServiceEndpoint {
 
     private final IServiceEntryService serviceEntryService;
 
-    public UpdateServiceEndpoint(IServiceEntryService serviceEntryService) {
+    private final TenantContext tenantContext;
+
+    public UpdateServiceEndpoint(IServiceEntryService serviceEntryService, TenantContext tenantContext) {
         this.serviceEntryService = serviceEntryService;
+        this.tenantContext = tenantContext;
     }
 
     @PutMapping("/{vehicleId}/services/{serviceId}")
     public ApiResponse<Void> update(@PathVariable UUID vehicleId,
                                     @PathVariable UUID serviceId,
                                     @Valid @RequestBody UpdateServiceRequest request) {
-        serviceEntryService.updateService(
+        int companyId = tenantContext.getCurrentCompanyId();
+        serviceEntryService.updateService(companyId, 
             vehicleId,
             serviceId,
             request.serviceType(),

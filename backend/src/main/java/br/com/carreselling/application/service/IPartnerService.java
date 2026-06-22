@@ -8,16 +8,16 @@ import java.util.UUID;
 
 public interface IPartnerService {
 
-    UUID createPartner(String name, String city, String phone, String email, BigDecimal commissionRate);
+    UUID createPartner(int companyId, String name, String city, String phone, String email, BigDecimal commissionRate);
 
-    List<PartnerSummary> listPartners();
+    List<PartnerSummary> listPartners(int companyId);
 
-    PartnerSummary getPartner(UUID id);
+    PartnerSummary getPartner(int companyId, UUID id);
 
-    void updatePartner(UUID id, String name, String city, String phone, String email,
+    void updatePartner(int companyId, UUID id, String name, String city, String phone, String email,
                        BigDecimal commissionRate, String changedBy);
 
-    List<PartnerHistorySummary> getPartnerHistory(UUID id);
+    List<PartnerHistorySummary> getPartnerHistory(int companyId, UUID id);
 
-    void disablePartner(UUID id);
+    void disablePartner(int companyId, UUID id);
 }

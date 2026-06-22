@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.document.delete.endpoint;
 
 import br.com.carreselling.application.service.IDocumentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import java.util.UUID;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,13 +17,17 @@ public class DeleteDocumentEndpoint {
 
     private final IDocumentService documentService;
 
-    public DeleteDocumentEndpoint(IDocumentService documentService) {
+    private final TenantContext tenantContext;
+
+    public DeleteDocumentEndpoint(IDocumentService documentService, TenantContext tenantContext) {
         this.documentService = documentService;
+        this.tenantContext = tenantContext;
     }
 
     @DeleteMapping("/{vehicleId}/documents/{documentId}")
     public ApiResponse<Void> delete(@PathVariable UUID vehicleId, @PathVariable UUID documentId) {
-        documentService.deleteDocument(vehicleId, documentId);
+        int companyId = tenantContext.getCurrentCompanyId();
+        documentService.deleteDocument(companyId, vehicleId, documentId);
         return new ApiResponse<>(null);
     }
 }

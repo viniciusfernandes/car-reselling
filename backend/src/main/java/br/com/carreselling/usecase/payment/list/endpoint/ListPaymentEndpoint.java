@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.payment.list.endpoint;
 
 import br.com.carreselling.application.service.IPaymentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.domain.model.PaymentType;
 import br.com.carreselling.usecase.payment.list.contract.PaymentListResponse;
 import br.com.carreselling.usecase.payment.list.mapping.PaymentListMapper;
@@ -17,8 +18,11 @@ public class ListPaymentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public ListPaymentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public ListPaymentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping
@@ -26,10 +30,11 @@ public class ListPaymentEndpoint {
             @RequestParam(required = false) PaymentType paymentType,
             @RequestParam(required = false) String paymentMonth,
             @RequestParam(required = false) String licensePlate) {
+        int companyId = tenantContext.getCurrentCompanyId();
         String[] paymentDates = paymentMonth != null ? paymentMonth.split("-") : null;
         Integer year = paymentDates != null ? Integer.parseInt(paymentDates[0]) : null;
         Integer month = paymentDates != null ? Integer.parseInt(paymentDates[1]) : null;
-        var payments = paymentService.listPayments(paymentType, year, month, licensePlate)
+        var payments = paymentService.listPayments(companyId, paymentType, year, month, licensePlate)
                 .stream()
                 .map(PaymentListMapper::toItem)
                 .toList();

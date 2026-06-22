@@ -5,5 +5,5 @@ import java.util.List;
 
 public interface IColorService {
 
-    List<ColorSummary> listColors();
+    List<ColorSummary> listColors(int companyId);
 }

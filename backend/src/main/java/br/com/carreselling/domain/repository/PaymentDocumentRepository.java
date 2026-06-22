@@ -8,13 +8,13 @@ import java.util.UUID;
 
 public interface PaymentDocumentRepository {
 
-    PaymentDocument savePaymentDocument(PaymentDocument document);
+    PaymentDocument savePaymentDocument(int companyId, PaymentDocument document);
 
-    Optional<PaymentDocument> findPaymentDocumentById(UUID id);
+    Optional<PaymentDocument> findPaymentDocumentById(int companyId, UUID id);
 
-    List<PaymentDocument> findPaymentDocumentsByPaymentId(UUID paymentId);
+    List<PaymentDocument> findPaymentDocumentsByPaymentId(int companyId, UUID paymentId);
 
-    void deletePaymentDocument(UUID id);
+    void deletePaymentDocument(int companyId, UUID id);
 
-    void deletePaymentDocumentsByPaymentId(UUID paymentId);
+    void deletePaymentDocumentsByPaymentId(int companyId, UUID paymentId);
 }

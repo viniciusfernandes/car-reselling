@@ -7,6 +7,7 @@ import java.util.UUID;
 public class Partner {
 
     private final UUID id;
+    private final int companyId;
     private final String name;
     private final String city;
     private final String phone;
@@ -17,6 +18,7 @@ public class Partner {
     private final Instant updatedAt;
 
     public Partner(UUID id,
+                   int companyId,
                    String name,
                    String city,
                    String phone,
@@ -26,6 +28,7 @@ public class Partner {
                    Instant createdAt,
                    Instant updatedAt) {
         this.id = id;
+        this.companyId = companyId;
         this.name = name;
         this.city = city;
         this.phone = phone;
@@ -38,6 +41,10 @@ public class Partner {
 
     public UUID getId() {
         return id;
+    }
+
+    public int getCompanyId() {
+        return companyId;
     }
 
     public String getName() {

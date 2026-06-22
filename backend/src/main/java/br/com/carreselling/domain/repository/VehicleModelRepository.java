@@ -7,11 +7,11 @@ import java.util.UUID;
 
 public interface VehicleModelRepository {
 
-    VehicleModel saveModel(VehicleModel model);
+    VehicleModel saveModel(int companyId, VehicleModel model);
 
-    List<VehicleModel> findModelsByBrandId(UUID brandId);
+    List<VehicleModel> findModelsByBrandId(int companyId, UUID brandId);
 
-    Optional<VehicleModel> findModelById(UUID id);
+    Optional<VehicleModel> findModelById(int companyId, UUID id);
 
-    Optional<VehicleModel> findModelByBrandIdAndName(UUID brandId, String name);
+    Optional<VehicleModel> findModelByBrandIdAndName(int companyId, UUID brandId, String name);
 }

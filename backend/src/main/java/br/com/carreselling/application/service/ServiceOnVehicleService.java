@@ -30,13 +30,14 @@ public class ServiceOnVehicleService implements IServiceEntryService {
     }
 
     @Override
-    public UUID addService(UUID vehicleId,
+    public UUID addService(int companyId,
+                           UUID vehicleId,
                            ServiceType serviceType,
                            BigDecimal serviceValue,
                            String description,
                            LocalDate startDate,
                            LocalDate endDate) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         vehicle.ensureServicesEditable();
         if (serviceValue == null || serviceValue.compareTo(BigDecimal.ZERO) < 0) {
@@ -47,6 +48,7 @@ public class ServiceOnVehicleService implements IServiceEntryService {
         }
         ServiceOnVehicle entry = new ServiceOnVehicle(
                 UuidGenerator.generate(),
+                companyId,
                 vehicleId,
                 serviceType,
                 description,
@@ -56,15 +58,15 @@ public class ServiceOnVehicleService implements IServiceEntryService {
                 Instant.now(),
                 Instant.now()
         );
-        serviceRepository.saveService(entry);
+        serviceRepository.saveService(companyId, entry);
         return entry.getId();
     }
 
     @Override
-    public List<ServiceSummary> listServices(UUID vehicleId) {
-        vehicleRepository.findVehicleById(vehicleId)
+    public List<ServiceSummary> listServices(int companyId, UUID vehicleId) {
+        vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
-        return serviceRepository.findServiceByVehicleId(vehicleId)
+        return serviceRepository.findServiceByVehicleId(companyId, vehicleId)
                 .stream()
                 .map(service -> new ServiceSummary(
                         service.getId(),
@@ -79,49 +81,50 @@ public class ServiceOnVehicleService implements IServiceEntryService {
     }
 
     @Override
-    public BigDecimal totalServices(UUID vehicleId) {
-        return serviceRepository.findServiceTotalByVehicleId(vehicleId);
+    public BigDecimal totalServices(int companyId, UUID vehicleId) {
+        return serviceRepository.findServiceTotalByVehicleId(companyId, vehicleId);
     }
 
     @Override
-    public void updateService(UUID vehicleId,
+    public void updateService(int companyId,
+                              UUID vehicleId,
                               UUID serviceId,
                               ServiceType serviceType,
                               BigDecimal serviceValue,
                               String description,
                               LocalDate startDate,
                               LocalDate endDate) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         vehicle.ensureServicesEditable();
         if (startDate == null) {
             throw new IllegalArgumentException("startDate: required.");
         }
-        ServiceOnVehicle service = serviceRepository.findServiceById(serviceId)
+        ServiceOnVehicle service = serviceRepository.findServiceById(companyId, serviceId)
                 .orElseThrow(() -> new NotFoundException("Service not found"));
         if (!service.getVehicleId().equals(vehicleId)) {
             throw new NotFoundException("Service not found for vehicle");
         }
         service.update(serviceType, description, serviceValue, startDate, endDate);
         service.setUpdatedAt(Instant.now());
-        serviceRepository.updateService(service);
+        serviceRepository.updateService(companyId, service);
     }
 
     @Override
-    public void deleteService(UUID vehicleId, UUID serviceId) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+    public void deleteService(int companyId, UUID vehicleId, UUID serviceId) {
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         vehicle.ensureServicesEditable();
-        ServiceOnVehicle service = serviceRepository.findServiceById(serviceId)
+        ServiceOnVehicle service = serviceRepository.findServiceById(companyId, serviceId)
                 .orElseThrow(() -> new NotFoundException("Service not found"));
         if (!service.getVehicleId().equals(vehicleId)) {
             throw new NotFoundException("Service not found for vehicle");
         }
-        serviceRepository.deleteService(serviceId);
+        serviceRepository.deleteService(companyId, serviceId);
     }
 
     @Override
-    public long calculateTotalServiceDays(List<ServiceOnVehicle> services) {
+    public long calculateTotalServiceDays(int companyId, List<ServiceOnVehicle> services) {
         if (services == null || services.isEmpty()) {
             return 0L;
         }
@@ -171,9 +174,9 @@ public class ServiceOnVehicleService implements IServiceEntryService {
     }
 
     @Override
-    public double calculateTotalServiceDays(UUID vehicleId) {
-        List<ServiceOnVehicle> services = serviceRepository.findServiceByVehicleId(vehicleId);
-        return calculateTotalServiceDays(services);
+    public double calculateTotalServiceDays(int companyId, UUID vehicleId) {
+        List<ServiceOnVehicle> services = serviceRepository.findServiceByVehicleId(companyId, vehicleId);
+        return calculateTotalServiceDays(companyId, services);
     }
 
     private long totalDays(Stack<LocalDate> dates) {

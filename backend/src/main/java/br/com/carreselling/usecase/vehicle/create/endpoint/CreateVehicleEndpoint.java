@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.vehicle.create.endpoint;
 
 import br.com.carreselling.application.service.IVehicleService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.vehicle.create.contract.CreateVehicleRequest;
 import br.com.carreselling.usecase.vehicle.create.contract.CreateVehicleResponse;
 import br.com.carreselling.usecase.vehicle.create.mapping.CreateVehicleMapper;
@@ -22,14 +23,18 @@ public class CreateVehicleEndpoint {
 
     private final IVehicleService vehicleService;
 
-    public CreateVehicleEndpoint(IVehicleService vehicleService) {
+    private final TenantContext tenantContext;
+
+    public CreateVehicleEndpoint(IVehicleService vehicleService, TenantContext tenantContext) {
         this.vehicleService = vehicleService;
+        this.tenantContext = tenantContext;
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreateVehicleResponse>> create(@Valid @RequestBody CreateVehicleRequest request) {
+        int companyId = tenantContext.getCurrentCompanyId();
         CreateVehicleRequest normalized = CreateVehicleMapper.normalize(request);
-        UUID vehicleId = vehicleService.createVehicle(
+        UUID vehicleId = vehicleService.createVehicle(companyId, 
             normalized.licensePlate(),
             normalized.renavam(),
             normalized.vin(),

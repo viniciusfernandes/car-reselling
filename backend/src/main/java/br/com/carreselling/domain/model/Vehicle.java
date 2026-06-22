@@ -13,6 +13,7 @@ import java.util.UUID;
 public class Vehicle {
 
     private final UUID id;
+    private final int companyId;
     private final String licensePlate;
     private String renavam;
     private String vin;
@@ -39,6 +40,7 @@ public class Vehicle {
     private Instant updatedAt;
 
     public Vehicle(UUID id,
+                   int companyId,
                    String licensePlate,
                    String renavam,
                    String vin,
@@ -64,6 +66,7 @@ public class Vehicle {
                    Instant createdAt,
                    Instant updatedAt) {
         this.id = id;
+        this.companyId = companyId;
         this.licensePlate = licensePlate;
         this.renavam = renavam;
         this.vin = vin;
@@ -160,6 +163,10 @@ public class Vehicle {
 
     public UUID getId() {
         return id;
+    }
+
+    public int getCompanyId() {
+        return companyId;
     }
 
     public String getLicensePlate() {

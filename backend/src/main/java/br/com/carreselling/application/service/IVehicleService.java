@@ -11,7 +11,8 @@ import java.util.UUID;
 
 public interface IVehicleService {
 
-    UUID createVehicle(String licensePlate,
+    UUID createVehicle(int companyId,
+                       String licensePlate,
                        String renavam,
                        String vin,
                        int year,
@@ -24,13 +25,14 @@ public interface IVehicleService {
                        BigDecimal purchaseCommission,
                        BigDecimal valorFipe);
 
-    VehicleDetail getVehicle(UUID vehicleId);
+    VehicleDetail getVehicle(int companyId, UUID vehicleId);
 
-    List<VehicleSummary> listVehicles(VehicleStatus status, String query, Boolean onService, int page, int size);
+    List<VehicleSummary> listVehicles(int companyId, VehicleStatus status, String query, Boolean onService, int page, int size);
 
-    long countVehicles(VehicleStatus status, String query, Boolean onService);
+    long countVehicles(int companyId, VehicleStatus status, String query, Boolean onService);
 
-    void updateVehicle(UUID vehicleId,
+    void updateVehicle(int companyId,
+                       UUID vehicleId,
                        int year,
                        String color,
                        String model,
@@ -43,13 +45,13 @@ public interface IVehicleService {
                        UUID paymentReceiptDocumentId,
                        BigDecimal valorFipe);
 
-    void updateSellingPrice(UUID vehicleId, BigDecimal sellingPrice);
+    void updateSellingPrice(int companyId, UUID vehicleId, BigDecimal sellingPrice);
 
-    VehicleTaxes getVehicleTaxes(UUID vehicleId);
+    VehicleTaxes getVehicleTaxes(int companyId, UUID vehicleId);
 
-    void transitionStatus(UUID vehicleId, VehicleStatus targetStatus, UUID assignedPartnerId);
+    void transitionStatus(int companyId, UUID vehicleId, VehicleStatus targetStatus, UUID assignedPartnerId);
 
-    void assignPartner(UUID vehicleId, UUID partnerId);
+    void assignPartner(int companyId, UUID vehicleId, UUID partnerId);
 
-    void deleteVehicle(UUID vehicleId);
+    void deleteVehicle(int companyId, UUID vehicleId);
 }

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import br.com.carreselling.tenant.TenantContext;
 
 @RestController
 @RequestMapping("/api/v1/vehicles")
@@ -20,14 +21,18 @@ public class DownloadDocumentEndpoint {
 
     private final IDocumentService documentService;
 
-    public DownloadDocumentEndpoint(IDocumentService documentService) {
+    private final TenantContext tenantContext;
+
+    public DownloadDocumentEndpoint(IDocumentService documentService, TenantContext tenantContext) {
         this.documentService = documentService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{vehicleId}/documents/{documentId}/download")
     public ResponseEntity<Resource> download(@PathVariable UUID vehicleId, @PathVariable UUID documentId) {
-        DocumentSummary summary = documentService.getDocument(vehicleId, documentId);
-        Resource resource = documentService.downloadDocument(vehicleId, documentId);
+        int companyId = tenantContext.getCurrentCompanyId();
+        DocumentSummary summary = documentService.getDocument(companyId, vehicleId, documentId);
+        Resource resource = documentService.downloadDocument(companyId, vehicleId, documentId);
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType(summary.contentType()))
             .header(HttpHeaders.CONTENT_DISPOSITION,

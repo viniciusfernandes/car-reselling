@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.vehicle.status.endpoint;
 
 import br.com.carreselling.application.service.IVehicleService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.vehicle.status.contract.UpdateVehicleStatusRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -19,14 +20,18 @@ public class UpdateVehicleStatusEndpoint {
 
     private final IVehicleService vehicleService;
 
-    public UpdateVehicleStatusEndpoint(IVehicleService vehicleService) {
+    private final TenantContext tenantContext;
+
+    public UpdateVehicleStatusEndpoint(IVehicleService vehicleService, TenantContext tenantContext) {
         this.vehicleService = vehicleService;
+        this.tenantContext = tenantContext;
     }
 
     @PostMapping("/{vehicleId}/status")
     public ApiResponse<Void> updateStatus(@PathVariable UUID vehicleId,
                                           @Valid @RequestBody UpdateVehicleStatusRequest request) {
-        vehicleService.transitionStatus(vehicleId, request.status(), request.assignedPartnerId());
+        int companyId = tenantContext.getCurrentCompanyId();
+        vehicleService.transitionStatus(companyId, vehicleId, request.status(), request.assignedPartnerId());
         return new ApiResponse<>(null);
     }
 }

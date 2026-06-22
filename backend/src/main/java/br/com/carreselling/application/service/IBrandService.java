@@ -5,5 +5,5 @@ import java.util.List;
 
 public interface IBrandService {
 
-    List<BrandSummary> listBrands();
+    List<BrandSummary> listBrands(int companyId);
 }

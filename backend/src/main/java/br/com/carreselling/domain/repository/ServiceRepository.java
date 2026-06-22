@@ -8,19 +8,19 @@ import java.util.UUID;
 
 public interface ServiceRepository {
 
-    ServiceOnVehicle saveService(ServiceOnVehicle serviceEntry);
+    ServiceOnVehicle saveService(int companyId, ServiceOnVehicle serviceEntry);
 
-    Optional<ServiceOnVehicle> findServiceById(UUID id);
+    Optional<ServiceOnVehicle> findServiceById(int companyId, UUID id);
 
-    List<ServiceOnVehicle> findServiceByVehicleId(UUID vehicleId);
+    List<ServiceOnVehicle> findServiceByVehicleId(int companyId, UUID vehicleId);
 
-    ServiceOnVehicle updateService(ServiceOnVehicle serviceEntry);
+    ServiceOnVehicle updateService(int companyId, ServiceOnVehicle serviceEntry);
 
-    void deleteService(UUID id);
+    void deleteService(int companyId, UUID id);
 
-    BigDecimal findServiceTotalByVehicleId(UUID vehicleId);
+    BigDecimal findServiceTotalByVehicleId(int companyId, UUID vehicleId);
 
-    void  deleteServicesByVehicleId(UUID vehicleId);
+    void deleteServicesByVehicleId(int companyId, UUID vehicleId);
 
-    boolean existsOpenServiceByVehicleId(UUID vehicleId);
+    boolean existsOpenServiceByVehicleId(int companyId, UUID vehicleId);
 }

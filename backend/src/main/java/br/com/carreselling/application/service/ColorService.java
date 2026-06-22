@@ -15,8 +15,8 @@ public class ColorService implements IColorService {
     }
 
     @Override
-    public List<ColorSummary> listColors() {
-        return colorRepository.findColors()
+    public List<ColorSummary> listColors(int companyId) {
+        return colorRepository.findColors(companyId)
             .stream()
             .map(color -> new ColorSummary(color.getId(), color.getName()))
             .toList();

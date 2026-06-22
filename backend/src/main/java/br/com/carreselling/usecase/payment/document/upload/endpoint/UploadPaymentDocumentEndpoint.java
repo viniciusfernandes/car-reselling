@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.payment.document.upload.endpoint;
 
 import br.com.carreselling.application.service.IPaymentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.payment.document.upload.contract.UploadPaymentDocumentResponse;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -20,15 +21,19 @@ public class UploadPaymentDocumentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public UploadPaymentDocumentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public UploadPaymentDocumentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @PostMapping(value = "/{paymentId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UploadPaymentDocumentResponse>> upload(
             @PathVariable UUID paymentId,
             @RequestParam("file") MultipartFile file) {
-        UUID documentId = paymentService.uploadPaymentDocument(paymentId, file);
+        int companyId = tenantContext.getCurrentCompanyId();
+        UUID documentId = paymentService.uploadPaymentDocument(companyId, paymentId, file);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(new UploadPaymentDocumentResponse(documentId)));
     }

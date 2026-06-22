@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import br.com.carreselling.tenant.TenantContext;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -17,14 +18,18 @@ public class DownloadPaymentDocumentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public DownloadPaymentDocumentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public DownloadPaymentDocumentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{paymentId}/documents/{documentId}/download")
     public ResponseEntity<Resource> download(@PathVariable UUID paymentId,
                                              @PathVariable UUID documentId) {
-        Resource resource = paymentService.downloadPaymentDocument(paymentId, documentId);
+        int companyId = tenantContext.getCurrentCompanyId();
+        Resource resource = paymentService.downloadPaymentDocument(companyId, paymentId, documentId);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + resource.getFilename() + "\"")

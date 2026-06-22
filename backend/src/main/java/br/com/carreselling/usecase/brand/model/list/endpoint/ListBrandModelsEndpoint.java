@@ -3,6 +3,7 @@ package br.com.carreselling.usecase.brand.model.list.endpoint;
 import br.com.carreselling.application.service.IVehicleModelService;
 import br.com.carreselling.application.service.model.VehicleModelSummary;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.brand.model.list.contract.VehicleModelItem;
 import br.com.carreselling.usecase.brand.model.list.contract.VehicleModelListResponse;
 import br.com.carreselling.usecase.brand.model.list.mapping.VehicleModelListMapper;
@@ -21,13 +22,17 @@ public class ListBrandModelsEndpoint {
 
     private final IVehicleModelService vehicleModelService;
 
-    public ListBrandModelsEndpoint(IVehicleModelService vehicleModelService) {
+    private final TenantContext tenantContext;
+
+    public ListBrandModelsEndpoint(IVehicleModelService vehicleModelService, TenantContext tenantContext) {
         this.vehicleModelService = vehicleModelService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping
     public ApiResponse<VehicleModelListResponse> list(@PathVariable UUID brandId) {
-        List<VehicleModelSummary> models = vehicleModelService.listModelsByBrandId(brandId);
+        int companyId = tenantContext.getCurrentCompanyId();
+        List<VehicleModelSummary> models = vehicleModelService.listModelsByBrandId(companyId, brandId);
         List<VehicleModelItem> items = models.stream()
             .map(VehicleModelListMapper::toItem)
             .toList();

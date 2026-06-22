@@ -6,6 +6,7 @@ import java.util.UUID;
 public class PaymentDocument {
 
     public final UUID id;
+    public final int companyId;
     public final UUID paymentId;
     public final String originalFileName;
     public final String contentType;
@@ -15,6 +16,7 @@ public class PaymentDocument {
     public final String uploadedBy;
 
     public PaymentDocument(UUID id,
+                           int companyId,
                            UUID paymentId,
                            String originalFileName,
                            String contentType,
@@ -23,6 +25,7 @@ public class PaymentDocument {
                            Instant uploadedAt,
                            String uploadedBy) {
         this.id = id;
+        this.companyId = companyId;
         this.paymentId = paymentId;
         this.originalFileName = originalFileName;
         this.contentType = contentType;

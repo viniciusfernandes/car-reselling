@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public interface PartnerHistoryRepository {
 
-    void saveHistory(PartnerHistory history);
+    void saveHistory(int companyId, PartnerHistory history);
 
-    List<PartnerHistory> findHistoryByPartnerId(UUID partnerId);
+    List<PartnerHistory> findHistoryByPartnerId(int companyId, UUID partnerId);
 }

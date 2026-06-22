@@ -16,17 +16,17 @@ public class CashBalanceService implements ICashBalanceService {
     }
 
     @Override
-    public CashBalance getCashBalance() {
-        return cashBalanceRepository.findCashBalance();
+    public CashBalance getCashBalance(int companyId) {
+        return cashBalanceRepository.findCashBalance(companyId);
     }
 
     @Override
-    public void updateCashBalance(double amount, String changedBy) throws UseCaseException {
+    public void updateCashBalance(int companyId, double amount, String changedBy) throws UseCaseException {
         if (changedBy == null || changedBy.isBlank()) {
             throw new UseCaseException("Failure on updating cash balance. Author must no be null or empty.");
         }
-        cashBalanceRepository.updateCashBalance(amount);
-        CashBalanceHistory history = new CashBalanceHistory(amount, changedBy);
-        cashBalanceRepository.saveCashBalanceHistory(history);
+        cashBalanceRepository.updateCashBalance(companyId, amount);
+        CashBalanceHistory history = new CashBalanceHistory(companyId, amount, changedBy);
+        cashBalanceRepository.saveCashBalanceHistory(companyId, history);
     }
 }

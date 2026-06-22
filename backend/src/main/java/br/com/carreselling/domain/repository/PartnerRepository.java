@@ -7,16 +7,16 @@ import java.util.UUID;
 
 public interface PartnerRepository {
 
-    Partner savePartner(Partner partner);
+    Partner savePartner(int companyId, Partner partner);
 
-    Partner updatePartner(Partner partner);
+    Partner updatePartner(int companyId, Partner partner);
 
     /** Returns only partners with enabled = true. */
-    List<Partner> findEnabledPartners();
+    List<Partner> findEnabledPartners(int companyId);
 
-    Optional<Partner> findPartnerById(UUID id);
+    Optional<Partner> findPartnerById(int companyId, UUID id);
 
-    Optional<Partner> findPartnerByName(String name);
+    Optional<Partner> findPartnerByName(int companyId, String name);
 
-    void setEnabled(UUID id, boolean enabled);
+    void setEnabled(int companyId, UUID id, boolean enabled);
 }

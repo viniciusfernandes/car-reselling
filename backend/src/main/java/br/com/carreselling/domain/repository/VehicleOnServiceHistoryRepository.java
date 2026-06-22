@@ -7,9 +7,9 @@ import java.util.UUID;
 
 public interface VehicleOnServiceHistoryRepository {
 
-    void save(VehicleOnServiceHistory history);
+    void save(int companyId, VehicleOnServiceHistory history);
 
-    List<VehicleOnServiceHistory> findByVehicleId(UUID vehicleId);
+    List<VehicleOnServiceHistory> findByVehicleId(int companyId, UUID vehicleId);
 
-    void deleteByVehicleId(UUID vehicleId);
+    void deleteByVehicleId(int companyId, UUID vehicleId);
 }

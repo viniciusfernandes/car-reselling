@@ -16,8 +16,8 @@ public class VehicleModelService implements IVehicleModelService {
     }
 
     @Override
-    public List<VehicleModelSummary> listModelsByBrandId(UUID brandId) {
-        return vehicleModelRepository.findModelsByBrandId(brandId)
+    public List<VehicleModelSummary> listModelsByBrandId(int companyId, UUID brandId) {
+        return vehicleModelRepository.findModelsByBrandId(companyId, brandId)
             .stream()
             .map(model -> new VehicleModelSummary(model.getId(), model.getName()))
             .toList();

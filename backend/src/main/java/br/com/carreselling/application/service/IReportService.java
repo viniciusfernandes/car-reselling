@@ -6,7 +6,7 @@ import br.com.carreselling.application.service.model.SoldVehiclesReport;
 
 public interface IReportService {
 
-    DistributedVehiclesReport distributedVehiclesReport(DistributedVehiclesFilter filter);
+    DistributedVehiclesReport distributedVehiclesReport(int companyId, DistributedVehiclesFilter filter);
 
-    SoldVehiclesReport soldVehiclesReport(DistributedVehiclesFilter filter);
+    SoldVehiclesReport soldVehiclesReport(int companyId, DistributedVehiclesFilter filter);
 }

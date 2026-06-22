@@ -6,5 +6,5 @@ import java.time.LocalDate;
 
 public interface IDashboardService {
 
-    FinancialDashboard getFinancialDashboard(LocalDate startDate, LocalDate endDate);
+    FinancialDashboard getFinancialDashboard(int companyId, LocalDate startDate, LocalDate endDate);
 }

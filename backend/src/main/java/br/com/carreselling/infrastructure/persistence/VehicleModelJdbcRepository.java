@@ -23,12 +23,13 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
     }
 
     @Override
-    public VehicleModel saveModel(VehicleModel model) {
+    public VehicleModel saveModel(int companyId, VehicleModel model) {
         jdbcTemplate.update("""
-                INSERT INTO models (id, brand_id, name, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO models (id, company_id, brand_id, name, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
             model.getId().toString(),
+            companyId,
             model.getBrandId().toString(),
             model.getName(),
             Timestamp.from(model.getCreatedAt()),
@@ -38,32 +39,35 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
     }
 
     @Override
-    public List<VehicleModel> findModelsByBrandId(UUID brandId) {
+    public List<VehicleModel> findModelsByBrandId(int companyId, UUID brandId) {
         return jdbcTemplate.query("""
-                SELECT * FROM models WHERE brand_id = ? ORDER BY name ASC
+                SELECT * FROM models WHERE brand_id = ? AND company_id = ? ORDER BY name ASC
                 """,
             new VehicleModelRowMapper(),
-            brandId.toString());
+            brandId.toString(),
+            companyId);
     }
 
     @Override
-    public Optional<VehicleModel> findModelById(UUID id) {
+    public Optional<VehicleModel> findModelById(int companyId, UUID id) {
         List<VehicleModel> result = jdbcTemplate.query("""
-                SELECT * FROM models WHERE id = ?
+                SELECT * FROM models WHERE id = ? AND company_id = ?
                 """,
             new VehicleModelRowMapper(),
-            id.toString());
+            id.toString(),
+            companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public Optional<VehicleModel> findModelByBrandIdAndName(UUID brandId, String name) {
+    public Optional<VehicleModel> findModelByBrandIdAndName(int companyId, UUID brandId, String name) {
         List<VehicleModel> result = jdbcTemplate.query("""
-                SELECT * FROM models WHERE brand_id = ? AND name = ?
+                SELECT * FROM models WHERE brand_id = ? AND name = ? AND company_id = ?
                 """,
             new VehicleModelRowMapper(),
             brandId.toString(),
-            name);
+            name,
+            companyId);
         return result.stream().findFirst();
     }
 
@@ -72,12 +76,14 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
         @Override
         public VehicleModel mapRow(ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
+            int companyId = rs.getInt("company_id");
             UUID brandId = UUID.fromString(rs.getString("brand_id"));
             String name = rs.getString("name");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");
             return new VehicleModel(
                 id,
+                companyId,
                 brandId,
                 name,
                 createdAt,

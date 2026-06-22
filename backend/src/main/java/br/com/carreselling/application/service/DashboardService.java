@@ -32,20 +32,20 @@ public class DashboardService implements IDashboardService {
     }
 
     @Override
-    public FinancialDashboard getFinancialDashboard(LocalDate startDate, LocalDate endDate) {
+    public FinancialDashboard getFinancialDashboard(int companyId, LocalDate startDate, LocalDate endDate) {
         LocalDate today = LocalDate.now();
         LocalDate start = startDate != null ? startDate : today.minusMonths(12).withDayOfMonth(1);
         LocalDate end = endDate != null ? endDate : today;
 
-        BigDecimal cashBalance = cashBalanceRepository.findCashBalance().amount;
+        BigDecimal cashBalance = cashBalanceRepository.findCashBalance(companyId).amount;
 
         List<SoldVehicle> soldVehicles = vehicleRepository.findTotalServicesFromSoldVehicles(
-                new DistributedVehiclesFilter(start, end, null, null, null));
+                companyId, new DistributedVehiclesFilter(start, end, null, null, null));
         SoldVehiclesReport soldReport = salesCalculator.buildSoldVehicles(soldVehicles);
 
-        VehiclesTotalCost vehicleCost = vehicleRepository.findVehicleTotalCost();
-        BigDecimal totalPayments = paymentRepository.findTotalPaymentsAmount(start, end);
-        List<MonthlyPaymentTotal> monthlyPayments = paymentRepository.findMonthlyPaymentTotals(start, end);
+        VehiclesTotalCost vehicleCost = vehicleRepository.findVehicleTotalCost(companyId);
+        BigDecimal totalPayments = paymentRepository.findTotalPaymentsAmount(companyId, start, end);
+        List<MonthlyPaymentTotal> monthlyPayments = paymentRepository.findMonthlyPaymentTotals(companyId, start, end);
 
         BigDecimal lucroVendas = soldReport.profit();
         BigDecimal lucroVendasSemImpostos = soldReport.profitBeforeTaxes();

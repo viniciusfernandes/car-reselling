@@ -3,6 +3,7 @@ package br.com.carreselling.usecase.partner.detail.endpoint;
 import br.com.carreselling.application.service.IPartnerService;
 import br.com.carreselling.application.service.model.PartnerSummary;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.partner.detail.contract.PartnerDetailResponse;
 import java.util.UUID;
 import org.springframework.validation.annotation.Validated;
@@ -18,13 +19,17 @@ public class GetPartnerEndpoint {
 
     private final IPartnerService partnerService;
 
-    public GetPartnerEndpoint(IPartnerService partnerService) {
+    private final TenantContext tenantContext;
+
+    public GetPartnerEndpoint(IPartnerService partnerService, TenantContext tenantContext) {
         this.partnerService = partnerService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{id}")
     public ApiResponse<PartnerDetailResponse> get(@PathVariable UUID id) {
-        PartnerSummary partner = partnerService.getPartner(id);
+        int companyId = tenantContext.getCurrentCompanyId();
+        PartnerSummary partner = partnerService.getPartner(companyId, id);
         return new ApiResponse<>(new PartnerDetailResponse(
             partner.id(),
             partner.name(),

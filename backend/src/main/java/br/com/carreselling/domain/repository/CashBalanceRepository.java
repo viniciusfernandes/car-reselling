@@ -5,9 +5,9 @@ import br.com.carreselling.domain.model.CashBalanceHistory;
 
 public interface CashBalanceRepository {
 
-    CashBalance findCashBalance();
+    CashBalance findCashBalance(int companyId);
 
-    void updateCashBalance(double amount);
+    void updateCashBalance(int companyId, double amount);
 
-    void saveCashBalanceHistory(CashBalanceHistory history);
+    void saveCashBalanceHistory(int companyId, CashBalanceHistory history);
 }

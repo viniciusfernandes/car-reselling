@@ -4,6 +4,7 @@ import br.com.carreselling.application.service.IReportService;
 import br.com.carreselling.application.service.model.DistributedVehiclesFilter;
 import br.com.carreselling.application.service.model.DistributedVehiclesReport;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,8 +22,11 @@ public class DistributedVehiclesReportEndpoint {
 
     private final IReportService reportService;
 
-    public DistributedVehiclesReportEndpoint(IReportService reportService) {
+    private final TenantContext tenantContext;
+
+    public DistributedVehiclesReportEndpoint(IReportService reportService, TenantContext tenantContext) {
         this.reportService = reportService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/distributed-vehicles")
@@ -33,6 +37,7 @@ public class DistributedVehiclesReportEndpoint {
         @RequestParam(required = false) String model,
         @RequestParam(required = false) UUID partnerId
     ) {
+        int companyId = tenantContext.getCurrentCompanyId();
         DistributedVehiclesFilter filter = new DistributedVehiclesFilter(
             startDate,
             endDate,
@@ -40,6 +45,6 @@ public class DistributedVehiclesReportEndpoint {
             model,
             partnerId
         );
-        return new ApiResponse<>(reportService.distributedVehiclesReport(filter));
+        return new ApiResponse<>(reportService.distributedVehiclesReport(companyId, filter));
     }
 }

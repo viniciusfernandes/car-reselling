@@ -23,13 +23,14 @@ public class PartnerHistoryJdbcRepository implements PartnerHistoryRepository {
     }
 
     @Override
-    public void saveHistory(PartnerHistory history) {
+    public void saveHistory(int companyId, PartnerHistory history) {
         jdbcTemplate.update("""
                 INSERT INTO partner_history
-                (id, partner_id, name, city, phone, email, commission_rate, changed_at, changed_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, company_id, partner_id, name, city, phone, email, commission_rate, changed_at, changed_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             history.getId().toString(),
+            companyId,
             history.getPartnerId().toString(),
             history.getName(),
             history.getCity(),
@@ -42,14 +43,15 @@ public class PartnerHistoryJdbcRepository implements PartnerHistoryRepository {
     }
 
     @Override
-    public List<PartnerHistory> findHistoryByPartnerId(UUID partnerId) {
+    public List<PartnerHistory> findHistoryByPartnerId(int companyId, UUID partnerId) {
         return jdbcTemplate.query("""
                 SELECT * FROM partner_history
-                WHERE partner_id = ?
+                WHERE partner_id = ? AND company_id = ?
                 ORDER BY changed_at DESC
                 """,
             new PartnerHistoryRowMapper(),
-            partnerId.toString()
+            partnerId.toString(),
+            companyId
         );
     }
 
@@ -58,6 +60,7 @@ public class PartnerHistoryJdbcRepository implements PartnerHistoryRepository {
         @Override
         public PartnerHistory mapRow(ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
+            int companyId = rs.getInt("company_id");
             UUID partnerId = UUID.fromString(rs.getString("partner_id"));
             String name = rs.getString("name");
             String city = rs.getString("city");
@@ -66,7 +69,7 @@ public class PartnerHistoryJdbcRepository implements PartnerHistoryRepository {
             BigDecimal commissionRate = rs.getBigDecimal("commission_rate");
             Instant changedAt = rs.getTimestamp("changed_at").toInstant();
             String changedBy = rs.getString("changed_by");
-            return new PartnerHistory(id, partnerId, name, city, phone, email,
+            return new PartnerHistory(id, companyId, partnerId, name, city, phone, email,
                 commissionRate, changedAt, changedBy);
         }
     }

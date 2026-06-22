@@ -7,6 +7,7 @@ import java.util.UUID;
 public class PartnerHistory {
 
     private final UUID id;
+    private final int companyId;
     private final UUID partnerId;
     private final String name;
     private final String city;
@@ -17,6 +18,7 @@ public class PartnerHistory {
     private final String changedBy;
 
     public PartnerHistory(UUID id,
+                          int companyId,
                           UUID partnerId,
                           String name,
                           String city,
@@ -26,6 +28,7 @@ public class PartnerHistory {
                           Instant changedAt,
                           String changedBy) {
         this.id = id;
+        this.companyId = companyId;
         this.partnerId = partnerId;
         this.name = name;
         this.city = city;
@@ -36,13 +39,43 @@ public class PartnerHistory {
         this.changedBy = changedBy;
     }
 
-    public UUID getId() { return id; }
-    public UUID getPartnerId() { return partnerId; }
-    public String getName() { return name; }
-    public String getCity() { return city; }
-    public String getPhone() { return phone; }
-    public String getEmail() { return email; }
-    public BigDecimal getCommissionRate() { return commissionRate; }
-    public Instant getChangedAt() { return changedAt; }
-    public String getChangedBy() { return changedBy; }
+    public UUID getId() {
+        return id;
+    }
+
+    public int getCompanyId() {
+        return companyId;
+    }
+
+    public UUID getPartnerId() {
+        return partnerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public BigDecimal getCommissionRate() {
+        return commissionRate;
+    }
+
+    public Instant getChangedAt() {
+        return changedAt;
+    }
+
+    public String getChangedBy() {
+        return changedBy;
+    }
 }

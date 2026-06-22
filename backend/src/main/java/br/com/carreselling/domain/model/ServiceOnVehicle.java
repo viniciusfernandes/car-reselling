@@ -8,6 +8,7 @@ import java.util.UUID;
 public class ServiceOnVehicle {
 
     private final UUID id;
+    private final int companyId;
     private final UUID vehicleId;
     private ServiceType serviceType;
     private String description;
@@ -18,16 +19,19 @@ public class ServiceOnVehicle {
     private Instant updatedAt;
 
     public ServiceOnVehicle(UUID id,
+                            int companyId,
                             UUID vehicleId,
                             LocalDate startDate,
                             LocalDate endDate) {
         this.id = id;
+        this.companyId = companyId;
         this.vehicleId = vehicleId;
         this.startDate = startDate;
         this.endDate = endDate;
     }
 
     public ServiceOnVehicle(UUID id,
+                            int companyId,
                             UUID vehicleId,
                             ServiceType serviceType,
                             String description,
@@ -37,6 +41,7 @@ public class ServiceOnVehicle {
                             Instant createdAt,
                             Instant updatedAt) {
         this.id = id;
+        this.companyId = companyId;
         this.vehicleId = vehicleId;
         this.serviceType = serviceType;
         this.description = description;
@@ -49,6 +54,10 @@ public class ServiceOnVehicle {
 
     public UUID getId() {
         return id;
+    }
+
+    public int getCompanyId() {
+        return companyId;
     }
 
     public UUID getVehicleId() {

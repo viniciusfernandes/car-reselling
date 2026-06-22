@@ -6,9 +6,9 @@ import java.util.Optional;
 
 public interface ColorRepository {
 
-    Color saveColor(Color color);
+    Color saveColor(int companyId, Color color);
 
-    List<Color> findColors();
+    List<Color> findColors(int companyId);
 
-    Optional<Color> findColorByName(String name);
+    Optional<Color> findColorByName(int companyId, String name);
 }

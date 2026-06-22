@@ -2,8 +2,6 @@ package br.com.carreselling.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Base64;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Base64;
+import java.util.Objects;
 
 @Component
 public class AuthTokenValidator {
@@ -42,10 +43,10 @@ public class AuthTokenValidator {
             headers.setBearerAuth(token);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
             ResponseEntity<String> response = restTemplate.exchange(
-                url,
-                Objects.requireNonNull(HttpMethod.GET),
-                entity,
-                String.class
+                    url,
+                    Objects.requireNonNull(HttpMethod.GET),
+                    entity,
+                    String.class
             );
             boolean valid = response.getStatusCode().is2xxSuccessful();
             if (!valid) {
@@ -84,5 +85,36 @@ public class AuthTokenValidator {
             log.warn("Could not extract username from JWT payload: {}", ex.getMessage());
         }
         return "unknown";
+    }
+
+    /**
+     * Decodes the JWT payload and returns the {@code companyId} claim, falling back to
+     * {@code company_id}, then to {@code 1} if neither claim is present.
+     */
+    public int extractCompanyId(String token) {
+        String[] parts = token.split("\\.");
+        if (parts.length < 2) {
+            throw new AuthTokenException("Invalid token format.");
+        }
+        JsonNode payload;
+        try {
+            byte[] decoded = Base64.getUrlDecoder().decode(parts[1]);
+            payload = MAPPER.readTree(decoded);
+        } catch (Exception ex) {
+            throw new AuthTokenException("Could not extract companyId from token.");
+        }
+
+        int companyId = readCompanyIdClaim(payload, "companyId");
+        if (companyId < 0) {
+            throw new AuthTokenException("Token is missing a valid companyId claim.");
+        }
+        return companyId;
+    }
+
+    private static int readCompanyIdClaim(JsonNode payload, String claimName) {
+        if (!payload.has(claimName) || payload.get(claimName).isNull()) {
+            return -1;
+        }
+        return payload.get(claimName).asInt(-1);
     }
 }

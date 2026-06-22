@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.payment.document.list.endpoint;
 
 import br.com.carreselling.application.service.IPaymentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.payment.document.list.contract.PaymentDocumentItem;
 import br.com.carreselling.usecase.payment.document.list.contract.PaymentDocumentListResponse;
 import java.util.List;
@@ -18,13 +19,17 @@ public class ListPaymentDocumentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public ListPaymentDocumentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public ListPaymentDocumentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping("/{paymentId}/documents")
     public ResponseEntity<ApiResponse<PaymentDocumentListResponse>> list(@PathVariable UUID paymentId) {
-        List<PaymentDocumentItem> documents = paymentService.listPaymentDocuments(paymentId)
+        int companyId = tenantContext.getCurrentCompanyId();
+        List<PaymentDocumentItem> documents = paymentService.listPaymentDocuments(companyId, paymentId)
             .stream()
             .map(doc -> new PaymentDocumentItem(
                 doc.id(),

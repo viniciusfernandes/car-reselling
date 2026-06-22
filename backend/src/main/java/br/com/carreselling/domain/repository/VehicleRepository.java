@@ -12,31 +12,31 @@ import java.util.*;
 
 public interface VehicleRepository {
 
-    Vehicle saveVehicle(Vehicle vehicle);
+    Vehicle saveVehicle(int companyId, Vehicle vehicle);
 
-    Optional<Vehicle> findVehicleById(UUID id);
+    Optional<Vehicle> findVehicleById(int companyId, UUID id);
 
-    Optional<Vehicle> findVehicleByLicensePlate(String licensePlate);
+    Optional<Vehicle> findVehicleByLicensePlate(int companyId, String licensePlate);
 
-    Optional<Vehicle> findVehicleByRenavam(String renavam);
+    Optional<Vehicle> findVehicleByRenavam(int companyId, String renavam);
 
-    Optional<Vehicle> findVehicleByVin(String vin);
+    Optional<Vehicle> findVehicleByVin(int companyId, String vin);
 
-    List<Vehicle> findVehicleByFilter(VehicleStatus status, String query, Boolean onService, int offset, int size);
+    List<Vehicle> findVehicleByFilter(int companyId, VehicleStatus status, String query, Boolean onService, int offset, int size);
 
-    long countVehicleByFilter(VehicleStatus status, String query, Boolean onService);
+    long countVehicleByFilter(int companyId, VehicleStatus status, String query, Boolean onService);
 
-    Vehicle updateVehicle(Vehicle vehicle);
+    Vehicle updateVehicle(int companyId, Vehicle vehicle);
 
-    void deleteVehicle(UUID id);
+    void deleteVehicle(int companyId, UUID id);
 
-    BigDecimal findVehicleServicesTotalByVehicleId(UUID vehicleId);
+    BigDecimal findVehicleServicesTotalByVehicleId(int companyId, UUID vehicleId);
 
-    int countVehicleDocumentsByVehicleId(UUID vehicleId);
+    int countVehicleDocumentsByVehicleId(int companyId, UUID vehicleId);
 
-    List<DistribuitedVehicle> distributedVehiclesReport(DistributedVehiclesFilter filter);
+    List<DistribuitedVehicle> distributedVehiclesReport(int companyId, DistributedVehiclesFilter filter);
 
-    List<SoldVehicle> findTotalServicesFromSoldVehicles(DistributedVehiclesFilter filter);
+    List<SoldVehicle> findTotalServicesFromSoldVehicles(int companyId, DistributedVehiclesFilter filter);
 
-    VehiclesTotalCost findVehicleTotalCost();
+    VehiclesTotalCost findVehicleTotalCost(int companyId);
 }

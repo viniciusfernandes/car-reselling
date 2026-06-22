@@ -20,8 +20,6 @@ import br.com.carreselling.infrastructure.storage.DocumentStorage;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,7 +74,8 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public UUID createVehicle(String licensePlate,
+    public UUID createVehicle(int companyId,
+                              String licensePlate,
                               String renavam,
                               String vin,
                               int year,
@@ -101,12 +100,12 @@ public class VehicleService implements IVehicleService {
         BigDecimal normalizedCommission = purchaseCommission == null ? BigDecimal.ZERO : purchaseCommission;
         validateOptionalMoney(normalizedCommission, "purchaseCommission");
         Instant now = Instant.now();
-        Optional<Vehicle> existingByPlate = vehicleRepository.findVehicleByLicensePlate(normalizedPlate);
+        Optional<Vehicle> existingByPlate = vehicleRepository.findVehicleByLicensePlate(companyId, normalizedPlate);
         UUID currentVehicleId = existingByPlate.map(Vehicle::getId).orElse(null);
-        validateUniqueRenavamAndVin(normalizedRenavam, normalizedVin, currentVehicleId);
-        resolveColor(normalizedColor, now);
-        Brand brandEntity = resolveBrand(normalizedBrand, now);
-        VehicleModel modelEntity = resolveModel(brandEntity.getId(), normalizedModel, now);
+        validateUniqueRenavamAndVin(companyId, normalizedRenavam, normalizedVin, currentVehicleId);
+        resolveColor(companyId, normalizedColor, now);
+        Brand brandEntity = resolveBrand(companyId, normalizedBrand, now);
+        VehicleModel modelEntity = resolveModel(companyId, brandEntity.getId(), normalizedModel, now);
         if (existingByPlate.isPresent()) {
             Vehicle existingVehicle = existingByPlate.get();
             existingVehicle.setRenavam(normalizedRenavam);
@@ -126,11 +125,12 @@ public class VehicleService implements IVehicleService {
             existingVehicle.setValorFipe(valorFipe);
             existingVehicle.setUpdatedAt(now);
             existingVehicle.ensureDistributionInvariant();
-            vehicleRepository.updateVehicle(existingVehicle);
+            vehicleRepository.updateVehicle(companyId, existingVehicle);
             return existingVehicle.getId();
         }
         Vehicle vehicle = new Vehicle(
                 UuidGenerator.generate(),
+                companyId,
                 normalizedPlate,
                 normalizedRenavam,
                 normalizedVin,
@@ -157,13 +157,13 @@ public class VehicleService implements IVehicleService {
                 now
         );
         vehicle.ensureDistributionInvariant();
-        vehicleRepository.saveVehicle(vehicle);
+        vehicleRepository.saveVehicle(companyId, vehicle);
         return vehicle.getId();
     }
 
-    private void validateUniqueRenavamAndVin(String renavam, String vin, UUID currentVehicleId) {
+    private void validateUniqueRenavamAndVin(int companyId, String renavam, String vin, UUID currentVehicleId) {
         if (StringUtils.hasText(renavam)) {
-            vehicleRepository.findVehicleByRenavam(renavam)
+            vehicleRepository.findVehicleByRenavam(companyId, renavam)
                     .ifPresent(existing -> {
                         if (currentVehicleId == null || !existing.getId().equals(currentVehicleId)) {
                             throw new ConflictException("Renavam already registered");
@@ -171,7 +171,7 @@ public class VehicleService implements IVehicleService {
                     });
         }
         if (StringUtils.hasText(vin)) {
-            vehicleRepository.findVehicleByVin(vin)
+            vehicleRepository.findVehicleByVin(companyId, vin)
                     .ifPresent(existing -> {
                         if (currentVehicleId == null || !existing.getId().equals(currentVehicleId)) {
                             throw new ConflictException("VIN already registered");
@@ -181,19 +181,19 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public VehicleDetail getVehicle(UUID vehicleId) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+    public VehicleDetail getVehicle(int companyId, UUID vehicleId) {
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
-        BigDecimal servicesTotal = vehicleRepository.findVehicleServicesTotalByVehicleId(vehicleId);
-        int documentsCount = vehicleRepository.countVehicleDocumentsByVehicleId(vehicleId);
+        BigDecimal servicesTotal = vehicleRepository.findVehicleServicesTotalByVehicleId(companyId, vehicleId);
+        int documentsCount = vehicleRepository.countVehicleDocumentsByVehicleId(companyId, vehicleId);
         BigDecimal totalCost = vehicle.getPurchasePrice()
                 .add(vehicle.getFreightCost())
                 .add(servicesTotal);
-        String partnerName = resolvePartnerName(vehicle.getAssignedPartnerId());
+        String partnerName = resolvePartnerName(companyId, vehicle.getAssignedPartnerId());
         BigDecimal purchaseCommission = vehicle.getPurchaseCommission() == null
                 ? BigDecimal.ZERO
                 : vehicle.getPurchaseCommission();
-        boolean onService = serviceRepository.existsOpenServiceByVehicleId(vehicleId);
+        boolean onService = serviceRepository.existsOpenServiceByVehicleId(companyId, vehicleId);
         return new VehicleDetail(
                 vehicle.getId(),
                 vehicle.getLicensePlate(),
@@ -225,22 +225,22 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public void updateSellingPrice(UUID vehicleId, BigDecimal sellingPrice) {
+    public void updateSellingPrice(int companyId, UUID vehicleId, BigDecimal sellingPrice) {
         validateRequiredMoney(sellingPrice, "sellingPrice");
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
 
         vehicle.transitionStatus(VehicleStatus.SOLD);
         vehicle.updateSellingPrice(sellingPrice);
         stampSoldAt(vehicle);
-        stampCommissionRate(vehicle);
+        stampCommissionRate(companyId, vehicle);
         vehicle.setUpdatedAt(Instant.now());
-        vehicleRepository.updateVehicle(vehicle);
+        vehicleRepository.updateVehicle(companyId, vehicle);
     }
 
     @Override
-    public VehicleTaxes getVehicleTaxes(UUID vehicleId) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+    public VehicleTaxes getVehicleTaxes(int companyId, UUID vehicleId) {
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         if (vehicle.getSellingPrice() == null) {
             return new VehicleTaxes(
@@ -269,15 +269,15 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<VehicleSummary> listVehicles(VehicleStatus status, String query, Boolean isOnService, int page, int size) {
+    public List<VehicleSummary> listVehicles(int companyId, VehicleStatus status, String query, Boolean isOnService, int page, int size) {
         if (size > 20) {
             size = 20;
         }
         int offset = Math.max(page, 0) * Math.max(size, 1);
-        List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(status, query, isOnService, offset, size);
+        List<Vehicle> vehicles = vehicleRepository.findVehicleByFilter(companyId, status, query, isOnService, offset, size);
         return vehicles.stream()
                 .map(vehicle -> {
-                    BigDecimal servicesTotal = vehicleRepository.findVehicleServicesTotalByVehicleId(vehicle.getId());
+                    BigDecimal servicesTotal = vehicleRepository.findVehicleServicesTotalByVehicleId(companyId, vehicle.getId());
                     BigDecimal totalCost = vehicle.getPurchasePrice()
                             .add(vehicle.getFreightCost())
                             .add(servicesTotal);
@@ -287,7 +287,7 @@ public class VehicleService implements IVehicleService {
                             : sellingPrice.subtract(totalCost);
                     Integer purchaseTimeDays = vehicle.calulatePurchaseTime();
 
-                    boolean serviceOpened = serviceRepository.existsOpenServiceByVehicleId(vehicle.getId());
+                    boolean serviceOpened = serviceRepository.existsOpenServiceByVehicleId(companyId, vehicle.getId());
                     return new VehicleSummary(
                             vehicle.getId(),
                             vehicle.getLicensePlate(),
@@ -301,7 +301,7 @@ public class VehicleService implements IVehicleService {
                             profitMargin,
                             purchaseTimeDays,
                             servicesTotal,
-                            serviceOnVehicleService.calculateTotalServiceDays(vehicle.getId())
+                            serviceOnVehicleService.calculateTotalServiceDays(companyId, vehicle.getId())
                     );
                 })
                 .filter(vehicle -> isOnService == null || vehicle.onService() == isOnService)
@@ -309,12 +309,13 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public long countVehicles(VehicleStatus status, String query, Boolean onService) {
-        return vehicleRepository.countVehicleByFilter(status, query, onService);
+    public long countVehicles(int companyId, VehicleStatus status, String query, Boolean onService) {
+        return vehicleRepository.countVehicleByFilter(companyId, status, query, onService);
     }
 
     @Override
-    public void updateVehicle(UUID vehicleId,
+    public void updateVehicle(int companyId,
+                              UUID vehicleId,
                               int year,
                               String color,
                               String model,
@@ -330,17 +331,17 @@ public class VehicleService implements IVehicleService {
         BigDecimal normalizedFreight = freightCost == null ? BigDecimal.ZERO : freightCost;
         validateOptionalMoney(normalizedFreight, "freightCost");
         validateOptionalMoney(purchaseCommission, "purchaseCommission");
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
-        validateDocumentLink(vehicleId, invoiceDocumentId);
-        validateDocumentLink(vehicleId, paymentReceiptDocumentId);
+        validateDocumentLink(companyId, vehicleId, invoiceDocumentId);
+        validateDocumentLink(companyId, vehicleId, paymentReceiptDocumentId);
         Instant now = Instant.now();
         String normalizedColor = normalizeColor(color);
-        resolveColor(normalizedColor, now);
+        resolveColor(companyId, normalizedColor, now);
         String normalizedBrand = normalizeOptionalText(brand);
         String normalizedModel = normalizeOptionalText(model);
-        Brand brandEntity = resolveBrand(normalizedBrand, now);
-        VehicleModel modelEntity = resolveModel(brandEntity.getId(), normalizedModel, now);
+        Brand brandEntity = resolveBrand(companyId, normalizedBrand, now);
+        VehicleModel modelEntity = resolveModel(companyId, brandEntity.getId(), normalizedModel, now);
         vehicle.updateDetails(
                 year,
                 normalizedColor,
@@ -357,16 +358,16 @@ public class VehicleService implements IVehicleService {
         vehicle.setValorFipe(valorFipe);
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
-        stampCommissionRate(vehicle);
+        stampCommissionRate(companyId, vehicle);
         if (vehicle.isSold()) {
             stampSoldAt(vehicle);
         }
-        vehicleRepository.updateVehicle(vehicle);
+        vehicleRepository.updateVehicle(companyId, vehicle);
     }
 
     @Override
-    public void transitionStatus(UUID vehicleId, VehicleStatus targetStatus, UUID assignedPartnerId) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+    public void transitionStatus(int companyId, UUID vehicleId, VehicleStatus targetStatus, UUID assignedPartnerId) {
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
         if (!vehicle.isStatusTransitionAllowed(targetStatus)) {
             throw new InvalidStateException("Invalid status transition.");
@@ -379,7 +380,7 @@ public class VehicleService implements IVehicleService {
         }
         if ((targetStatus == VehicleStatus.DISTRIBUTED || targetStatus == VehicleStatus.SOLD)
                 && assignedPartnerId != null) {
-            partnerRepository.findPartnerById(assignedPartnerId)
+            partnerRepository.findPartnerById(companyId, assignedPartnerId)
                     .orElseThrow(() -> new NotFoundException("Partner not found"));
         }
         UUID partner = assignedPartnerId != null ? assignedPartnerId : vehicle.getAssignedPartnerId();
@@ -389,29 +390,29 @@ public class VehicleService implements IVehicleService {
                 vehicle.setDistributedAt(Instant.now());
             }
             if (partner != null) {
-                partnerRepository.findPartnerById(partner)
+                partnerRepository.findPartnerById(companyId, partner)
                         .ifPresent(p -> vehicle.setSaleCommissionRate(p.getCommissionRate()));
             }
         }
         if (targetStatus == VehicleStatus.SOLD) {
             stampSoldAt(vehicle);
             if (partner != null) {
-                partnerRepository.findPartnerById(partner)
+                partnerRepository.findPartnerById(companyId, partner)
                         .ifPresent(p -> vehicle.setSaleCommissionRate(p.getCommissionRate()));
             } else {
-                stampCommissionRate(vehicle);
+                stampCommissionRate(companyId, vehicle);
             }
         }
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
-        vehicleRepository.updateVehicle(vehicle);
+        vehicleRepository.updateVehicle(companyId, vehicle);
     }
 
     @Override
-    public void assignPartner(UUID vehicleId, UUID partnerId) {
-        Vehicle vehicle = vehicleRepository.findVehicleById(vehicleId)
+    public void assignPartner(int companyId, UUID vehicleId, UUID partnerId) {
+        Vehicle vehicle = vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
-        Partner partner = partnerRepository.findPartnerById(partnerId)
+        Partner partner = partnerRepository.findPartnerById(companyId, partnerId)
                 .orElseThrow(() -> new NotFoundException("Partner not found"));
         vehicle.assignPartner(partner.getId());
         if (vehicle.getDistributedAt() == null) {
@@ -420,21 +421,21 @@ public class VehicleService implements IVehicleService {
         vehicle.setSaleCommissionRate(partner.getCommissionRate());
         vehicle.setUpdatedAt(Instant.now());
         vehicle.ensureDistributionInvariant();
-        vehicleRepository.updateVehicle(vehicle);
+        vehicleRepository.updateVehicle(companyId, vehicle);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteVehicle(UUID vehicleId) {
-        vehicleRepository.findVehicleById(vehicleId)
+    public void deleteVehicle(int companyId, UUID vehicleId) {
+        vehicleRepository.findVehicleById(companyId, vehicleId)
                 .orElseThrow(() -> new NotFoundException("Vehicle not found"));
 
-        List<String> storageKeys = documentRepository.findStorageKeyByVehicleId(vehicleId);
+        List<String> storageKeys = documentRepository.findStorageKeyByVehicleId(companyId, vehicleId);
         deleteFormStorage(vehicleId, storageKeys);
-        paymentService.deletePaymentsByVehicleId(vehicleId);
-        vehicleOnServiceHistoryRepository.deleteByVehicleId(vehicleId);
-        serviceRepository.deleteServicesByVehicleId(vehicleId);
-        vehicleRepository.deleteVehicle(vehicleId);
+        paymentService.deletePaymentsByVehicleId(companyId, vehicleId);
+        vehicleOnServiceHistoryRepository.deleteByVehicleId(companyId, vehicleId);
+        serviceRepository.deleteServicesByVehicleId(companyId, vehicleId);
+        vehicleRepository.deleteVehicle(companyId, vehicleId);
     }
 
     private void deleteFormStorage(UUID vehicleId, List<String> storageKeys) {
@@ -449,41 +450,44 @@ public class VehicleService implements IVehicleService {
         }
     }
 
-    private Brand resolveBrand(String brand, Instant now) {
+    private Brand resolveBrand(int companyId, String brand, Instant now) {
         String normalized = normalizeOptionalText(brand);
         if (!StringUtils.hasText(normalized)) {
             throw new IllegalArgumentException("brand: required.");
         }
-        return brandRepository.findBrandByName(normalized)
-                .orElseGet(() -> brandRepository.saveBrand(new Brand(
+        return brandRepository.findBrandByName(companyId, normalized)
+                .orElseGet(() -> brandRepository.saveBrand(companyId, new Brand(
                         UuidGenerator.generate(),
+                        companyId,
                         normalized,
                         now,
                         now
                 )));
     }
 
-    private void resolveColor(String color, Instant now) {
+    private void resolveColor(int companyId, String color, Instant now) {
         if (!StringUtils.hasText(color)) {
             throw new IllegalArgumentException("color: required.");
         }
-        colorRepository.findColorByName(color)
-                .orElseGet(() -> colorRepository.saveColor(new Color(
+        colorRepository.findColorByName(companyId, color)
+                .orElseGet(() -> colorRepository.saveColor(companyId, new Color(
                         UuidGenerator.generate(),
+                        companyId,
                         color,
                         now,
                         now
                 )));
     }
 
-    private VehicleModel resolveModel(UUID brandId, String model, Instant now) {
+    private VehicleModel resolveModel(int companyId, UUID brandId, String model, Instant now) {
         String normalized = normalizeOptionalText(model);
         if (!StringUtils.hasText(normalized)) {
             throw new IllegalArgumentException("model: required.");
         }
-        return vehicleModelRepository.findModelByBrandIdAndName(brandId, normalized)
-                .orElseGet(() -> vehicleModelRepository.saveModel(new VehicleModel(
+        return vehicleModelRepository.findModelByBrandIdAndName(companyId, brandId, normalized)
+                .orElseGet(() -> vehicleModelRepository.saveModel(companyId, new VehicleModel(
                         UuidGenerator.generate(),
+                        companyId,
                         brandId,
                         normalized,
                         now,
@@ -515,11 +519,11 @@ public class VehicleService implements IVehicleService {
         }
     }
 
-    private void validateDocumentLink(UUID vehicleId, UUID documentId) {
+    private void validateDocumentLink(int companyId, UUID vehicleId, UUID documentId) {
         if (documentId == null) {
             return;
         }
-        documentRepository.findDocumentById(documentId)
+        documentRepository.findDocumentById(companyId, documentId)
                 .filter(document -> document.getVehicleId().equals(vehicleId))
                 .orElseThrow(() -> new NotFoundException("Document not found for vehicle."));
     }
@@ -537,11 +541,11 @@ public class VehicleService implements IVehicleService {
         return normalized == null ? null : normalized.toUpperCase();
     }
 
-    private String resolvePartnerName(UUID partnerId) {
+    private String resolvePartnerName(int companyId, UUID partnerId) {
         if (partnerId == null) {
             return null;
         }
-        Optional<Partner> partner = partnerRepository.findPartnerById(partnerId);
+        Optional<Partner> partner = partnerRepository.findPartnerById(companyId, partnerId);
         return partner.map(Partner::getName).orElse(null);
     }
 
@@ -551,10 +555,10 @@ public class VehicleService implements IVehicleService {
         }
     }
 
-    private void stampCommissionRate(Vehicle vehicle) {
+    private void stampCommissionRate(int companyId, Vehicle vehicle) {
         UUID partnerId = vehicle.getAssignedPartnerId();
         if (partnerId != null) {
-            partnerRepository.findPartnerById(partnerId)
+            partnerRepository.findPartnerById(companyId, partnerId)
                     .ifPresent(p -> vehicle.setSaleCommissionRate(p.getCommissionRate()));
         }
     }

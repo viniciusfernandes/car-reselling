@@ -6,5 +6,5 @@ import java.util.UUID;
 
 public interface IVehicleModelService {
 
-    List<VehicleModelSummary> listModelsByBrandId(UUID brandId);
+    List<VehicleModelSummary> listModelsByBrandId(int companyId, UUID brandId);
 }

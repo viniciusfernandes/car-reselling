@@ -3,6 +3,7 @@ package br.com.carreselling.usecase.color.list.endpoint;
 import br.com.carreselling.application.service.IColorService;
 import br.com.carreselling.application.service.model.ColorSummary;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.color.list.contract.ColorItem;
 import br.com.carreselling.usecase.color.list.contract.ColorListResponse;
 import br.com.carreselling.usecase.color.list.mapping.ColorListMapper;
@@ -19,13 +20,17 @@ public class ListColorEndpoint {
 
     private final IColorService colorService;
 
-    public ListColorEndpoint(IColorService colorService) {
+    private final TenantContext tenantContext;
+
+    public ListColorEndpoint(IColorService colorService, TenantContext tenantContext) {
         this.colorService = colorService;
+        this.tenantContext = tenantContext;
     }
 
     @GetMapping
     public ApiResponse<ColorListResponse> list() {
-        List<ColorSummary> colors = colorService.listColors();
+        int companyId = tenantContext.getCurrentCompanyId();
+        List<ColorSummary> colors = colorService.listColors(companyId);
         List<ColorItem> items = colors.stream()
             .map(ColorListMapper::toItem)
             .toList();

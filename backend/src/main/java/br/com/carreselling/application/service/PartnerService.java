@@ -28,14 +28,15 @@ public class PartnerService implements IPartnerService {
     }
 
     @Override
-    public UUID createPartner(String name, String city, String phone, String email, BigDecimal commissionRate) {
-        partnerRepository.findPartnerByName(name)
+    public UUID createPartner(int companyId, String name, String city, String phone, String email, BigDecimal commissionRate) {
+        partnerRepository.findPartnerByName(companyId, name)
             .ifPresent(existing -> {
                 throw new ConflictException("Partner name already exists");
             });
         Instant now = Instant.now();
         Partner partner = new Partner(
             UuidGenerator.generate(),
+            companyId,
             name,
             city,
             phone,
@@ -45,33 +46,33 @@ public class PartnerService implements IPartnerService {
             now,
             now
         );
-        partnerRepository.savePartner(partner);
-        partnerHistoryRepository.saveHistory(snapshotOf(partner, "system"));
+        partnerRepository.savePartner(companyId, partner);
+        partnerHistoryRepository.saveHistory(companyId, snapshotOf(companyId, partner, "system"));
         return partner.getId();
     }
 
     @Override
-    public List<PartnerSummary> listPartners() {
-        return partnerRepository.findEnabledPartners()
+    public List<PartnerSummary> listPartners(int companyId) {
+        return partnerRepository.findEnabledPartners(companyId)
             .stream()
             .map(this::toSummary)
             .toList();
     }
 
     @Override
-    public PartnerSummary getPartner(UUID id) {
-        return partnerRepository.findPartnerById(id)
+    public PartnerSummary getPartner(int companyId, UUID id) {
+        return partnerRepository.findPartnerById(companyId, id)
             .map(this::toSummary)
             .orElseThrow(() -> new NotFoundException("Partner not found"));
     }
 
     @Override
-    public void updatePartner(UUID id, String name, String city, String phone, String email,
+    public void updatePartner(int companyId, UUID id, String name, String city, String phone, String email,
                               BigDecimal commissionRate, String changedBy) {
-        Partner existing = partnerRepository.findPartnerById(id)
+        Partner existing = partnerRepository.findPartnerById(companyId, id)
             .orElseThrow(() -> new NotFoundException("Partner not found"));
 
-        partnerRepository.findPartnerByName(name)
+        partnerRepository.findPartnerByName(companyId, name)
             .filter(p -> !p.getId().equals(id))
             .ifPresent(p -> {
                 throw new ConflictException("Partner name already exists");
@@ -79,6 +80,7 @@ public class PartnerService implements IPartnerService {
 
         Partner updated = new Partner(
             existing.getId(),
+            companyId,
             name,
             city,
             phone,
@@ -88,15 +90,15 @@ public class PartnerService implements IPartnerService {
             existing.getCreatedAt(),
             Instant.now()
         );
-        partnerRepository.updatePartner(updated);
-        partnerHistoryRepository.saveHistory(snapshotOf(updated, changedBy));
+        partnerRepository.updatePartner(companyId, updated);
+        partnerHistoryRepository.saveHistory(companyId, snapshotOf(companyId, updated, changedBy));
     }
 
     @Override
-    public List<PartnerHistorySummary> getPartnerHistory(UUID id) {
-        partnerRepository.findPartnerById(id)
+    public List<PartnerHistorySummary> getPartnerHistory(int companyId, UUID id) {
+        partnerRepository.findPartnerById(companyId, id)
             .orElseThrow(() -> new NotFoundException("Partner not found"));
-        return partnerHistoryRepository.findHistoryByPartnerId(id)
+        return partnerHistoryRepository.findHistoryByPartnerId(companyId, id)
             .stream()
             .map(h -> new PartnerHistorySummary(
                 h.getId(),
@@ -118,21 +120,22 @@ public class PartnerService implements IPartnerService {
     }
 
     @Override
-    public void disablePartner(UUID id) {
-        Partner existing = partnerRepository.findPartnerById(id)
+    public void disablePartner(int companyId, UUID id) {
+        Partner existing = partnerRepository.findPartnerById(companyId, id)
             .orElseThrow(() -> new NotFoundException("Partner not found"));
-        partnerRepository.setEnabled(id, false);
-        partnerHistoryRepository.saveHistory(snapshotOf(
-            new Partner(existing.getId(), existing.getName(), existing.getCity(),
+        partnerRepository.setEnabled(companyId, id, false);
+        partnerHistoryRepository.saveHistory(companyId, snapshotOf(companyId,
+            new Partner(existing.getId(), companyId, existing.getName(), existing.getCity(),
                 existing.getPhone(), existing.getEmail(), existing.getCommissionRate(),
                 false, existing.getCreatedAt(), Instant.now()),
             "system"
         ));
     }
 
-    private PartnerHistory snapshotOf(Partner partner, String changedBy) {
+    private PartnerHistory snapshotOf(int companyId, Partner partner, String changedBy) {
         return new PartnerHistory(
             UuidGenerator.generate(),
+            companyId,
             partner.getId(),
             partner.getName(),
             partner.getCity(),

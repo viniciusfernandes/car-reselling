@@ -30,14 +30,15 @@ public class PaymentJdbcRepository implements PaymentRepository {
     }
 
     @Override
-    public Payment savePayment(Payment payment) {
+    public Payment savePayment(int companyId, Payment payment) {
         jdbcTemplate.update("""
                         INSERT INTO payments
-                        (id, payment_type, description, amount, payment_date, vehicle_id,
+                        (id, company_id, payment_type, description, amount, payment_date, vehicle_id,
                          notes, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 payment.id.toString(),
+                companyId,
                 payment.paymentType.name(),
                 payment.description,
                 payment.amount,
@@ -51,26 +52,28 @@ public class PaymentJdbcRepository implements PaymentRepository {
     }
 
     @Override
-    public Optional<Payment> findPaymentById(UUID id) {
+    public Optional<Payment> findPaymentById(int companyId, UUID id) {
         List<Payment> result = jdbcTemplate.query("""
                         SELECT p.*, v.license_plate
                         FROM payments p
-                        LEFT JOIN vehicles v ON v.id = p.vehicle_id
-                        WHERE p.id = ?
+                        LEFT JOIN vehicles v ON v.id = p.vehicle_id AND v.company_id = p.company_id
+                        WHERE p.id = ? AND p.company_id = ?
                         """,
                 new PaymentRowMapper(),
-                id.toString());
+                id.toString(),
+                companyId);
         return result.stream().findFirst();
     }
 
     @Override
-    public List<Payment> findPayments(PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate) {
+    public List<Payment> findPayments(int companyId, PaymentType paymentType, Integer paymentYear, Integer paymentMonth, String licensePlate) {
         List<Object> params = new ArrayList<>();
+        params.add(companyId);
         StringBuilder sql = new StringBuilder("""
                 SELECT p.*, v.license_plate
                 FROM payments p
-                LEFT JOIN vehicles v ON v.id = p.vehicle_id
-                WHERE 1=1
+                LEFT JOIN vehicles v ON v.id = p.vehicle_id AND v.company_id = p.company_id
+                WHERE p.company_id = ?
                 """);
 
         if (paymentType != null) {
@@ -95,26 +98,28 @@ public class PaymentJdbcRepository implements PaymentRepository {
     }
 
     @Override
-    public List<String> findDistinctDescriptions(PaymentType paymentType) {
+    public List<String> findDistinctDescriptions(int companyId, PaymentType paymentType) {
         return jdbcTemplate.queryForList("""
                         SELECT DISTINCT description
                         FROM payments
-                        WHERE payment_type = ?
+                        WHERE company_id = ?
+                          AND payment_type = ?
                           AND description IS NOT NULL
                           AND TRIM(description) <> ''
                         ORDER BY description
                         """,
                 String.class,
+                companyId,
                 paymentType.name());
     }
 
     @Override
-    public Payment updatePayment(Payment payment) {
+    public Payment updatePayment(int companyId, Payment payment) {
         jdbcTemplate.update("""
                         UPDATE payments
                         SET payment_type = ?, description = ?, amount = ?, payment_date = ?,
                             vehicle_id = ?, notes = ?, updated_at = ?
-                        WHERE id = ?
+                        WHERE id = ? AND company_id = ?
                         """,
                 payment.paymentType.name(),
                 payment.description,
@@ -123,38 +128,41 @@ public class PaymentJdbcRepository implements PaymentRepository {
                 payment.vehicleId == null ? null : payment.vehicleId.toString(),
                 payment.notes,
                 Timestamp.from(Instant.now()),
-                payment.id.toString()
+                payment.id.toString(),
+                companyId
         );
         return payment;
     }
 
     @Override
-    public void deletePayment(UUID id) {
-        jdbcTemplate.update("DELETE FROM payments WHERE id = ?", id.toString());
+    public void deletePayment(int companyId, UUID id) {
+        jdbcTemplate.update("DELETE FROM payments WHERE id = ? AND company_id = ?", id.toString(), companyId);
     }
 
     @Override
-    public List<Payment> findPaymentsByVehicleId(UUID vehicleId) {
+    public List<Payment> findPaymentsByVehicleId(int companyId, UUID vehicleId) {
         return jdbcTemplate.query("""
                         SELECT p.*, v.license_plate
                         FROM payments p
-                        LEFT JOIN vehicles v ON v.id = p.vehicle_id
-                        WHERE p.vehicle_id = ?
+                        LEFT JOIN vehicles v ON v.id = p.vehicle_id AND v.company_id = p.company_id
+                        WHERE p.vehicle_id = ? AND p.company_id = ?
                         ORDER BY p.payment_date DESC, p.created_at DESC
                         """,
                 new PaymentRowMapper(),
-                vehicleId.toString());
+                vehicleId.toString(),
+                companyId);
     }
 
     @Override
-    public void deletePaymentsByVehicleId(UUID vehicleId) {
-        jdbcTemplate.update("DELETE FROM payments WHERE vehicle_id = ?", vehicleId.toString());
+    public void deletePaymentsByVehicleId(int companyId, UUID vehicleId) {
+        jdbcTemplate.update("DELETE FROM payments WHERE vehicle_id = ? AND company_id = ?", vehicleId.toString(), companyId);
     }
 
     @Override
-    public BigDecimal findTotalPaymentsAmount(LocalDate startDate, LocalDate endDate) {
-        StringBuilder sql = new StringBuilder("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE 1=1");
+    public BigDecimal findTotalPaymentsAmount(int companyId, LocalDate startDate, LocalDate endDate) {
+        StringBuilder sql = new StringBuilder("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE company_id = ?");
         List<Object> params = new ArrayList<>();
+        params.add(companyId);
         if (startDate != null) {
             sql.append(" AND payment_date >= ?");
             params.add(Date.valueOf(startDate));
@@ -168,16 +176,17 @@ public class PaymentJdbcRepository implements PaymentRepository {
     }
 
     @Override
-    public List<MonthlyPaymentTotal> findMonthlyPaymentTotals(LocalDate startDate, LocalDate endDate) {
+    public List<MonthlyPaymentTotal> findMonthlyPaymentTotals(int companyId, LocalDate startDate, LocalDate endDate) {
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     YEAR(payment_date)  AS pay_year,
                     MONTH(payment_date) AS pay_month,
                     SUM(amount)         AS total
                 FROM payments
-                WHERE 1=1
+                WHERE company_id = ?
                 """);
         List<Object> params = new ArrayList<>();
+        params.add(companyId);
         if (startDate != null) {
             sql.append(" AND payment_date >= ?");
             params.add(Date.valueOf(startDate));
@@ -202,6 +211,7 @@ public class PaymentJdbcRepository implements PaymentRepository {
         @Override
         public Payment mapRow(ResultSet rs, int rowNum) throws SQLException {
             UUID id = UUID.fromString(rs.getString("id"));
+            int companyId = rs.getInt("company_id");
             PaymentType paymentType = PaymentType.valueOf(rs.getString("payment_type"));
             String description = rs.getString("description");
             BigDecimal amount = rs.getBigDecimal("amount");
@@ -213,7 +223,7 @@ public class PaymentJdbcRepository implements PaymentRepository {
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAtTs = rs.getTimestamp("updated_at");
             Instant updatedAt = updatedAtTs == null ? null : updatedAtTs.toInstant();
-            Payment payment = new Payment(id, paymentType, description, amount, paymentDate,
+            Payment payment = new Payment(id, companyId, paymentType, description, amount, paymentDate,
                     vehicleId, notes, createdAt, updatedAt);
             String licensePlate = rs.getString("license_plate");
             if (licensePlate != null) {

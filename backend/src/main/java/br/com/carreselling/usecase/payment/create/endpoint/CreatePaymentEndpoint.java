@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.payment.create.endpoint;
 
 import br.com.carreselling.application.service.IPaymentService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.payment.create.contract.CreatePaymentRequest;
 import br.com.carreselling.usecase.payment.create.contract.CreatePaymentResponse;
 import jakarta.validation.Valid;
@@ -23,13 +24,17 @@ public class CreatePaymentEndpoint {
 
     private final IPaymentService paymentService;
 
-    public CreatePaymentEndpoint(IPaymentService paymentService) {
+    private final TenantContext tenantContext;
+
+    public CreatePaymentEndpoint(IPaymentService paymentService, TenantContext tenantContext) {
         this.paymentService = paymentService;
+        this.tenantContext = tenantContext;
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreatePaymentResponse>> create(@Valid @RequestBody CreatePaymentRequest request) {
-        UUID id = paymentService.createPayment(
+        int companyId = tenantContext.getCurrentCompanyId();
+        UUID id = paymentService.createPayment(companyId, 
                 request.paymentType(),
                 request.description(),
                 request.amount(),

@@ -2,6 +2,7 @@ package br.com.carreselling.usecase.partner.create.endpoint;
 
 import br.com.carreselling.application.service.IPartnerService;
 import br.com.carreselling.config.ApiResponse;
+import br.com.carreselling.tenant.TenantContext;
 import br.com.carreselling.usecase.partner.create.contract.CreatePartnerRequest;
 import br.com.carreselling.usecase.partner.create.contract.CreatePartnerResponse;
 import jakarta.validation.Valid;
@@ -21,13 +22,17 @@ public class CreatePartnerEndpoint {
 
     private final IPartnerService partnerService;
 
-    public CreatePartnerEndpoint(IPartnerService partnerService) {
+    private final TenantContext tenantContext;
+
+    public CreatePartnerEndpoint(IPartnerService partnerService, TenantContext tenantContext) {
         this.partnerService = partnerService;
+        this.tenantContext = tenantContext;
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreatePartnerResponse>> create(@Valid @RequestBody CreatePartnerRequest request) {
-        UUID partnerId = partnerService.createPartner(
+        int companyId = tenantContext.getCurrentCompanyId();
+        UUID partnerId = partnerService.createPartner(companyId, 
             request.name(),
             request.city(),
             request.phone(),

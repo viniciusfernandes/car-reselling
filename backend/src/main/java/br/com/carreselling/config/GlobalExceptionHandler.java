@@ -3,12 +3,12 @@ package br.com.carreselling.config;
 import br.com.carreselling.domain.exception.ConflictException;
 import br.com.carreselling.domain.exception.InvalidStateException;
 import br.com.carreselling.domain.exception.NotFoundException;
+import br.com.carreselling.infrastructure.storage.DocumentStorageException;
+import br.com.carreselling.security.AuthTokenException;
 import br.com.carreselling.usecase.UseCaseException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
-
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleConflict(RuntimeException ex, HttpServletRequest request) {
         log.warn("Conflict on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
+                .body(new ApiErrorResponse(List.of(safeMessage(ex, "Conflict")), traceId(request)));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -64,7 +64,38 @@ public class GlobalExceptionHandler {
                                                                   HttpServletRequest request) {
         log.warn("Illegal argument on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiErrorResponse(List.of(safeMessage(ex, "Invalid request")), traceId(request)));
+    }
+
+    @ExceptionHandler(UseCaseException.class)
+    public ResponseEntity<ApiErrorResponse> handleUseCase(UseCaseException ex, HttpServletRequest request) {
+        log.warn("Use case error on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
+    }
+
+    @ExceptionHandler(AuthTokenException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthTokenException(AuthTokenException ex,
+                                                                     HttpServletRequest request) {
+        log.warn("Auth token error on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiErrorResponse(List.of(safeMessage(ex, "Unauthorized")), traceId(request)));
+    }
+
+    @ExceptionHandler(DocumentStorageException.class)
+    public ResponseEntity<ApiErrorResponse> handleDocumentStorage(DocumentStorageException ex,
+                                                                  HttpServletRequest request) {
+        log.error("Document storage error on {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiErrorResponse(List.of(safeMessage(ex, "Failed to store document")), traceId(request)));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalState(IllegalStateException ex,
+                                                               HttpServletRequest request) {
+        log.error("Illegal state on {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiErrorResponse(List.of(safeMessage(ex, "Unexpected error")), traceId(request)));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -74,13 +105,6 @@ public class GlobalExceptionHandler {
                 ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ApiErrorResponse(List.of("Resource not found"), traceId(request)));
-    }
-
-    @ExceptionHandler(UseCaseException.class)
-    public ResponseEntity<ApiErrorResponse> handleNoResource(UseCaseException ex,
-                                                             HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiErrorResponse(List.of(ex.getMessage()), traceId(request)));
     }
 
     @ExceptionHandler(Exception.class)
@@ -100,5 +124,10 @@ public class GlobalExceptionHandler {
             return error.getField() + ": invalid";
         }
         return error.getField() + ": " + error.getDefaultMessage();
+    }
+
+    private static String safeMessage(Throwable ex, String fallback) {
+        String message = ex.getMessage();
+        return message == null || message.isBlank() ? fallback : message;
     }
 }
