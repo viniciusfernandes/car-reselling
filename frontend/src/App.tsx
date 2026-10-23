@@ -1,13 +1,13 @@
 import { BrowserRouter, NavLink, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import VehicleListPage from "./app/page/vehicle/VehicleListPage";
-import NewVehiclePage from "./app/page/vehicle/NewVehiclePage";
-import VehicleDetailPage from "./app/page/vehicle/VehicleDetailPage";
-import DistributedVehiclesReportPage from "./app/page/report/DistributedVehiclesReportPage";
-import SoldVehiclesReportPage from "./app/page/report/SoldVehiclesReportPage";
-import PaymentsPage from "./app/page/payment/PaymentsPage";
-import PartnerManagementPage from "./app/page/partner/PartnerManagementPage";
+import VeiculoListPage from "./app/page/veiculo/VeiculoListPage";
+import NovoVeiculoPage from "./app/page/veiculo/NovoVeiculoPage";
+import DetalheVeiculoPage from "./app/page/veiculo/DetalheVeiculoPage";
+import RelatorioVeiculosDistribuidosPage from "./app/page/relatorio/RelatorioVeiculosDistribuidosPage";
+import RelatorioVeiculosVendidosPage from "./app/page/relatorio/RelatorioVeiculosVendidosPage";
+import PagamentosPage from "./app/page/pagamento/PagamentosPage";
+import ParceiroManagementPage from "./app/page/parceiro/ParceiroManagementPage";
 import ToastProvider from "./app/component/notification/ToastProvider";
 import LoginPage from "./app/page/auth/LoginPage";
 import { authTokenEvents, authTokenStorage } from "./app/service/api";
@@ -73,7 +73,7 @@ function AppLayout() {
                 <nav className="flex flex-wrap items-center gap-2">
                   <div className="mx-1 h-5 w-px bg-slate-200" />
                   <NavLink
-                    to="/vehicles"
+                    to="/veiculos"
                     className={({ isActive }) =>
                       `${linkClass} ${isActive ? activeClass : ""}`
                     }
@@ -81,7 +81,7 @@ function AppLayout() {
                     {t("nav.vehicles")}
                   </NavLink>
                   <NavLink
-                    to="/reports/distributed-vehicles"
+                    to="/relatorios/veiculos-distribuidos"
                     className={({ isActive }) =>
                       `${linkClass} ${isActive ? activeClass : ""}`
                     }
@@ -89,7 +89,7 @@ function AppLayout() {
                     {t("nav.reports")}
                   </NavLink>
                   <NavLink
-                    to="/reports/sold-vehicles"
+                    to="/relatorios/veiculos-vendidos"
                     className={({ isActive }) =>
                       `${linkClass} ${isActive ? activeClass : ""}`
                     }
@@ -97,7 +97,7 @@ function AppLayout() {
                     {t("nav.sales")}
                   </NavLink>
                   <NavLink
-                    to="/payments"
+                    to="/pagamentos"
                     className={({ isActive }) =>
                       `${linkClass} ${isActive ? activeClass : ""}`
                     }
@@ -105,7 +105,7 @@ function AppLayout() {
                     {t("nav.finances")}
                   </NavLink>
                   <NavLink
-                    to="/partners"
+                    to="/parceiros"
                     className={({ isActive }) =>
                       `${linkClass} ${isActive ? activeClass : ""}`
                     }
@@ -134,63 +134,63 @@ function AppLayout() {
               path="/"
               element={
                 <RequireAuth>
-                  <VehicleListPage />
+                  <VeiculoListPage />
                 </RequireAuth>
               }
             />
             <Route
-              path="/vehicles"
+              path="/veiculos"
               element={
                 <RequireAuth>
-                  <VehicleListPage />
+                  <VeiculoListPage />
                 </RequireAuth>
               }
             />
             <Route
-              path="/vehicles/new"
+              path="/veiculos/new"
               element={
                 <RequireAuth>
-                  <NewVehiclePage />
+                  <NovoVeiculoPage />
                 </RequireAuth>
               }
             />
             <Route
-              path="/vehicles/:vehicleId"
+              path="/veiculos/:veiculoId"
               element={
                 <RequireAuth>
-                  <VehicleDetailPage />
+                  <DetalheVeiculoPage />
                 </RequireAuth>
               }
             />
             <Route
-              path="/reports/distributed-vehicles"
+              path="/relatorios/veiculos-distribuidos"
               element={
                 <RequireAuth>
-                  <DistributedVehiclesReportPage />
+                  <RelatorioVeiculosDistribuidosPage />
                 </RequireAuth>
               }
             />
             <Route
-              path="/reports/sold-vehicles"
+              path="/relatorios/veiculos-vendidos"
               element={
                 <RequireAuth>
-                  <SoldVehiclesReportPage />
+                  <RelatorioVeiculosVendidosPage />
                 </RequireAuth>
               }
             />
             <Route
-              path="/payments"
+              path="/pagamentos"
               element={
                 <RequireAuth>
-                  <PaymentsPage />
+                  <PagamentosPage />
                 </RequireAuth>
               }
             />
             <Route
-              path="/partners"
+              path="/parceiros"
               element={
                 <RequireAuth>
-                  <PartnerManagementPage />
+                  <ParceiroManagementPage />
                 </RequireAuth>
               }
             />

@@ -54,7 +54,7 @@ the partner dealer will receive a commission at the end of the month.
     public interface IUserService{...}
     ```
 - All Java classes must reside under the base package:
-    `br.com.carreselling`
+    `br.com.revendacarros`
 - Follow **Domain-Driven Design (DDD)** principles:
     - No anemic models
     - Use repositories, root entities, and aggregates appropriately
@@ -71,14 +71,14 @@ the partner dealer will receive a commission at the end of the month.
 ```{=html}
 <!-- -->
 ```
-    br/com/carreselling/usecase/user/save/
+    br/com/revendacarros/usecase/user/save/
         endpoint   -> all endpoints here
         contract   -> request and response DTO classes
         mapping    -> mapping utilities (request → domain, domain → response)
 
 - Endpoint naming convention:
     - Example: `SaveUserEndpoint` →
-        `br/com/carreselling/usecase/user/save/endpoint`
+        `br/com/revendacarros/usecase/user/save/endpoint`
 - HTTP responses must follow the structure:
 
 ``` json

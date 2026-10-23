@@ -2,14 +2,14 @@ import axios from "axios";
 import i18n from "../i18n";
 import type {
   ApiResponse,
-  CashBalanceData,
-  FinancialDashboardData,
-  PaymentType,
-  PaymentListResponse,
-  PaymentItem,
-  PaymentDocumentListResponse,
-  CreatePaymentRequest,
-  UpdatePaymentRequest,
+  SaldoCaixaData,
+  PainelFinanceiroData,
+  TipoPagamento,
+  ListaPagamentosResponse,
+  PagamentoItem,
+  ListaDocumentosPagamentoResponse,
+  CriarPagamentoRequest,
+  AtualizarPagamentoRequest,
 } from "./types";
 
 const AUTH_TOKEN_KEY = "auth_token";
@@ -98,69 +98,69 @@ export function extractFieldErrors(errors?: string[]) {
   }, {});
 }
 
-export const financialApi = {
-  getFinancialDashboard(startDate?: string, endDate?: string) {
-    return api.get<ApiResponse<FinancialDashboardData>>("/reports/financial-dashboard", {
-      params: { startDate, endDate },
+export const financeiroApi = {
+  getPainelFinanceiro(dataInicio?: string, dataFim?: string) {
+    return api.get<ApiResponse<PainelFinanceiroData>>("/relatorios/painel-financeiro", {
+      params: { dataInicio, dataFim },
     });
   },
 };
 
-export const cashBalanceApi = {
+export const saldoCaixaApi = {
   get() {
-    return api.get<ApiResponse<CashBalanceData>>("/financial/cash-balance");
+    return api.get<ApiResponse<SaldoCaixaData>>("/financeiro/saldo-caixa");
   },
-  update(amount: number) {
-    return api.put<ApiResponse<CashBalanceData>>("/financial/cash-balance", { amount });
+  update(valor: number) {
+    return api.put<ApiResponse<SaldoCaixaData>>("/financeiro/saldo-caixa", { valor });
   },
 };
 
-export const paymentsApi = {
-  list(params?: { paymentType?: PaymentType; paymentMonth?: string; licensePlate?: string }) {
-    return api.get<ApiResponse<PaymentListResponse>>("/payments", { params });
+export const pagamentosApi = {
+  list(params?: { tipoPagamento?: TipoPagamento; mesPagamento?: string; placa?: string }) {
+    return api.get<ApiResponse<ListaPagamentosResponse>>("/pagamentos", { params });
   },
 
   get(id: string) {
-    return api.get<ApiResponse<PaymentItem>>(`/payments/${id}`);
+    return api.get<ApiResponse<PagamentoItem>>(`/pagamentos/${id}`);
   },
 
-  create(data: CreatePaymentRequest) {
-    return api.post<ApiResponse<{ id: string }>>("/payments", data);
+  create(data: CriarPagamentoRequest) {
+    return api.post<ApiResponse<{ id: string }>>("/pagamentos", data);
   },
 
-  update(id: string, data: UpdatePaymentRequest) {
-    return api.put<ApiResponse<void>>(`/payments/${id}`, data);
+  update(id: string, data: AtualizarPagamentoRequest) {
+    return api.put<ApiResponse<void>>(`/pagamentos/${id}`, data);
   },
 
   delete(id: string) {
-    return api.delete(`/payments/${id}`);
+    return api.delete(`/pagamentos/${id}`);
   },
 
-  listDocuments(paymentId: string) {
-    return api.get<ApiResponse<PaymentDocumentListResponse>>(`/payments/${paymentId}/documents`);
+  listarDocumentos(pagamentoId: string) {
+    return api.get<ApiResponse<ListaDocumentosPagamentoResponse>>(`/pagamentos/${pagamentoId}/documentos`);
   },
 
-  uploadDocument(paymentId: string, file: File) {
+  uploadDocumento(pagamentoId: string, file: File) {
     const formData = new FormData();
     formData.append("file", file);
-    return api.post<ApiResponse<{ documentId: string }>>(`/payments/${paymentId}/documents`, formData, {
+    return api.post<ApiResponse<{ documentoId: string }>>(`/pagamentos/${pagamentoId}/documentos`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
 
-  downloadDocument(paymentId: string, documentId: string) {
-    return api.get(`/payments/${paymentId}/documents/${documentId}/download`, {
+  downloadDocumento(pagamentoId: string, documentoId: string) {
+    return api.get(`/pagamentos/${pagamentoId}/documentos/${documentoId}/download`, {
       responseType: "blob",
     });
   },
 
-  deleteDocument(paymentId: string, documentId: string) {
-    return api.delete(`/payments/${paymentId}/documents/${documentId}`);
+  deleteDocumento(pagamentoId: string, documentoId: string) {
+    return api.delete(`/pagamentos/${pagamentoId}/documentos/${documentoId}`);
   },
 
-  listDescriptions(paymentType?: PaymentType) {
-    return api.get<ApiResponse<string[]>>("/payments/descriptions", {
-      params: paymentType ? { paymentType } : undefined,
+  listarDescricoes(tipoPagamento?: TipoPagamento) {
+    return api.get<ApiResponse<string[]>>("/pagamentos/descricoes", {
+      params: tipoPagamento ? { tipoPagamento } : undefined,
     });
   },
 };

@@ -135,11 +135,11 @@
     "personalContact": "Personal contact"
   },
   "status": {
-    "IN_LOT": "In lot",
-    "ON_SERVICE": "In service",
-    "READY_FOR_DISTRIBUTION": "Ready for distribution",
-    "DISTRIBUTED": "Distributed",
-    "SOLD": "Sold"
+    "NO_PATIO": "In lot",
+    "EM_SERVICO": "In service",
+    "PRONTO_PARA_DISTRIBUICAO": "Ready for distribution",
+    "DISTRIBUIDO": "Distributed",
+    "VENDIDO": "Sold"
   },
   "tabs": {
     "overview": "Overview",
@@ -149,25 +149,25 @@
     "taxes": "Taxes"
   },
   "serviceTypes": {
-    "MECHANICAL": "Mechanical",
-    "ELECTRICAL": "Electrical",
-    "UPHOLSTERY": "Upholstery",
-    "AESTHETICS": "Aesthetics",
-    "INSPECTION": "Inspection",
-    "DISPATCHER": "Dispatcher",
-    "FINES": "Fines",
-    "PARTS": "Parts",
-    "FREIGHT": "Freight",
-    "PURCHASE_TAX": "Purchase Tax",
-    "PURCHASE_COMMISSION": "Purchase Commission",
-    "BODYWORK_AND_PAINT": "Bodywork & Paint",
-    "OTHERS": "Others"
+    "MECANICA": "Mechanical",
+    "ELETRICA": "Electrical",
+    "ESTOFAMENTO": "Upholstery",
+    "ESTETICA": "Aesthetics",
+    "VISTORIA": "Inspection",
+    "DESPACHANTE": "Dispatcher",
+    "MULTAS": "Fines",
+    "PECAS": "Parts",
+    "FRETE": "Freight",
+    "IMPOSTO_COMPRA": "Purchase Tax",
+    "COMISSAO_COMPRA": "Purchase Commission",
+    "FUNILARIA_E_PINTURA": "Bodywork & Paint",
+    "OUTROS": "Others"
   },
   "documentTypes": {
-    "INVOICE": "Invoice",
-    "RECEIPT": "Receipt",
-    "SERVICE_ORDER": "Service order",
-    "OTHER": "Other"
+    "NOTA_FISCAL": "Invoice",
+    "COMPROVANTE": "Receipt",
+    "ORDEM_SERVICO": "Service order",
+    "OUTRO": "Other"
   },
   "vehicleDetail": {
     "loading": "Loading vehicle details...",
@@ -391,11 +391,11 @@
       "totalOperationsCostDesc": "Sum of all payments in the period"
     },
     "types": {
-      "WARRANTY": "Warranty",
-      "OPERATIONAL_COST": "Operational Cost",
+      "GARANTIA": "Warranty",
+      "CUSTO_OPERACIONAL": "Operational Cost",
       "PRO_LABORE": "Pro Labore",
       "BONUS_PLR": "Bonus / PLR",
-      "OTHER": "Other"
+      "OUTRO": "Other"
     },
     "table": {
       "type": "Type",

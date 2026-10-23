@@ -47,7 +47,7 @@ export default function LoginPage() {
         return;
       }
       authTokenStorage.set(token);
-      const redirectTo = (location.state as any)?.from?.pathname || "/vehicles";
+      const redirectTo = (location.state as any)?.from?.pathname || "/veiculos";
       navigate(redirectTo, { replace: true });
     } catch (error) {
       showToast(extractErrorMessage(error), "error");

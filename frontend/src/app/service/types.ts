@@ -2,302 +2,302 @@ export type ApiResponse<T> = {
   data: T;
 };
 
-export type VehicleStatus =
-  | "IN_LOT"
-  | "READY_FOR_DISTRIBUTION"
-  | "DISTRIBUTED"
-  | "SOLD";
+export type StatusVeiculo =
+  | "NO_PATIO"
+  | "PRONTO_PARA_DISTRIBUICAO"
+  | "DISTRIBUIDO"
+  | "VENDIDO";
 
-export type SupplierSource = "INTERNET" | "PERSONAL_CONTACT";
+export type OrigemFornecedor = "INTERNET" | "CONTATO_PESSOAL";
 
-export type ServiceType =
-  | "MECHANICAL"
-  | "PAINT"
-  | "BODYWORK"
-  | "ELECTRICAL"
-  | "UPHOLSTERY"
-  | "WINDOWS";
+export type TipoServico =
+  | "MECANICA"
+  | "PINTURA"
+  | "FUNILARIA"
+  | "ELETRICA"
+  | "ESTOFAMENTO"
+  | "VIDROS";
 
-export type DocumentType = "INVOICE" | "RECEIPT" | "SERVICE_ORDER" | "OTHER";
+export type TipoDocumento = "NOTA_FISCAL" | "COMPROVANTE" | "ORDEM_SERVICO" | "OUTRO";
 
-export type VehicleListItem = {
+export type ItemListaVeiculo = {
   id: string;
-  licensePlate: string;
-  brand: string;
-  model: string;
-  year: number;
-  status: VehicleStatus;
-  onService: boolean;
-  sellingPrice?: number | null;
-  totalCost: number;
-  profitMargin?: number | null;
-  purchaseTimeDays?: number | null;
-  servicesTotal: number;
-  daysOnService?: number | null;
+  placa: string;
+  marca: string;
+  modelo: string;
+  ano: number;
+  status: StatusVeiculo;
+  emServico: boolean;
+  precoVenda?: number | null;
+  custoTotal: number;
+  margemLucro?: number | null;
+  diasTempoCompra?: number | null;
+  totalServicos: number;
+  diasEmServico?: number | null;
 };
 
-export type VehicleListResponse = {
-  items: VehicleListItem[];
+export type ListaVeiculosResponse = {
+  items: ItemListaVeiculo[];
   page: number;
   size: number;
   total: number;
 };
 
-export type VehicleDetail = {
+export type DetalheVeiculo = {
   id: string;
-  licensePlate: string;
+  placa: string;
   renavam?: string | null;
-  vin?: string | null;
-  year: number;
-  color: string;
-  model: string;
-  brand: string;
-  supplierSource: SupplierSource;
-  purchasePrice: number;
-  freightCost: number;
-  purchaseCommission: number;
-  sellingPrice?: number | null;
+  chassi?: string | null;
+  ano: number;
+  cor: string;
+  modelo: string;
+  marca: string;
+  origemFornecedor: OrigemFornecedor;
+  precoCompra: number;
+  custoFrete: number;
+  comissaoCompra: number;
+  precoVenda?: number | null;
   valorFipe?: number | null;
-  purchaseInvoiceDocumentId?: string | null;
-  purchasePaymentReceiptDocumentId?: string | null;
-  status: VehicleStatus;
-  onService: boolean;
-  assignedPartnerId?: string | null;
-  assignedPartnerName?: string | null;
-  servicesTotal: number;
-  totalCost: number;
-  documentsCount: number;
-  distributedAt?: string | null;
+  documentoNotaFiscalCompraId?: string | null;
+  documentoComprovantePagamentoCompraId?: string | null;
+  status: StatusVeiculo;
+  emServico: boolean;
+  parceiroAtribuidoId?: string | null;
+  nomeParceiroAtribuido?: string | null;
+  totalServicos: number;
+  custoTotal: number;
+  documentosCount: number;
+  distribuidoEm?: string | null;
 };
 
-export type SoldVehicleItem = {
-  vehicleId: string;
-  licensePlate: string;
-  brand: string;
-  model: string;
-  year: number;
-  soldAt: string;
-  purchasePrice: number;
-  sellingPrice: number;
-  totalTaxes: number;
-  servicesTotal: number;
-  purchaseCommission: number;
-  profit: number;
-  commissionRate: number | null;
+export type ItemVeiculoVendido = {
+  veiculoId: string;
+  placa: string;
+  marca: string;
+  modelo: string;
+  ano: number;
+  dataVenda: string;
+  precoCompra: number;
+  precoVenda: number;
+  totalImpostos: number;
+  totalServicos: number;
+  comissaoCompra: number;
+  lucro: number;
+  taxaComissao: number | null;
 };
 
-export type SoldVehiclesReport = {
-  vehicles: SoldVehicleItem[];
-  totalVehiclesSold: number;
-  totalSoldValue: number;
-  totalTaxesValue: number;
-  totalServiceValue: number;
-  totalCommissionValue: number;
-  profit: number;
-  profitBeforeTaxes: number;
+export type RelatorioVeiculosVendidos = {
+  veiculos: ItemVeiculoVendido[];
+  totalVeiculosVendidos: number;
+  valorTotalVendido: number;
+  valorTotalImpostos: number;
+  valorTotalServicos: number;
+  valorTotalComissoes: number;
+  lucro: number;
+  lucroAntesImpostos: number;
 };
 
-export type ServiceItem = {
+export type ServicoItem = {
   id: string;
-  vehicleId: string;
-  serviceType: ServiceType;
-  description?: string | null;
-  serviceValue: number;
-  startDate: string;
-  endDate?: string | null;
+  veiculoId: string;
+  tipoServico: TipoServico;
+  descricao?: string | null;
+  valorServico: number;
+  dataInicio: string;
+  dataFim?: string | null;
 };
 
-export type ServiceListResponse = {
-  services: ServiceItem[];
+export type ListaServicosResponse = {
+  servicos: ServicoItem[];
   total: number;
 };
 
-export type DocumentItem = {
+export type DocumentoItem = {
   id: string;
-  vehicleId: string;
-  documentType: DocumentType;
-  originalFileName: string;
+  veiculoId: string;
+  tipoDocumento: TipoDocumento;
+  nomeOriginalArquivo: string;
   contentType: string;
-  sizeBytes: number;
-  uploadedAt: string;
+  tamanhoBytes: number;
+  enviadoEm: string;
 };
 
-export type DocumentListResponse = {
-  documents: DocumentItem[];
+export type ListaDocumentosResponse = {
+  documentos: DocumentoItem[];
 };
 
-export type PartnerItem = {
+export type ParceiroItem = {
   id: string;
-  name: string;
-  city?: string | null;
-  phone?: string | null;
+  nome: string;
+  cidade?: string | null;
+  telefone?: string | null;
   email?: string | null;
-  commissionRate?: number | null;
+  taxaComissao?: number | null;
 };
 
-export type PartnerListResponse = {
-  partners: PartnerItem[];
+export type ListaParceirosResponse = {
+  parceiros: ParceiroItem[];
 };
 
-export type PartnerDetail = {
+export type DetalheParceiro = {
   id: string;
-  name: string;
-  city?: string | null;
-  phone?: string | null;
+  nome: string;
+  cidade?: string | null;
+  telefone?: string | null;
   email?: string | null;
-  commissionRate?: number | null;
+  taxaComissao?: number | null;
 };
 
-export type PartnerHistoryItem = {
+export type HistoricoParceiroItem = {
   id: string;
-  name: string;
-  city?: string | null;
-  phone?: string | null;
+  nome: string;
+  cidade?: string | null;
+  telefone?: string | null;
   email?: string | null;
-  commissionRate?: number | null;
-  changedAt: string;
-  changedBy?: string | null;
+  taxaComissao?: number | null;
+  alteradoEm: string;
+  alteradoPor?: string | null;
 };
 
-export type PartnerHistoryResponse = {
-  history: PartnerHistoryItem[];
+export type HistoricoParceiroResponse = {
+  historico: HistoricoParceiroItem[];
 };
 
-export type BrandItem = {
+export type MarcaItem = {
   id: string;
-  name: string;
+  nome: string;
 };
 
-export type BrandListResponse = {
-  brands: BrandItem[];
+export type ListaMarcasResponse = {
+  marcas: MarcaItem[];
 };
 
-export type ModelItem = {
+export type ModeloItem = {
   id: string;
-  name: string;
+  nome: string;
 };
 
-export type ModelListResponse = {
-  models: ModelItem[];
+export type ModeloListResponse = {
+  modelos: ModeloItem[];
 };
 
-export type ColorItem = {
+export type CorItem = {
   id: string;
-  name: string;
+  nome: string;
 };
 
-export type ColorListResponse = {
-  colors: ColorItem[];
+export type ListaCoresResponse = {
+  cores: CorItem[];
 };
 
-export type ReportVehicleItem = {
-  vehicleId: string;
-  licensePlate: string;
-  brand: string;
-  model: string;
-  year: number;
-  distributedAt?: string | null;
-  purchasePrice: number;
-  purchaseCommission: number;
-  totalCost: number;
+export type ItemVeiculoRelatorio = {
+  veiculoId: string;
+  placa: string;
+  marca: string;
+  modelo: string;
+  ano: number;
+  distribuidoEm?: string | null;
+  precoCompra: number;
+  comissaoCompra: number;
+  custoTotal: number;
 };
 
-export type VehicleTaxes = {
+export type ImpostosVeiculo = {
   icms: number;
   pis: number;
   cofins: number;
   csll: number;
   irpj: number;
-  totalTaxes: number;
+  totalImpostos: number;
 };
 
-export type ReportPartnerGroup = {
-  partnerId: string;
-  partnerName: string;
-  vehicles: ReportVehicleItem[];
-  partnerVehiclesTotalValue: number;
-  partnerVehiclesCount: number;
+export type GrupoParceiroRelatorio = {
+  parceiroId: string;
+  nomeParceiro: string;
+  veiculos: ItemVeiculoRelatorio[];
+  valorTotalVeiculosParceiro: number;
+  quantidadeVeiculosParceiro: number;
 };
 
-export type DistributedVehiclesReport = {
-  partners: ReportPartnerGroup[];
-  overallVehiclesCount: number;
-  overallVehiclesTotalValue: number;
+export type RelatorioVeiculosDistribuidos = {
+  parceiros: GrupoParceiroRelatorio[];
+  quantidadeGeralVeiculos: number;
+  valorTotalGeralVeiculos: number;
 };
 
-export enum PaymentType {
-  WARRANTY = "WARRANTY",
-  OPERATIONAL_COST = "OPERATIONAL_COST",
+export enum TipoPagamento {
+  GARANTIA = "GARANTIA",
+  CUSTO_OPERACIONAL = "CUSTO_OPERACIONAL",
   PRO_LABORE = "PRO_LABORE",
   BONUS_PLR = "BONUS_PLR",
-  OTHER = "OTHER",
+  OUTRO = "OUTRO",
 }
 
-export type PaymentItem = {
+export type PagamentoItem = {
   id: string;
-  paymentType: PaymentType;
-  description?: string | null;
-  amount: number;
-  paymentDate: string;
-  vehicleId?: string | null;
-  vehicleLicensePlate?: string | null;
-  notes?: string | null;
-  createdAt: string;
-  updatedAt?: string | null;
+  tipoPagamento: TipoPagamento;
+  descricao?: string | null;
+  valor: number;
+  dataPagamento: string;
+  veiculoId?: string | null;
+  veiculoPlaca?: string | null;
+  observacoes?: string | null;
+  criadoEm: string;
+  atualizadoEm?: string | null;
 };
 
-export type PaymentListResponse = {
-  payments: PaymentItem[];
+export type ListaPagamentosResponse = {
+  pagamentos: PagamentoItem[];
 };
 
-export type PaymentDocumentItem = {
+export type DocumentoPagamentoItem = {
   id: string;
-  paymentId: string;
-  originalFileName: string;
+  pagamentoId: string;
+  nomeOriginalArquivo: string;
   contentType: string;
-  sizeBytes: number;
-  uploadedAt: string;
+  tamanhoBytes: number;
+  enviadoEm: string;
 };
 
-export type PaymentDocumentListResponse = {
-  documents: PaymentDocumentItem[];
+export type ListaDocumentosPagamentoResponse = {
+  documentos: DocumentoPagamentoItem[];
 };
 
-export type FinancialMonthlyPoint = {
-  year: number;
-  month: number;
-  salesProfit: number;
-  expenses: number;
+export type PontoMensalFinanceiro = {
+  ano: number;
+  mes: number;
+  lucroVendas: number;
+  despesas: number;
   net: number;
 };
 
-export type FinancialDashboardData = {
-  cashBalanceAmount: number;
+export type PainelFinanceiroData = {
+  valorSaldoCaixa: number;
   valorEmCaixa: number;
   patrimonio: number;
-  activeVehiclesCount: number;
-  activeVehiclesTotalCost: number;
+  quantidadeVeiculosAtivos: number;
+  custoTotalVeiculosAtivos: number;
   lucroVendas: number;
   lucroVendasSemImpostos: number;
-  totalVehiclesSold: number;
+  totalVeiculosVendidos: number;
   lucroCompras: number;
-  totalVehiclesAcquired: number;
-  totalPayments: number;
-  monthlyEvolution: FinancialMonthlyPoint[];
+  totalVeiculosAdquiridos: number;
+  totalPagamentos: number;
+  evolucaoMensal: PontoMensalFinanceiro[];
 };
 
-export type CashBalanceData = {
-  amount: number;
-  updatedAt: string;
+export type SaldoCaixaData = {
+  valor: number;
+  atualizadoEm: string;
 };
 
-export type CreatePaymentRequest = {
-  paymentType: PaymentType;
-  description?: string;
-  amount: number;
-  paymentDate: string;
-  vehicleLicensePlate?: string;
-  notes?: string;
+export type CriarPagamentoRequest = {
+  tipoPagamento: TipoPagamento;
+  descricao?: string;
+  valor: number;
+  dataPagamento: string;
+  veiculoPlaca?: string;
+  observacoes?: string;
 };
 
-export type UpdatePaymentRequest = CreatePaymentRequest;
+export type AtualizarPagamentoRequest = CriarPagamentoRequest;

@@ -19,18 +19,18 @@ const DATE_PLACEHOLDER: Record<string, string> = {
 
 const parseDateValue = (value?: string) => {
   if (!value) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return null;
-  const parsed = new Date(year, month - 1, day);
+  const [ano, mes, day] = value.split("-").map(Number);
+  if (!ano || !mes || !day) return null;
+  const parsed = new Date(ano, mes - 1, day);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
 const toDateValue = (value: Date | null) => {
   if (!value) return "";
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const ano = value.getFullYear();
+  const mes = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return `${ano}-${mes}-${day}`;
 };
 
 export default function DateInput({ label, error, required, ...props }: Props) {
@@ -95,9 +95,9 @@ export default function DateInput({ label, error, required, ...props }: Props) {
 
     const parseMonthValue = (v?: string) => {
       if (!v) return null;
-      const [year, month] = v.split("-").map(Number);
-      if (!year || !month) return null;
-      const d = new Date(year, month - 1, 1);
+      const [ano, mes] = v.split("-").map(Number);
+      if (!ano || !mes) return null;
+      const d = new Date(ano, mes - 1, 1);
       return Number.isNaN(d.getTime()) ? null : d;
     };
 

@@ -135,11 +135,11 @@
     "personalContact": "Contato pessoal"
   },
   "status": {
-    "IN_LOT": "No pátio",
-    "ON_SERVICE": "Em serviço",
-    "READY_FOR_DISTRIBUTION": "Pronto para distribuição",
-    "DISTRIBUTED": "Distribuído",
-    "SOLD": "Vendido"
+    "NO_PATIO": "No pátio",
+    "EM_SERVICO": "Em serviço",
+    "PRONTO_PARA_DISTRIBUICAO": "Pronto para distribuição",
+    "DISTRIBUIDO": "Distribuído",
+    "VENDIDO": "Vendido"
   },
   "tabs": {
     "overview": "Visão geral",
@@ -149,25 +149,25 @@
     "taxes": "Impostos"
   },
   "serviceTypes": {
-    "MECHANICAL": "Mecânico",
-    "ELECTRICAL": "Elétrica",
-    "UPHOLSTERY": "Tapeçaria",
-    "AESTHETICS": "Estética",
-    "INSPECTION": "Vistoria",
-    "DISPATCHER": "Despachante",
-    "FINES": "Multas",
-    "PARTS": "Peças",
-    "FREIGHT": "Frete",
-    "PURCHASE_TAX": "Taxa Compra",
-    "PURCHASE_COMMISSION": "Comissão Compra",
-    "BODYWORK_AND_PAINT": "Funilaria/Pintura",
-    "OTHERS": "Outros"
+    "MECANICA": "Mecânico",
+    "ELETRICA": "Elétrica",
+    "ESTOFAMENTO": "Tapeçaria",
+    "ESTETICA": "Estética",
+    "VISTORIA": "Vistoria",
+    "DESPACHANTE": "Despachante",
+    "MULTAS": "Multas",
+    "PECAS": "Peças",
+    "FRETE": "Frete",
+    "IMPOSTO_COMPRA": "Taxa Compra",
+    "COMISSAO_COMPRA": "Comissão Compra",
+    "FUNILARIA_E_PINTURA": "Funilaria/Pintura",
+    "OUTROS": "Outros"
   },
   "documentTypes": {
-    "INVOICE": "Nota fiscal",
-    "RECEIPT": "Recibo",
-    "SERVICE_ORDER": "Ordem de serviço",
-    "OTHER": "Outro"
+    "NOTA_FISCAL": "Nota fiscal",
+    "COMPROVANTE": "Recibo",
+    "ORDEM_SERVICO": "Ordem de serviço",
+    "OUTRO": "Outro"
   },
   "vehicleDetail": {
     "loading": "Carregando detalhes do veículo...",
@@ -391,11 +391,11 @@
       "totalOperationsCostDesc": "Soma de todos os pagamentos no período"
     },
     "types": {
-      "WARRANTY": "Garantia",
-      "OPERATIONAL_COST": "Custo Operacional",
+      "GARANTIA": "Garantia",
+      "CUSTO_OPERACIONAL": "Custo Operacional",
       "PRO_LABORE": "Pro Labore",
       "BONUS_PLR": "Bônus / PLR",
-      "OTHER": "Outro"
+      "OUTRO": "Outro"
     },
     "table": {
       "type": "Tipo",
