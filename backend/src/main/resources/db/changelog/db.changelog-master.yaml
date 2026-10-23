@@ -6,16 +6,16 @@ databaseChangeLog:
         - sql:
             sql: |
               CREATE TABLE IF NOT EXISTS partners (
-                id CHAR(36) PRIMARY KEY,
+                id VARCHAR(36) PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
                 city VARCHAR(255) NULL,
                 commission_rate DECIMAL(6,2) NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL
               );
 
               CREATE TABLE IF NOT EXISTS vehicles (
-                id CHAR(36) PRIMARY KEY,
+                id VARCHAR(36) PRIMARY KEY,
                 license_plate VARCHAR(16) NOT NULL UNIQUE,
                 renavam VARCHAR(32) NULL UNIQUE,
                 vin VARCHAR(64) NULL UNIQUE,
@@ -26,44 +26,47 @@ databaseChangeLog:
                 supplier_source VARCHAR(32) NOT NULL,
                 purchase_price DECIMAL(13,2) NOT NULL,
                 freight_cost DECIMAL(13,2) NOT NULL DEFAULT 0,
-                purchase_payment_receipt_document_id CHAR(36) NULL,
-                purchase_invoice_document_id CHAR(36) NULL,
+                purchase_payment_receipt_document_id VARCHAR(36) NULL,
+                purchase_invoice_document_id VARCHAR(36) NULL,
                 status VARCHAR(32) NOT NULL,
-                assigned_partner_id CHAR(36) NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                KEY idx_vehicles_status (status),
-                KEY idx_vehicles_plate (license_plate),
-                KEY idx_vehicles_partner (assigned_partner_id),
+                assigned_partner_id VARCHAR(36) NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL,
                 CONSTRAINT fk_vehicles_partner FOREIGN KEY (assigned_partner_id) REFERENCES partners(id)
               );
 
+              CREATE INDEX IF NOT EXISTS idx_vehicles_status ON vehicles (status);
+              CREATE INDEX IF NOT EXISTS idx_vehicles_plate ON vehicles (license_plate);
+              CREATE INDEX IF NOT EXISTS idx_vehicles_partner ON vehicles (assigned_partner_id);
+
               CREATE TABLE IF NOT EXISTS services (
-                id CHAR(36) PRIMARY KEY,
-                vehicle_id CHAR(36) NOT NULL,
+                id VARCHAR(36) PRIMARY KEY,
+                vehicle_id VARCHAR(36) NOT NULL,
                 service_type VARCHAR(32) NOT NULL,
                 description VARCHAR(500) NULL,
                 service_value DECIMAL(13,2) NOT NULL,
                 performed_at DATE NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                KEY idx_services_vehicle (vehicle_id),
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL,
                 CONSTRAINT fk_services_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
               );
 
+              CREATE INDEX IF NOT EXISTS idx_services_vehicle ON services (vehicle_id);
+
               CREATE TABLE IF NOT EXISTS documents (
-                id CHAR(36) PRIMARY KEY,
-                vehicle_id CHAR(36) NOT NULL,
+                id VARCHAR(36) PRIMARY KEY,
+                vehicle_id VARCHAR(36) NOT NULL,
                 document_type VARCHAR(32) NOT NULL,
                 original_file_name VARCHAR(512) NOT NULL,
                 content_type VARCHAR(255) NOT NULL,
                 size_bytes BIGINT NOT NULL,
                 storage_key VARCHAR(1024) NOT NULL,
-                uploaded_at DATETIME NOT NULL,
+                uploaded_at TIMESTAMP NOT NULL,
                 uploaded_by VARCHAR(128) NULL,
-                KEY idx_documents_vehicle (vehicle_id),
                 CONSTRAINT fk_documents_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
               );
+
+              CREATE INDEX IF NOT EXISTS idx_documents_vehicle ON documents (vehicle_id);
 
   - changeSet:
       id: vinicius-20260130-01
@@ -72,7 +75,7 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE vehicles
-                ADD COLUMN selling_price DECIMAL(13,2) NULL AFTER freight_cost;
+                ADD COLUMN selling_price DECIMAL(13,2) NULL;
   - changeSet:
       id: vinicius-20260206-01
       author: vinicius
@@ -80,8 +83,8 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE vehicles
-                ADD COLUMN purchase_commission DECIMAL(13,2) NOT NULL DEFAULT 0 AFTER freight_cost,
-                ADD COLUMN distributed_at DATETIME NULL AFTER assigned_partner_id;
+                ADD COLUMN purchase_commission DECIMAL(13,2) NOT NULL DEFAULT 0,
+                ADD COLUMN distributed_at TIMESTAMP NULL;
 
               UPDATE vehicles
               SET distributed_at = updated_at
@@ -94,32 +97,34 @@ databaseChangeLog:
         - sql:
             sql: |
               CREATE TABLE IF NOT EXISTS brands (
-                id CHAR(36) PRIMARY KEY,
+                id VARCHAR(36) PRIMARY KEY,
                 name VARCHAR(128) NOT NULL UNIQUE,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL
               );
 
               CREATE TABLE IF NOT EXISTS models (
-                id CHAR(36) PRIMARY KEY,
-                brand_id CHAR(36) NOT NULL,
+                id VARCHAR(36) PRIMARY KEY,
+                brand_id VARCHAR(36) NOT NULL,
                 name VARCHAR(128) NOT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                UNIQUE KEY uk_models_brand_name (brand_id, name),
-                KEY idx_models_brand (brand_id),
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL,
+                CONSTRAINT uk_models_brand_name UNIQUE (brand_id, name),
                 CONSTRAINT fk_models_brand FOREIGN KEY (brand_id) REFERENCES brands(id)
               );
 
-              ALTER TABLE vehicles
-                ADD COLUMN brand_id CHAR(36) NULL AFTER brand,
-                ADD COLUMN model_id CHAR(36) NULL AFTER brand_id,
-                ADD KEY idx_vehicles_brand (brand_id),
-                ADD KEY idx_vehicles_model (model_id);
+              CREATE INDEX IF NOT EXISTS idx_models_brand ON models (brand_id);
 
               ALTER TABLE vehicles
-                MODIFY brand_id CHAR(36) NOT NULL,
-                MODIFY model_id CHAR(36) NOT NULL,
+                ADD COLUMN brand_id VARCHAR(36) NULL,
+                ADD COLUMN model_id VARCHAR(36) NULL;
+
+              CREATE INDEX IF NOT EXISTS idx_vehicles_brand ON vehicles (brand_id);
+              CREATE INDEX IF NOT EXISTS idx_vehicles_model ON vehicles (model_id);
+
+              ALTER TABLE vehicles
+                ALTER COLUMN brand_id SET NOT NULL,
+                ALTER COLUMN model_id SET NOT NULL,
                 ADD CONSTRAINT fk_vehicles_brand FOREIGN KEY (brand_id) REFERENCES brands(id),
                 ADD CONSTRAINT fk_vehicles_model FOREIGN KEY (model_id) REFERENCES models(id);
   - changeSet:
@@ -129,10 +134,10 @@ databaseChangeLog:
         - sql:
             sql: |
               CREATE TABLE IF NOT EXISTS colors (
-                id CHAR(36) PRIMARY KEY,
+                id VARCHAR(36) PRIMARY KEY,
                 name VARCHAR(64) NOT NULL UNIQUE,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL
               );
 
   - changeSet:
@@ -142,22 +147,23 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE partners
-                ADD COLUMN phone VARCHAR(32) NULL AFTER city,
-                ADD COLUMN email VARCHAR(255) NULL AFTER phone;
+                ADD COLUMN phone VARCHAR(32) NULL,
+                ADD COLUMN email VARCHAR(255) NULL;
 
               CREATE TABLE IF NOT EXISTS partner_history (
-                id CHAR(36) PRIMARY KEY,
-                partner_id CHAR(36) NOT NULL,
+                id VARCHAR(36) PRIMARY KEY,
+                partner_id VARCHAR(36) NOT NULL,
                 name VARCHAR(255) NOT NULL,
                 city VARCHAR(255) NULL,
                 phone VARCHAR(32) NULL,
                 email VARCHAR(255) NULL,
                 commission_rate DECIMAL(6,2) NULL,
-                changed_at DATETIME NOT NULL,
+                changed_at TIMESTAMP NOT NULL,
                 changed_by VARCHAR(128) NULL,
-                KEY idx_partner_history_partner (partner_id),
                 CONSTRAINT fk_partner_history_partner FOREIGN KEY (partner_id) REFERENCES partners(id)
               );
+
+              CREATE INDEX IF NOT EXISTS idx_partner_history_partner ON partner_history (partner_id);
   - changeSet:
       id: vinicius-20260309-01
       author: vinicius
@@ -165,7 +171,7 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE partners
-                ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE AFTER email;
+                ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE;
   - changeSet:
       id: vinicius-20260313-01
       author: vinicius
@@ -173,11 +179,11 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE vehicles
-                ADD COLUMN sold_at DATE NULL AFTER distributed_at,
-                ADD COLUMN sale_commission_rate DECIMAL(6,2) NULL AFTER sold_at;
+                ADD COLUMN sold_at DATE NULL,
+                ADD COLUMN sale_commission_rate DECIMAL(6,2) NULL;
 
               UPDATE vehicles
-              SET sold_at = DATE(COALESCE(updated_at, created_at))
+              SET sold_at = CAST(COALESCE(updated_at, created_at) AS DATE)
               WHERE status = 'SOLD' AND sold_at IS NULL;
   - changeSet:
       id: vinicius-20260317-02
@@ -186,7 +192,7 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE vehicles
-                ADD COLUMN on_service BOOLEAN NOT NULL DEFAULT TRUE AFTER status;
+                ADD COLUMN on_service BOOLEAN NOT NULL DEFAULT TRUE;
 
               UPDATE vehicles
               SET on_service = TRUE, status = 'IN_LOT'
@@ -200,13 +206,14 @@ databaseChangeLog:
         - sql:
             sql: |
               CREATE TABLE IF NOT EXISTS vehicle_on_service_history (
-                id CHAR(36) PRIMARY KEY,
-                vehicle_id CHAR(36) NOT NULL,
+                id VARCHAR(36) PRIMARY KEY,
+                vehicle_id VARCHAR(36) NOT NULL,
                 on_service BOOLEAN NOT NULL,
-                changed_at DATETIME NOT NULL,
-                KEY idx_on_service_history_vehicle (vehicle_id),
+                changed_at TIMESTAMP NOT NULL,
                 CONSTRAINT fk_on_service_history_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
               );
+
+              CREATE INDEX IF NOT EXISTS idx_on_service_history_vehicle ON vehicle_on_service_history (vehicle_id);
 
   - changeSet:
       id: vinicius-20260211-07
@@ -216,16 +223,17 @@ databaseChangeLog:
             sql: |
               ALTER TABLE services
                 ADD COLUMN start_date DATE NULL,
-                ADD COLUMN end_date DATE NULL AFTER start_date;
+                ADD COLUMN end_date DATE NULL;
 
               UPDATE services
-              SET start_date = COALESCE(performed_at, DATE(created_at));
+              SET start_date = COALESCE(performed_at, CAST(created_at AS DATE));
 
               ALTER TABLE services
-                MODIFY COLUMN start_date DATE NOT NULL;
+                ALTER COLUMN start_date SET NOT NULL;
+
+              DROP INDEX IF EXISTS idx_vehicles_on_service;
 
               ALTER TABLE vehicles
-                DROP INDEX idx_vehicles_on_service,
                 DROP COLUMN on_service;
 
   - changeSet:
@@ -244,34 +252,36 @@ databaseChangeLog:
         - sql:
             sql: |
               CREATE TABLE IF NOT EXISTS payments (
-                id CHAR(36) PRIMARY KEY,
+                id VARCHAR(36) PRIMARY KEY,
                 payment_type VARCHAR(32) NOT NULL,
                 description VARCHAR(500) NULL,
                 amount DECIMAL(13,2) NOT NULL,
                 payment_date DATE NOT NULL,
-                vehicle_id CHAR(36) NULL,
-                reference_month CHAR(7) NULL,
+                vehicle_id VARCHAR(36) NULL,
+                reference_month VARCHAR(7) NULL,
                 notes VARCHAR(1000) NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
-                KEY idx_payments_type (payment_type),
-                KEY idx_payments_date (payment_date),
-                KEY idx_payments_vehicle (vehicle_id),
-                KEY idx_payments_month (reference_month)
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL
               );
 
+              CREATE INDEX IF NOT EXISTS idx_payments_type ON payments (payment_type);
+              CREATE INDEX IF NOT EXISTS idx_payments_date ON payments (payment_date);
+              CREATE INDEX IF NOT EXISTS idx_payments_vehicle ON payments (vehicle_id);
+              CREATE INDEX IF NOT EXISTS idx_payments_month ON payments (reference_month);
+
               CREATE TABLE IF NOT EXISTS payment_documents (
-                id CHAR(36) PRIMARY KEY,
-                payment_id CHAR(36) NOT NULL,
+                id VARCHAR(36) PRIMARY KEY,
+                payment_id VARCHAR(36) NOT NULL,
                 original_file_name VARCHAR(512) NOT NULL,
                 content_type VARCHAR(255) NOT NULL,
                 size_bytes BIGINT NOT NULL,
                 storage_key VARCHAR(1024) NOT NULL,
-                uploaded_at DATETIME NOT NULL,
+                uploaded_at TIMESTAMP NOT NULL,
                 uploaded_by VARCHAR(128) NULL,
-                KEY idx_payment_documents_payment (payment_id),
                 CONSTRAINT fk_payment_documents_payment FOREIGN KEY (payment_id) REFERENCES payments(id)
               );
+
+              CREATE INDEX IF NOT EXISTS idx_payment_documents_payment ON payment_documents (payment_id);
 
   - changeSet:
       id: vinicius-20260518-01
@@ -280,20 +290,21 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE payments
-                ADD COLUMN reference_year  INT NULL,
+                ADD COLUMN reference_year INT NULL,
                 ADD COLUMN reference_month_new INT NULL;
 
               UPDATE payments
-              SET reference_year      = CAST(SUBSTRING(reference_month, 1, 4) AS UNSIGNED),
-                  reference_month_new = CAST(SUBSTRING(reference_month, 6, 2) AS UNSIGNED)
+              SET reference_year      = CAST(SUBSTRING(reference_month, 1, 4) AS INTEGER),
+                  reference_month_new = CAST(SUBSTRING(reference_month, 6, 2) AS INTEGER)
               WHERE reference_month IS NOT NULL;
 
+              DROP INDEX IF EXISTS idx_payments_month;
+
               ALTER TABLE payments
-                DROP INDEX idx_payments_month,
                 DROP COLUMN reference_month;
 
               ALTER TABLE payments
-                CHANGE COLUMN reference_month_new reference_month INT NULL;
+                RENAME COLUMN reference_month_new TO reference_month;
 
               CREATE INDEX idx_payments_year_month ON payments (reference_year, reference_month);
 
@@ -305,16 +316,17 @@ databaseChangeLog:
             sql: |
               CREATE TABLE IF NOT EXISTS cash_balance (
                 amount DECIMAL(13,2) NOT NULL DEFAULT 0,
-                updated_at DATETIME NOT NULL
+                updated_at TIMESTAMP NOT NULL
               );
 
               CREATE TABLE IF NOT EXISTS cash_balance_history (
-                id CHAR(36) PRIMARY KEY,
+                id VARCHAR(36) PRIMARY KEY,
                 amount DECIMAL(13,2) NOT NULL,
-                changed_at DATETIME NOT NULL,
-                changed_by VARCHAR(255) NULL,
-                KEY idx_cash_balance_history_changed_at (changed_at)
+                changed_at TIMESTAMP NOT NULL,
+                changed_by VARCHAR(255) NULL
               );
+
+              CREATE INDEX IF NOT EXISTS idx_cash_balance_history_changed_at ON cash_balance_history (changed_at);
 
               INSERT INTO cash_balance (amount, updated_at)
               VALUES (0, NOW());
@@ -325,8 +337,9 @@ databaseChangeLog:
       changes:
         - sql:
             sql: |
+              DROP INDEX IF EXISTS idx_payments_year_month;
+
               ALTER TABLE payments
-                DROP INDEX idx_payments_year_month,
                 DROP COLUMN reference_year,
                 DROP COLUMN reference_month;
 
@@ -347,7 +360,7 @@ databaseChangeLog:
         - sql:
             sql: |
               ALTER TABLE vehicles
-                ADD COLUMN valor_fipe DECIMAL(13,2) NULL AFTER selling_price;
+                ADD COLUMN valor_fipe DECIMAL(13,2) NULL;
 
   - changeSet:
       id: vinicius-20260621-01
@@ -358,8 +371,8 @@ databaseChangeLog:
               CREATE TABLE IF NOT EXISTS companies (
                 company_id SMALLINT PRIMARY KEY,
                 name VARCHAR(50) NOT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NULL,
                 active BOOLEAN NOT NULL DEFAULT TRUE
               );
 
@@ -367,137 +380,135 @@ databaseChangeLog:
               VALUES (1, 'Bruno Revendas', NOW(), NOW(), TRUE);
 
               ALTER TABLE partners
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_partners_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_partners_company ON partners (company_id);
 
               UPDATE partners SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE partners
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_partners_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE vehicles
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_vehicles_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_vehicles_company ON vehicles (company_id);
 
               UPDATE vehicles SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE vehicles
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_vehicles_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE services
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_services_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_services_company ON services (company_id);
 
               UPDATE services SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE services
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_services_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE documents
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_documents_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_documents_company ON documents (company_id);
 
               UPDATE documents SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE documents
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_documents_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE brands
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_brands_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_brands_company ON brands (company_id);
 
               UPDATE brands SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE brands
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_brands_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE models
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_models_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_models_company ON models (company_id);
 
               UPDATE models SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE models
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_models_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE colors
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_colors_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_colors_company ON colors (company_id);
 
               UPDATE colors SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE colors
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_colors_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE partner_history
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_partner_history_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_partner_history_company ON partner_history (company_id);
 
               UPDATE partner_history SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE partner_history
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_partner_history_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE vehicle_on_service_history
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_on_service_history_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_on_service_history_company ON vehicle_on_service_history (company_id);
 
               UPDATE vehicle_on_service_history SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE vehicle_on_service_history
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_on_service_history_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE payments
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_payments_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_payments_company ON payments (company_id);
 
               UPDATE payments SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE payments
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_payments_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE payment_documents
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_payment_documents_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_payment_documents_company ON payment_documents (company_id);
 
               UPDATE payment_documents SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE payment_documents
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_payment_documents_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE cash_balance
-                ADD COLUMN company_id SMALLINT NULL FIRST;
+                ADD COLUMN company_id SMALLINT NULL;
 
               UPDATE cash_balance SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE cash_balance
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD PRIMARY KEY (company_id),
                 ADD CONSTRAINT fk_cash_balance_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               ALTER TABLE cash_balance_history
-                ADD COLUMN company_id SMALLINT NULL AFTER id,
-                ADD KEY idx_cash_balance_history_company (company_id);
+                ADD COLUMN company_id SMALLINT NULL;
+              CREATE INDEX IF NOT EXISTS idx_cash_balance_history_company ON cash_balance_history (company_id);
 
               UPDATE cash_balance_history SET company_id = 1 WHERE company_id IS NULL;
 
               ALTER TABLE cash_balance_history
-                MODIFY company_id SMALLINT NOT NULL,
+                ALTER COLUMN company_id SET NOT NULL,
                 ADD CONSTRAINT fk_cash_balance_history_company FOREIGN KEY (company_id) REFERENCES companies(company_id);
 
               INSERT INTO cash_balance (company_id, amount, updated_at)
               SELECT 1, 0, NOW()
-              FROM DUAL
               WHERE NOT EXISTS (SELECT 1 FROM cash_balance WHERE company_id = 1);
-

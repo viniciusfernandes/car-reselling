@@ -81,11 +81,11 @@ public class PaymentJdbcRepository implements PaymentRepository {
             params.add(paymentType.name());
         }
         if (paymentYear != null) {
-            sql.append(" AND YEAR(p.payment_date) = ?");
+            sql.append(" AND EXTRACT(YEAR FROM p.payment_date) = ?");
             params.add(paymentYear);
         }
         if (paymentMonth != null) {
-            sql.append(" AND MONTH(p.payment_date) = ?");
+            sql.append(" AND EXTRACT(MONTH FROM p.payment_date) = ?");
             params.add(paymentMonth);
         }
         if (licensePlate != null && !licensePlate.isBlank()) {
@@ -179,8 +179,8 @@ public class PaymentJdbcRepository implements PaymentRepository {
     public List<MonthlyPaymentTotal> findMonthlyPaymentTotals(int companyId, LocalDate startDate, LocalDate endDate) {
         StringBuilder sql = new StringBuilder("""
                 SELECT
-                    YEAR(payment_date)  AS pay_year,
-                    MONTH(payment_date) AS pay_month,
+                    CAST(EXTRACT(YEAR FROM payment_date) AS INTEGER)  AS pay_year,
+                    CAST(EXTRACT(MONTH FROM payment_date) AS INTEGER) AS pay_month,
                     SUM(amount)         AS total
                 FROM payments
                 WHERE company_id = ?
@@ -195,7 +195,7 @@ public class PaymentJdbcRepository implements PaymentRepository {
             sql.append(" AND payment_date <= ?");
             params.add(Date.valueOf(endDate));
         }
-        sql.append(" GROUP BY YEAR(payment_date), MONTH(payment_date) ORDER BY pay_year, pay_month");
+        sql.append(" GROUP BY EXTRACT(YEAR FROM payment_date), EXTRACT(MONTH FROM payment_date) ORDER BY pay_year, pay_month");
         return jdbcTemplate.query(sql.toString(),
                 (rs, rowNum) -> new MonthlyPaymentTotal(
                         rs.getInt("pay_year"),
