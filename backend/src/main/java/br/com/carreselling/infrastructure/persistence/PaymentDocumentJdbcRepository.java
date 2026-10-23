@@ -31,9 +31,9 @@ public class PaymentDocumentJdbcRepository implements PaymentDocumentRepository 
                          storage_key, uploaded_at, uploaded_by)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                document.id.toString(),
+                document.id,
                 companyId,
-                document.paymentId.toString(),
+                document.paymentId,
                 document.originalFileName,
                 document.contentType,
                 document.sizeBytes,
@@ -50,7 +50,7 @@ public class PaymentDocumentJdbcRepository implements PaymentDocumentRepository 
                         SELECT * FROM payment_documents WHERE id = ? AND company_id = ?
                         """,
                 new PaymentDocumentRowMapper(),
-                id.toString(),
+                id,
                 companyId);
         return result.stream().findFirst();
     }
@@ -61,27 +61,27 @@ public class PaymentDocumentJdbcRepository implements PaymentDocumentRepository 
                         SELECT * FROM payment_documents WHERE payment_id = ? AND company_id = ? ORDER BY uploaded_at DESC
                         """,
                 new PaymentDocumentRowMapper(),
-                paymentId.toString(),
+                paymentId,
                 companyId);
     }
 
     @Override
     public void deletePaymentDocument(int companyId, UUID id) {
-        jdbcTemplate.update("DELETE FROM payment_documents WHERE id = ? AND company_id = ?", id.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM payment_documents WHERE id = ? AND company_id = ?", id, companyId);
     }
 
     @Override
     public void deletePaymentDocumentsByPaymentId(int companyId, UUID paymentId) {
-        jdbcTemplate.update("DELETE FROM payment_documents WHERE payment_id = ? AND company_id = ?", paymentId.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM payment_documents WHERE payment_id = ? AND company_id = ?", paymentId, companyId);
     }
 
     private static class PaymentDocumentRowMapper implements RowMapper<PaymentDocument> {
 
         @Override
         public PaymentDocument mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
-            UUID paymentId = UUID.fromString(rs.getString("payment_id"));
+            UUID paymentId = rs.getObject("payment_id", UUID.class);
             String originalFileName = rs.getString("original_file_name");
             String contentType = rs.getString("content_type");
             long sizeBytes = rs.getLong("size_bytes");

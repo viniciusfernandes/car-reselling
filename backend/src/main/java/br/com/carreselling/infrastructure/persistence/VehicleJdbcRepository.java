@@ -43,7 +43,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                          sale_commission_rate, created_at, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                vehicle.getId().toString(),
+                vehicle.getId(),
                 companyId,
                 vehicle.getLicensePlate(),
                 vehicle.getRenavam(),
@@ -52,18 +52,18 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 vehicle.getColor(),
                 vehicle.getModel(),
                 vehicle.getBrand(),
-                optionalUuid(vehicle.getBrandId()),
-                optionalUuid(vehicle.getModelId()),
+                vehicle.getBrandId(),
+                vehicle.getModelId(),
                 vehicle.getSupplierSource().name(),
                 vehicle.getPurchasePrice(),
                 vehicle.getFreightCost(),
                 vehicle.getPurchaseCommission(),
                 vehicle.getSellingPrice(),
                 vehicle.getValorFipe(),
-                optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
-                optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
+                vehicle.getPurchasePaymentReceiptDocumentId(),
+                vehicle.getPurchaseInvoiceDocumentId(),
                 vehicle.getStatus().name(),
-                optionalUuid(vehicle.getAssignedPartnerId()),
+                vehicle.getAssignedPartnerId(),
                 vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
                 vehicle.getSoldAt(),
                 vehicle.getSaleCommissionRate(),
@@ -79,7 +79,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                         SELECT * FROM vehicles WHERE id = ? AND company_id = ?
                         """,
                 new VehicleRowMapper(),
-                id.toString(),
+                id,
                 companyId);
         return result.stream().findFirst();
     }
@@ -200,23 +200,23 @@ public class VehicleJdbcRepository implements VehicleRepository {
                 vehicle.getColor(),
                 vehicle.getModel(),
                 vehicle.getBrand(),
-                optionalUuid(vehicle.getBrandId()),
-                optionalUuid(vehicle.getModelId()),
+                vehicle.getBrandId(),
+                vehicle.getModelId(),
                 vehicle.getSupplierSource().name(),
                 vehicle.getPurchasePrice(),
                 vehicle.getFreightCost(),
                 vehicle.getPurchaseCommission(),
                 vehicle.getSellingPrice(),
                 vehicle.getValorFipe(),
-                optionalUuid(vehicle.getPurchasePaymentReceiptDocumentId()),
-                optionalUuid(vehicle.getPurchaseInvoiceDocumentId()),
+                vehicle.getPurchasePaymentReceiptDocumentId(),
+                vehicle.getPurchaseInvoiceDocumentId(),
                 vehicle.getStatus().name(),
-                optionalUuid(vehicle.getAssignedPartnerId()),
+                vehicle.getAssignedPartnerId(),
                 vehicle.getDistributedAt() == null ? null : Timestamp.from(vehicle.getDistributedAt()),
                 vehicle.getSoldAt(),
                 vehicle.getSaleCommissionRate(),
                 vehicle.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(vehicle.getUpdatedAt()),
-                vehicle.getId().toString(),
+                vehicle.getId(),
                 companyId
         );
         return vehicle;
@@ -224,7 +224,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
 
     @Override
     public void deleteVehicle(int companyId, UUID id) {
-        jdbcTemplate.update("DELETE FROM vehicles WHERE id = ? AND company_id = ?", id.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM vehicles WHERE id = ? AND company_id = ?", id, companyId);
     }
 
     @Override
@@ -233,7 +233,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                         SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ? AND company_id = ?
                         """,
                 BigDecimal.class,
-                vehicleId.toString(),
+                vehicleId,
                 companyId);
         return total == null ? BigDecimal.ZERO : total;
     }
@@ -244,7 +244,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
                         SELECT COUNT(*) FROM documents WHERE vehicle_id = ? AND company_id = ?
                         """,
                 Integer.class,
-                vehicleId.toString(),
+                vehicleId,
                 companyId);
         return count == null ? 0 : count;
     }
@@ -302,7 +302,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
             }
             if (filter.partnerId() != null) {
                 sql.append(" AND v.assigned_partner_id = ?");
-                params.add(filter.partnerId().toString());
+                params.add(filter.partnerId());
             }
         }
 
@@ -366,7 +366,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
             }
             if (filter.partnerId() != null) {
                 sql.append(" AND v.assigned_partner_id = ?");
-                params.add(filter.partnerId().toString());
+                params.add(filter.partnerId());
             }
         }
         sql.append(" ORDER BY v.sold_at DESC, v.license_plate");
@@ -407,17 +407,13 @@ public class VehicleJdbcRepository implements VehicleRepository {
         );
     }
 
-    private static String optionalUuid(UUID id) {
-        return id == null ? null : id.toString();
-    }
-
     private static class SoldVehicleMapper implements RowMapper<SoldVehicle> {
 
         @Override
         public SoldVehicle mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
             Date soldAtDate = rs.getDate("sold_at");
             return new SoldVehicle(
-                    UUID.fromString(rs.getString("vehicle_id")),
+                    rs.getObject("vehicle_id", UUID.class),
                     rs.getString("license_plate"),
                     rs.getString("brand"),
                     rs.getString("model"),
@@ -438,9 +434,9 @@ public class VehicleJdbcRepository implements VehicleRepository {
         @Override
         public DistribuitedVehicle mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
             return new DistribuitedVehicle(
-                    UUID.fromString(rs.getString("partner_id")),
+                    rs.getObject("partner_id", UUID.class),
                     rs.getString("partner_name"),
-                    UUID.fromString(rs.getString("vehicle_id")),
+                    rs.getObject("vehicle_id", UUID.class),
                     rs.getString("license_plate"),
                     rs.getString("brand"),
                     rs.getString("model"),
@@ -458,7 +454,7 @@ public class VehicleJdbcRepository implements VehicleRepository {
 
         @Override
         public Vehicle mapRow(@org.springframework.lang.NonNull ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
             String licensePlate = rs.getString("license_plate");
             String renavam = rs.getString("renavam");
@@ -467,18 +463,18 @@ public class VehicleJdbcRepository implements VehicleRepository {
             String color = rs.getString("color");
             String model = rs.getString("model");
             String brand = rs.getString("brand");
-            UUID brandId = optionalUuid(rs.getString("brand_id"));
-            UUID modelId = optionalUuid(rs.getString("model_id"));
+            UUID brandId = rs.getObject("brand_id", UUID.class);
+            UUID modelId = rs.getObject("model_id", UUID.class);
             SupplierSource supplierSource = SupplierSource.valueOf(rs.getString("supplier_source"));
             BigDecimal purchasePrice = rs.getBigDecimal("purchase_price");
             BigDecimal freightCost = rs.getBigDecimal("freight_cost");
             BigDecimal purchaseCommission = rs.getBigDecimal("purchase_commission");
             BigDecimal sellingPrice = rs.getBigDecimal("selling_price");
             BigDecimal valorFipe = rs.getBigDecimal("valor_fipe");
-            UUID paymentReceiptId = optionalUuid(rs.getString("purchase_payment_receipt_document_id"));
-            UUID invoiceId = optionalUuid(rs.getString("purchase_invoice_document_id"));
+            UUID paymentReceiptId = rs.getObject("purchase_payment_receipt_document_id", UUID.class);
+            UUID invoiceId = rs.getObject("purchase_invoice_document_id", UUID.class);
             VehicleStatus status = VehicleStatus.valueOf(rs.getString("status"));
-            UUID assignedPartnerId = optionalUuid(rs.getString("assigned_partner_id"));
+            UUID assignedPartnerId = rs.getObject("assigned_partner_id", UUID.class);
             Timestamp distributedAt = rs.getTimestamp("distributed_at");
             java.sql.Date soldAtDate = rs.getDate("sold_at");
             BigDecimal saleCommissionRate = rs.getBigDecimal("sale_commission_rate");
@@ -512,10 +508,6 @@ public class VehicleJdbcRepository implements VehicleRepository {
                     createdAt,
                     updatedAt == null ? null : updatedAt.toInstant()
             );
-        }
-
-        private static UUID optionalUuid(String value) {
-            return value == null ? null : UUID.fromString(value);
         }
     }
 

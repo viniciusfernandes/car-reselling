@@ -30,7 +30,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
                 (id, company_id, name, city, phone, email, commission_rate, enabled, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-            partner.getId().toString(),
+            partner.getId(),
             companyId,
             partner.getName(),
             partner.getCity(),
@@ -58,7 +58,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
             partner.getCommissionRate(),
             partner.isEnabled(),
             Timestamp.from(partner.getUpdatedAt()),
-            partner.getId().toString(),
+            partner.getId(),
             companyId
         );
         return partner;
@@ -76,7 +76,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
     @Override
     public void setEnabled(int companyId, UUID id, boolean enabled) {
         jdbcTemplate.update("UPDATE partners SET enabled = ?, updated_at = ? WHERE id = ? AND company_id = ?",
-            enabled, Timestamp.from(Instant.now()), id.toString(), companyId);
+            enabled, Timestamp.from(Instant.now()), id, companyId);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
                 SELECT * FROM partners WHERE id = ? AND company_id = ?
                 """,
             new PartnerRowMapper(),
-            id.toString(),
+            id,
             companyId);
         return result.stream().findFirst();
     }
@@ -105,7 +105,7 @@ public class PartnerJdbcRepository implements PartnerRepository {
 
         @Override
         public Partner mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
             String name = rs.getString("name");
             String city = rs.getString("city");

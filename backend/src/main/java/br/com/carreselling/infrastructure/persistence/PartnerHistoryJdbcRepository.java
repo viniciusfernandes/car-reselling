@@ -29,9 +29,9 @@ public class PartnerHistoryJdbcRepository implements PartnerHistoryRepository {
                 (id, company_id, partner_id, name, city, phone, email, commission_rate, changed_at, changed_by)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-            history.getId().toString(),
+            history.getId(),
             companyId,
-            history.getPartnerId().toString(),
+            history.getPartnerId(),
             history.getName(),
             history.getCity(),
             history.getPhone(),
@@ -50,7 +50,7 @@ public class PartnerHistoryJdbcRepository implements PartnerHistoryRepository {
                 ORDER BY changed_at DESC
                 """,
             new PartnerHistoryRowMapper(),
-            partnerId.toString(),
+            partnerId,
             companyId
         );
     }
@@ -59,9 +59,9 @@ public class PartnerHistoryJdbcRepository implements PartnerHistoryRepository {
 
         @Override
         public PartnerHistory mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
-            UUID partnerId = UUID.fromString(rs.getString("partner_id"));
+            UUID partnerId = rs.getObject("partner_id", UUID.class);
             String name = rs.getString("name");
             String city = rs.getString("city");
             String phone = rs.getString("phone");

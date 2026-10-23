@@ -37,13 +37,13 @@ public class PaymentJdbcRepository implements PaymentRepository {
                          notes, created_at, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                payment.id.toString(),
+                payment.id,
                 companyId,
                 payment.paymentType.name(),
                 payment.description,
                 payment.amount,
                 payment.paymentDate,
-                payment.vehicleId == null ? null : payment.vehicleId.toString(),
+                payment.vehicleId,
                 payment.notes,
                 Timestamp.from(payment.createdAt),
                 payment.updatedAt == null ? null : Timestamp.from(payment.updatedAt)
@@ -60,7 +60,7 @@ public class PaymentJdbcRepository implements PaymentRepository {
                         WHERE p.id = ? AND p.company_id = ?
                         """,
                 new PaymentRowMapper(),
-                id.toString(),
+                id,
                 companyId);
         return result.stream().findFirst();
     }
@@ -125,10 +125,10 @@ public class PaymentJdbcRepository implements PaymentRepository {
                 payment.description,
                 payment.amount,
                 payment.paymentDate,
-                payment.vehicleId == null ? null : payment.vehicleId.toString(),
+                payment.vehicleId,
                 payment.notes,
                 Timestamp.from(Instant.now()),
-                payment.id.toString(),
+                payment.id,
                 companyId
         );
         return payment;
@@ -136,7 +136,7 @@ public class PaymentJdbcRepository implements PaymentRepository {
 
     @Override
     public void deletePayment(int companyId, UUID id) {
-        jdbcTemplate.update("DELETE FROM payments WHERE id = ? AND company_id = ?", id.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM payments WHERE id = ? AND company_id = ?", id, companyId);
     }
 
     @Override
@@ -149,13 +149,13 @@ public class PaymentJdbcRepository implements PaymentRepository {
                         ORDER BY p.payment_date DESC, p.created_at DESC
                         """,
                 new PaymentRowMapper(),
-                vehicleId.toString(),
+                vehicleId,
                 companyId);
     }
 
     @Override
     public void deletePaymentsByVehicleId(int companyId, UUID vehicleId) {
-        jdbcTemplate.update("DELETE FROM payments WHERE vehicle_id = ? AND company_id = ?", vehicleId.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM payments WHERE vehicle_id = ? AND company_id = ?", vehicleId, companyId);
     }
 
     @Override
@@ -210,15 +210,14 @@ public class PaymentJdbcRepository implements PaymentRepository {
 
         @Override
         public Payment mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
             PaymentType paymentType = PaymentType.valueOf(rs.getString("payment_type"));
             String description = rs.getString("description");
             BigDecimal amount = rs.getBigDecimal("amount");
             Date paymentDateSql = rs.getDate("payment_date");
             LocalDate paymentDate = paymentDateSql == null ? null : paymentDateSql.toLocalDate();
-            String vehicleIdStr = rs.getString("vehicle_id");
-            UUID vehicleId = vehicleIdStr == null ? null : UUID.fromString(vehicleIdStr);
+            UUID vehicleId = rs.getObject("vehicle_id", UUID.class);
             String notes = rs.getString("notes");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAtTs = rs.getTimestamp("updated_at");

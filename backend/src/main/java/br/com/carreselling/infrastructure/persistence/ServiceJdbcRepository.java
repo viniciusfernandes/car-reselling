@@ -33,9 +33,9 @@ public class ServiceJdbcRepository implements ServiceRepository {
                         (id, company_id, vehicle_id, service_type, description, service_value, start_date, end_date, created_at, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                serviceEntry.getId().toString(),
+                serviceEntry.getId(),
                 companyId,
-                serviceEntry.getVehicleId().toString(),
+                serviceEntry.getVehicleId(),
                 serviceEntry.getServiceType().name(),
                 serviceEntry.getDescription(),
                 serviceEntry.getServiceValue(),
@@ -53,7 +53,7 @@ public class ServiceJdbcRepository implements ServiceRepository {
                         SELECT * FROM services WHERE id = ? AND company_id = ?
                         """,
                 new ServiceRowMapper(),
-                id.toString(),
+                id,
                 companyId);
         return result.stream().findFirst();
     }
@@ -64,7 +64,7 @@ public class ServiceJdbcRepository implements ServiceRepository {
                         SELECT * FROM services WHERE vehicle_id = ? AND company_id = ? ORDER BY created_at DESC
                         """,
                 new ServiceRowMapper(),
-                vehicleId.toString(),
+                vehicleId,
                 companyId);
     }
 
@@ -82,7 +82,7 @@ public class ServiceJdbcRepository implements ServiceRepository {
                 serviceEntry.getStartDate(),
                 serviceEntry.getEndDate(),
                 serviceEntry.getUpdatedAt() == null ? Timestamp.from(Instant.now()) : Timestamp.from(serviceEntry.getUpdatedAt()),
-                serviceEntry.getId().toString(),
+                serviceEntry.getId(),
                 companyId
         );
         return serviceEntry;
@@ -90,7 +90,7 @@ public class ServiceJdbcRepository implements ServiceRepository {
 
     @Override
     public void deleteService(int companyId, UUID id) {
-        jdbcTemplate.update("DELETE FROM services WHERE id = ? AND company_id = ?", id.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM services WHERE id = ? AND company_id = ?", id, companyId);
     }
 
     @Override
@@ -98,14 +98,14 @@ public class ServiceJdbcRepository implements ServiceRepository {
         BigDecimal total = jdbcTemplate.queryForObject("""
                         SELECT COALESCE(SUM(service_value), 0) FROM services WHERE vehicle_id = ? AND company_id = ?
                         """,
-                new Object[]{vehicleId.toString(), companyId},
+                new Object[]{vehicleId, companyId},
                 BigDecimal.class);
         return total == null ? BigDecimal.ZERO : total;
     }
 
     @Override
     public void deleteServicesByVehicleId(int companyId, UUID vehicleId) {
-        jdbcTemplate.update("DELETE FROM services WHERE vehicle_id = ? AND company_id = ?", vehicleId.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM services WHERE vehicle_id = ? AND company_id = ?", vehicleId, companyId);
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ServiceJdbcRepository implements ServiceRepository {
         return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
                 "SELECT EXISTS (SELECT 1 FROM services WHERE vehicle_id = ? AND company_id = ? AND (end_date IS NULL OR end_date > CURRENT_DATE))",
                 Boolean.class,
-                vehicleId.toString(),
+                vehicleId,
                 companyId
         ));
     }
@@ -122,9 +122,9 @@ public class ServiceJdbcRepository implements ServiceRepository {
 
         @Override
         public ServiceOnVehicle mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
-            UUID vehicleId = UUID.fromString(rs.getString("vehicle_id"));
+            UUID vehicleId = rs.getObject("vehicle_id", UUID.class);
             ServiceType serviceType = ServiceType.valueOf(rs.getString("service_type"));
             String description = rs.getString("description");
             BigDecimal value = rs.getBigDecimal("service_value");

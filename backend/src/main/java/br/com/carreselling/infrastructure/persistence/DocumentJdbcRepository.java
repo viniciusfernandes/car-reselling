@@ -32,9 +32,9 @@ public class DocumentJdbcRepository implements DocumentRepository {
                          storage_key, uploaded_at, uploaded_by)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                document.getId().toString(),
+                document.getId(),
                 companyId,
-                document.getVehicleId().toString(),
+                document.getVehicleId(),
                 document.getDocumentType().name(),
                 document.getOriginalFileName(),
                 document.getContentType(),
@@ -52,7 +52,7 @@ public class DocumentJdbcRepository implements DocumentRepository {
                         SELECT * FROM documents WHERE id = ? AND company_id = ?
                         """,
                 new DocumentRowMapper(),
-                id.toString(),
+                id,
                 companyId);
         return result.stream().findFirst();
     }
@@ -63,7 +63,7 @@ public class DocumentJdbcRepository implements DocumentRepository {
                         SELECT * FROM documents WHERE vehicle_id = ? AND company_id = ? ORDER BY uploaded_at DESC
                         """,
                 new DocumentRowMapper(),
-                vehicleId.toString(),
+                vehicleId,
                 companyId);
     }
 
@@ -72,27 +72,27 @@ public class DocumentJdbcRepository implements DocumentRepository {
         return jdbcTemplate.queryForList("""
                         SELECT storage_key FROM documents WHERE vehicle_id = ? AND company_id = ?""",
                 String.class,
-                vehicleId.toString(),
+                vehicleId,
                 companyId);
     }
 
     @Override
     public void deleteDocument(int companyId, UUID id) {
-        jdbcTemplate.update("DELETE FROM documents WHERE id = ? AND company_id = ?", id.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM documents WHERE id = ? AND company_id = ?", id, companyId);
     }
 
     @Override
     public void deleteDocumentByVEhicleId(int companyId, UUID vehicleId) {
-        jdbcTemplate.update("DELETE FROM documents WHERE vehicle_id = ? AND company_id = ?", vehicleId.toString(), companyId);
+        jdbcTemplate.update("DELETE FROM documents WHERE vehicle_id = ? AND company_id = ?", vehicleId, companyId);
     }
 
     private static class DocumentRowMapper implements RowMapper<Document> {
 
         @Override
         public Document mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
-            UUID vehicleId = UUID.fromString(rs.getString("vehicle_id"));
+            UUID vehicleId = rs.getObject("vehicle_id", UUID.class);
             DocumentType documentType = DocumentType.valueOf(rs.getString("document_type"));
             String originalFileName = rs.getString("original_file_name");
             String contentType = rs.getString("content_type");

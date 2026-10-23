@@ -28,9 +28,9 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
                 INSERT INTO models (id, company_id, brand_id, name, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-            model.getId().toString(),
+            model.getId(),
             companyId,
-            model.getBrandId().toString(),
+            model.getBrandId(),
             model.getName(),
             Timestamp.from(model.getCreatedAt()),
             model.getUpdatedAt() == null ? null : Timestamp.from(model.getUpdatedAt())
@@ -44,7 +44,7 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
                 SELECT * FROM models WHERE brand_id = ? AND company_id = ? ORDER BY name ASC
                 """,
             new VehicleModelRowMapper(),
-            brandId.toString(),
+            brandId,
             companyId);
     }
 
@@ -54,7 +54,7 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
                 SELECT * FROM models WHERE id = ? AND company_id = ?
                 """,
             new VehicleModelRowMapper(),
-            id.toString(),
+            id,
             companyId);
         return result.stream().findFirst();
     }
@@ -65,7 +65,7 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
                 SELECT * FROM models WHERE brand_id = ? AND name = ? AND company_id = ?
                 """,
             new VehicleModelRowMapper(),
-            brandId.toString(),
+            brandId,
             name,
             companyId);
         return result.stream().findFirst();
@@ -75,9 +75,9 @@ public class VehicleModelJdbcRepository implements VehicleModelRepository {
 
         @Override
         public VehicleModel mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
-            UUID brandId = UUID.fromString(rs.getString("brand_id"));
+            UUID brandId = rs.getObject("brand_id", UUID.class);
             String name = rs.getString("name");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();
             Timestamp updatedAt = rs.getTimestamp("updated_at");

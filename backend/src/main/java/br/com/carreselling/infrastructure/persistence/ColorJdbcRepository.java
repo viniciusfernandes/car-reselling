@@ -28,7 +28,7 @@ public class ColorJdbcRepository implements ColorRepository {
                 INSERT INTO colors (id, company_id, name, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-            color.getId().toString(),
+            color.getId(),
             companyId,
             color.getName(),
             Timestamp.from(color.getCreatedAt()),
@@ -61,7 +61,7 @@ public class ColorJdbcRepository implements ColorRepository {
 
         @Override
         public Color mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
             String name = rs.getString("name");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();

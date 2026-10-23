@@ -1,6 +1,5 @@
 package br.com.carreselling.infrastructure.persistence;
 
-import br.com.carreselling.common.UuidGenerator;
 import br.com.carreselling.domain.model.CashBalance;
 import br.com.carreselling.domain.model.CashBalanceHistory;
 import br.com.carreselling.domain.repository.CashBalanceRepository;
@@ -58,7 +57,7 @@ public class CashBalanceJdbcRepository implements CashBalanceRepository {
                         INSERT INTO cash_balance_history (id, company_id, amount, changed_at, changed_by)
                         VALUES (?, ?, ?, ?, ?)
                         """,
-                UuidGenerator.generate().toString(),
+                history.id,
                 companyId,
                 history.amount,
                 history.changedAt,

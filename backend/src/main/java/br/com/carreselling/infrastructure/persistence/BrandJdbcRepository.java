@@ -28,7 +28,7 @@ public class BrandJdbcRepository implements BrandRepository {
                 INSERT INTO brands (id, company_id, name, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-            brand.getId().toString(),
+            brand.getId(),
             companyId,
             brand.getName(),
             Timestamp.from(brand.getCreatedAt()),
@@ -52,7 +52,7 @@ public class BrandJdbcRepository implements BrandRepository {
                 SELECT * FROM brands WHERE id = ? AND company_id = ?
                 """,
             new BrandRowMapper(),
-            id.toString(),
+            id,
             companyId);
         return result.stream().findFirst();
     }
@@ -72,7 +72,7 @@ public class BrandJdbcRepository implements BrandRepository {
 
         @Override
         public Brand mapRow(ResultSet rs, int rowNum) throws SQLException {
-            UUID id = UUID.fromString(rs.getString("id"));
+            UUID id = rs.getObject("id", UUID.class);
             int companyId = rs.getInt("company_id");
             String name = rs.getString("name");
             Instant createdAt = rs.getTimestamp("created_at").toInstant();

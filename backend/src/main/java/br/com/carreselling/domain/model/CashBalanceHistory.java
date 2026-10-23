@@ -1,5 +1,7 @@
 package br.com.carreselling.domain.model;
 
+import br.com.carreselling.common.UuidGenerator;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -12,6 +14,7 @@ public class CashBalanceHistory {
     public String changedBy;
 
     public CashBalanceHistory(int companyId, double amount, String changedBy) {
+        this.id = UuidGenerator.generate();
         this.companyId = companyId;
         this.amount = amount;
         this.changedAt = LocalDateTime.now();

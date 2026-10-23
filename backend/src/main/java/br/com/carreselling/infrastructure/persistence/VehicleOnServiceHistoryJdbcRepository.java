@@ -29,9 +29,9 @@ public class VehicleOnServiceHistoryJdbcRepository implements VehicleOnServiceHi
                         INSERT INTO vehicle_on_service_history (id, company_id, vehicle_id, on_service, changed_at)
                         VALUES (?, ?, ?, ?, ?)
                         """,
-                history.id().toString(),
+                history.id(),
                 companyId,
-                history.vehicleId().toString(),
+                history.vehicleId(),
                 history.onService(),
                 Timestamp.from(history.changedAt())
         );
@@ -46,7 +46,7 @@ public class VehicleOnServiceHistoryJdbcRepository implements VehicleOnServiceHi
                         ORDER BY changed_at ASC
                         """,
                 new HistoryRowMapper(),
-                vehicleId.toString(),
+                vehicleId,
                 companyId
         );
     }
@@ -55,7 +55,7 @@ public class VehicleOnServiceHistoryJdbcRepository implements VehicleOnServiceHi
     public void deleteByVehicleId(int companyId, UUID vehicleId) {
         jdbcTemplate.update(
                 "DELETE FROM vehicle_on_service_history WHERE vehicle_id = ? AND company_id = ?",
-                vehicleId.toString(),
+                vehicleId,
                 companyId
         );
     }
@@ -65,9 +65,9 @@ public class VehicleOnServiceHistoryJdbcRepository implements VehicleOnServiceHi
         @Override
         public VehicleOnServiceHistory mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
             return new VehicleOnServiceHistory(
-                    UUID.fromString(rs.getString("id")),
+                    rs.getObject("id", UUID.class),
                     rs.getInt("company_id"),
-                    UUID.fromString(rs.getString("vehicle_id")),
+                    rs.getObject("vehicle_id", UUID.class),
                     rs.getBoolean("on_service"),
                     rs.getTimestamp("changed_at").toInstant()
             );
