@@ -33,21 +33,7 @@ public class CriarVeiculoEndpoint {
     @PostMapping
     public ResponseEntity<ApiResponse<CriarVeiculoResponse>> create(@Valid @RequestBody CriarVeiculoRequest request) {
         int empresaId = tenantContext.getCurrentEmpresaId();
-        CriarVeiculoRequest normalized = CriarVeiculoMapper.normalize(request);
-        UUID veiculoId = veiculoService.criarVeiculo(empresaId, 
-            normalized.placa(),
-            normalized.renavam(),
-            normalized.chassi(),
-            normalized.ano(),
-            normalized.cor(),
-            normalized.modelo(),
-            normalized.marca(),
-            normalized.origemFornecedor(),
-            normalized.precoCompra(),
-            normalized.custoFrete(),
-            normalized.comissaoCompra(),
-            normalized.valorFipe()
-        );
+        UUID veiculoId = veiculoService.criarVeiculo(CriarVeiculoMapper.toDomain(empresaId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new ApiResponse<>(new CriarVeiculoResponse(veiculoId)));
     }

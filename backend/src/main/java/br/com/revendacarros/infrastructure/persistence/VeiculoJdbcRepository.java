@@ -86,7 +86,7 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
 
     @Override
     public Optional<Veiculo> findVeiculoByPlaca(int empresaId, String placa) {
-        List<Veiculo> result = jdbcTemplate.query("""
+        List<Veiculo> result = jdbcTemplate. query("""
                         SELECT * FROM veiculos WHERE placa = ? AND empresa_id = ?
                         """,
                 new VeiculoRowMapper(),
@@ -118,7 +118,8 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
     }
 
     @Override
-    public List<Veiculo> findVeiculoByFilter(int empresaId, StatusVeiculo status, String query, Boolean emServico, int offset, int size) {
+    public List<Veiculo> findVeiculoByFilter(int empresaId, StatusVeiculo status, String query, Boolean emServico, int page, int size) {
+        int offset = Math.max(page, 0) * Math.max(size, 1);
         StringBuilder sql = new StringBuilder("SELECT * FROM veiculos v WHERE v.empresa_id = ? ");
         List<Object> params = new ArrayList<>();
         params.add(empresaId);
@@ -127,7 +128,7 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
             params.add(status.name());
         }
         if (emServico != null) {
-            if (Boolean.TRUE.equals(emServico)) {
+            if (emServico) {
                 sql.append("AND EXISTS (SELECT 1 FROM servicos s WHERE s.veiculo_id = v.id AND s.empresa_id = ? AND s.data_fim IS NULL) ");
                 params.add(empresaId);
             } else {

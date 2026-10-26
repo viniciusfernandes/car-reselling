@@ -47,20 +47,13 @@ _tei_vars_loc() {
     'API_VERSION=1' \
     'UI_VERSION=1' \
     'AUTH_VERSION=1' \
-    'MYSQL_HOST=localhost' \
-    'MYSQL_PORT=5432' \
-    'MYSQL_DATABASE=car_reselling' \
-    'MYSQL_USER=car' \
-    'MYSQL_PASSWORD=car' \
-    'MYSQL_ROOT_PASSWORD=root' \
-    'SERVER_PORT=8082' \
-    'CAR_RESELLING_SERVER_PORT=8082' \
-    'SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/car_reselling' \
-    'SPRING_DATASOURCE_USERNAME=car' \
-    'SPRING_DATASOURCE_PASSWORD=car' \
+    'CAR_RESELLING_SERVER_PORT=8080' \
     'CAR_RESELLING_DB_URL=jdbc:postgresql://localhost:5432/car_reselling' \
     'CAR_RESELLING_DB_USERNAME=car' \
     'CAR_RESELLING_DB_PASSWORD=car' \
+    'AUTH_DB_URL=jdbc:postgresql://localhost:5432/auth' \
+    'AUTH_DB_USERNAME=authenticator' \
+    'AUTH_DB_PASSWORD=admin' \
     'STORAGE_BASE_PATH=./storage' \
     'AUTH_BASE_URL=http://localhost:8081' \
     'ORS_ALLOWED_ORIGIN_PATTERNS=http://localhost:*' \
@@ -79,9 +72,10 @@ _tei_vars_loc() {
     'OBSERVABILITY_OTLP_ENDPOINT=http://localhost:4317' \
     'OBSERVABILITY_OTLP_HEADERS=' \
     'OBSERVABILITY_METRICS_INTERVAL=30s' \
-    'OTLP_METRICS_ENABLED=true' \
+    'OTLP_METRICS_ENABLED=false' \
     'OTLP_METRICS_URL=http://localhost:4318/v1/metrics' \
     'OTLP_METRICS_STEP=30s' \
+	'AUTH_SERVER_PORT=8081' \
     'LOKI_URL=http://localhost:3100'
 }
 
@@ -91,20 +85,13 @@ _tei_vars_prd() {
     'API_VERSION=1' \
     'UI_VERSION=1' \
     'AUTH_VERSION=1' \
-    'MYSQL_HOST=postgres' \
-    'MYSQL_PORT=5432' \
-    'MYSQL_DATABASE=car_reselling' \
-    'MYSQL_USER=change-me' \
-    'MYSQL_PASSWORD=change-me' \
-    'MYSQL_ROOT_PASSWORD=change-me-root' \
-    'SERVER_PORT=8080' \
-    'CAR_RESELLING_SERVER_PORT=8080' \
-    'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/car_reselling' \
-    'SPRING_DATASOURCE_USERNAME=change-me' \
-    'SPRING_DATASOURCE_PASSWORD=change-me' \
+	'CAR_RESELLING_SERVER_PORT=8080' \
     'CAR_RESELLING_DB_URL=jdbc:postgresql://postgres:5432/car_reselling' \
     'CAR_RESELLING_DB_USERNAME=change-me' \
     'CAR_RESELLING_DB_PASSWORD=change-me' \
+    'AUTH_DB_URL=jdbc:postgresql://postgres:5432/auth' \
+    'AUTH_DB_USERNAME=authenticator' \
+    'AUTH_DB_PASSWORD=change-me' \
     'STORAGE_BASE_PATH=/storage' \
     'AUTH_BASE_URL=http://authentication-api:8081' \
     'ORS_ALLOWED_ORIGIN_PATTERNS=https://carreselling.vps7659.panel.icontainer.run' \
@@ -126,6 +113,7 @@ _tei_vars_prd() {
     'OTLP_METRICS_ENABLED=true' \
     'OTLP_METRICS_URL=http://otel-collector:4318/v1/metrics' \
     'OTLP_METRICS_STEP=30s' \
+	'AUTH_SERVER_PORT=8081' \
     'LOKI_URL=http://loki:3100'
 }
 

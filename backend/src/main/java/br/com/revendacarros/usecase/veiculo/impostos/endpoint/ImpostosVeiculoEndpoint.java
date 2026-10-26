@@ -30,7 +30,7 @@ public class ImpostosVeiculoEndpoint {
     @GetMapping("/{veiculoId}/impostos")
     public ApiResponse<ImpostosVeiculoResponse> getImpostos(@PathVariable UUID veiculoId) {
         int empresaId = tenantContext.getCurrentEmpresaId();
-        ImpostosVeiculo impostos = veiculoService.getImpostosVeiculo(empresaId, veiculoId);
+        ImpostosVeiculo impostos = veiculoService.findImpostosVeiculo(empresaId, veiculoId);
         return new ApiResponse<>(ImpostosVeiculoMapper.toResponse(impostos));
     }
 }

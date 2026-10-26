@@ -30,7 +30,7 @@ public class DetalheVeiculoEndpoint {
     @GetMapping("/{veiculoId}")
     public ApiResponse<DetalheVeiculoResponse> detail(@PathVariable UUID veiculoId) {
         int empresaId = tenantContext.getCurrentEmpresaId();
-        DetalheVeiculo detail = veiculoService.getVeiculo(empresaId, veiculoId);
+        DetalheVeiculo detail = veiculoService.findVeiculo(empresaId, veiculoId);
         return new ApiResponse<>(DetalheVeiculoMapper.toResponse(detail));
     }
 }

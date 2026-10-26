@@ -32,9 +32,6 @@ import org.springframework.util.StringUtils;
 @Slf4j
 @Service
 public class VeiculoService implements IVeiculoService {
-
-    private static final String PLATE_REGEX = "^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$";
-
     private final VeiculoRepository veiculoRepository;
     private final HistoricoVeiculoEmServicoRepository historicoVeiculoEmServicoRepository;
     private final DocumentoRepository documentoRepository;
@@ -74,94 +71,50 @@ public class VeiculoService implements IVeiculoService {
     }
 
     @Override
-    public UUID criarVeiculo(int empresaId,
-                              String placa,
-                              String renavam,
-                              String chassi,
-                              int ano,
-                              String cor,
-                              String modelo,
-                              String marca,
-                              OrigemFornecedor origemFornecedor,
-                              BigDecimal precoCompra,
-                              BigDecimal custoFrete,
-                              BigDecimal comissaoCompra,
-                              BigDecimal valorFipe) {
-        String normalizedPlate = normalizePlate(placa);
-        String normalizedRenavam = normalizeOptionalText(renavam);
-        String normalizedChassi = normalizeOptionalText(chassi);
-        String normalizedCor = normalizeCor(cor);
-        String normalizedMarca = normalizeOptionalText(marca);
-        String normalizedModelo = normalizeOptionalText(modelo);
-        validatePlate(normalizedPlate);
-        validateRequiredMoney(precoCompra, "precoCompra");
-        BigDecimal normalizedFrete = custoFrete == null ? BigDecimal.ZERO : custoFrete;
-        validateOptionalMoney(normalizedFrete, "custoFrete");
-        BigDecimal normalizedComissao = comissaoCompra == null ? BigDecimal.ZERO : comissaoCompra;
-        validateOptionalMoney(normalizedComissao, "comissaoCompra");
+    public UUID criarVeiculo(Veiculo veiculo) {
+        veiculo.normalizar();
+        int empresaId = veiculo.getEmpresaId();
+       veiculo.validar();
+
         Instant now = Instant.now();
-        Optional<Veiculo> existingByPlate = veiculoRepository.findVeiculoByPlaca(empresaId, normalizedPlate);
+        Optional<Veiculo> existingByPlate = veiculoRepository.findVeiculoByPlaca(empresaId, veiculo.getPlaca());
         UUID currentVeiculoId = existingByPlate.map(Veiculo::getId).orElse(null);
-        validateUniqueRenavamAndChassi(empresaId, normalizedRenavam, normalizedChassi, currentVeiculoId);
-        resolveCor(empresaId, normalizedCor, now);
-        Marca marcaEntity = resolveMarca(empresaId, normalizedMarca, now);
-        ModeloVeiculo modeloEntity = resolveModelo(empresaId, marcaEntity.getId(), normalizedModelo, now);
+        validarRenavamAndChassi(empresaId, veiculo.getRenavam(), veiculo.getChassi(), currentVeiculoId);
+        resolveCor(empresaId, veiculo.getCor(), now);
+        Marca marcaEntity = resolveMarca(empresaId, veiculo.getMarca(), now);
+        ModeloVeiculo modeloEntity = resolveModelo(empresaId, marcaEntity.getId(), veiculo.getModelo(), now);
         if (existingByPlate.isPresent()) {
             Veiculo existingVeiculo = existingByPlate.get();
-            existingVeiculo.setRenavam(normalizedRenavam);
-            existingVeiculo.setChassi(normalizedChassi);
+            existingVeiculo.setRenavam(veiculo.getRenavam());
+            existingVeiculo.setChassi(veiculo.getChassi());
             existingVeiculo.updateDetails(
-                    ano,
-                    normalizedCor,
-                    normalizedModelo,
-                    normalizedMarca,
-                    origemFornecedor,
-                    precoCompra,
-                    normalizedFrete,
-                    normalizedComissao
+                    veiculo.getAno(),
+                    veiculo.getCor(),
+                    veiculo.getModelo(),
+                    veiculo.getMarca(),
+                    veiculo.getOrigemFornecedor(),
+                    veiculo.getPrecoCompra(),
+                    veiculo.getCustoFrete(),
+                    veiculo.getComissaoCompra()
             );
             existingVeiculo.setMarcaId(marcaEntity.getId());
             existingVeiculo.setModeloId(modeloEntity.getId());
-            existingVeiculo.setValorFipe(valorFipe);
+            existingVeiculo.setValorFipe(veiculo.getValorFipe());
             existingVeiculo.setAtualizadoEm(now);
             existingVeiculo.ensureDistribuicaoInvariant();
             veiculoRepository.updateVeiculo(empresaId, existingVeiculo);
             return existingVeiculo.getId();
         }
-        Veiculo veiculo = new Veiculo(
-                UuidGenerator.generate(),
-                empresaId,
-                normalizedPlate,
-                normalizedRenavam,
-                normalizedChassi,
-                ano,
-                normalizedCor,
-                normalizedModelo,
-                normalizedMarca,
-                marcaEntity.getId(),
-                modeloEntity.getId(),
-                origemFornecedor,
-                precoCompra,
-                normalizedFrete,
-                normalizedComissao,
-                null,
-                valorFipe,
-                null,
-                null,
-                StatusVeiculo.NO_PATIO,
-                null,
-                null,
-                null,
-                null,
-                now,
-                now
-        );
+        veiculo.setMarcaId(marcaEntity.getId());
+        veiculo.setModeloId(modeloEntity.getId());
+        veiculo.setCriadoEm(now);
+        veiculo.setAtualizadoEm(now);
         veiculo.ensureDistribuicaoInvariant();
         veiculoRepository.saveVeiculo(empresaId, veiculo);
         return veiculo.getId();
     }
 
-    private void validateUniqueRenavamAndChassi(int empresaId, String renavam, String chassi, UUID currentVeiculoId) {
+    private void validarRenavamAndChassi(int empresaId, String renavam, String chassi, UUID currentVeiculoId) {
         if (StringUtils.hasText(renavam)) {
             veiculoRepository.findVeiculoByRenavam(empresaId, renavam)
                     .ifPresent(existing -> {
@@ -181,7 +134,7 @@ public class VeiculoService implements IVeiculoService {
     }
 
     @Override
-    public DetalheVeiculo getVeiculo(int empresaId, UUID veiculoId) {
+    public DetalheVeiculo findVeiculo(int empresaId, UUID veiculoId) {
         Veiculo veiculo = veiculoRepository.findVeiculoById(empresaId, veiculoId)
                 .orElseThrow(() -> new NotFoundException("Veículo não encontrado"));
         BigDecimal totalServicos = veiculoRepository.findVeiculoTotalServicosByVeiculoId(empresaId, veiculoId);
@@ -226,7 +179,6 @@ public class VeiculoService implements IVeiculoService {
 
     @Override
     public void updatePrecoVenda(int empresaId, UUID veiculoId, BigDecimal precoVenda) {
-        validateRequiredMoney(precoVenda, "precoVenda");
         Veiculo veiculo = veiculoRepository.findVeiculoById(empresaId, veiculoId)
                 .orElseThrow(() -> new NotFoundException("Veículo não encontrado"));
 
@@ -235,11 +187,12 @@ public class VeiculoService implements IVeiculoService {
         stampDataVenda(veiculo);
         stampTaxaComissao(empresaId, veiculo);
         veiculo.setAtualizadoEm(Instant.now());
+        veiculo.validar();
         veiculoRepository.updateVeiculo(empresaId, veiculo);
     }
 
     @Override
-    public ImpostosVeiculo getImpostosVeiculo(int empresaId, UUID veiculoId) {
+    public ImpostosVeiculo findImpostosVeiculo(int empresaId, UUID veiculoId) {
         Veiculo veiculo = veiculoRepository.findVeiculoById(empresaId, veiculoId)
                 .orElseThrow(() -> new NotFoundException("Veículo não encontrado"));
         if (veiculo.getPrecoVenda() == null) {
@@ -273,8 +226,8 @@ public class VeiculoService implements IVeiculoService {
         if (size > 20) {
             size = 20;
         }
-        int offset = Math.max(page, 0) * Math.max(size, 1);
-        List<Veiculo> veiculos = veiculoRepository.findVeiculoByFilter(empresaId, status, query, isEmServico, offset, size);
+
+        List<Veiculo> veiculos = veiculoRepository.findVeiculoByFilter(empresaId, status, query, isEmServico, page, size);
         return veiculos.stream()
                 .map(veiculo -> {
                     BigDecimal totalServicos = veiculoRepository.findVeiculoTotalServicosByVeiculoId(empresaId, veiculo.getId());
@@ -327,31 +280,27 @@ public class VeiculoService implements IVeiculoService {
                               UUID notaFiscalDocumentoId,
                               UUID pagamentoComprovanteDocumentoId,
                               BigDecimal valorFipe) {
-        validateRequiredMoney(precoCompra, "precoCompra");
-        BigDecimal normalizedFrete = custoFrete == null ? BigDecimal.ZERO : custoFrete;
-        validateOptionalMoney(normalizedFrete, "custoFrete");
-        validateOptionalMoney(comissaoCompra, "comissaoCompra");
+
         Veiculo veiculo = veiculoRepository.findVeiculoById(empresaId, veiculoId)
                 .orElseThrow(() -> new NotFoundException("Veículo não encontrado"));
         validateDocumentoLink(empresaId, veiculoId, notaFiscalDocumentoId);
         validateDocumentoLink(empresaId, veiculoId, pagamentoComprovanteDocumentoId);
         Instant now = Instant.now();
-        String normalizedCor = normalizeCor(cor);
-        resolveCor(empresaId, normalizedCor, now);
-        String normalizedMarca = normalizeOptionalText(marca);
-        String normalizedModelo = normalizeOptionalText(modelo);
-        Marca marcaEntity = resolveMarca(empresaId, normalizedMarca, now);
-        ModeloVeiculo modeloEntity = resolveModelo(empresaId, marcaEntity.getId(), normalizedModelo, now);
         veiculo.updateDetails(
                 ano,
-                normalizedCor,
-                normalizedModelo,
-                normalizedMarca,
+                cor,
+                modelo,
+                marca,
                 origemFornecedor,
                 precoCompra,
-                normalizedFrete,
+                custoFrete,
                 comissaoCompra
         );
+        veiculo.validar();
+        veiculo.normalizar();
+        resolveCor(empresaId, veiculo.getCor(), now);
+        Marca marcaEntity = resolveMarca(empresaId, veiculo.getMarca(), now);
+        ModeloVeiculo modeloEntity = resolveModelo(empresaId, marcaEntity.getId(), veiculo.getModelo(), now);
         veiculo.updateLinkedDocumentos(notaFiscalDocumentoId, pagamentoComprovanteDocumentoId);
         veiculo.setMarcaId(marcaEntity.getId());
         veiculo.setModeloId(modeloEntity.getId());
@@ -451,15 +400,14 @@ public class VeiculoService implements IVeiculoService {
     }
 
     private Marca resolveMarca(int empresaId, String marca, Instant now) {
-        String normalized = normalizeOptionalText(marca);
-        if (!StringUtils.hasText(normalized)) {
+        if (!StringUtils.hasText(marca)) {
             throw new IllegalArgumentException("marca: obrigatório.");
         }
-        return marcaRepository.findMarcaByNome(empresaId, normalized)
+        return marcaRepository.findMarcaByNome(empresaId, marca)
                 .orElseGet(() -> marcaRepository.saveMarca(empresaId, new Marca(
                         UuidGenerator.generate(),
                         empresaId,
-                        normalized,
+                        marca,
                         now,
                         now
                 )));
@@ -480,44 +428,21 @@ public class VeiculoService implements IVeiculoService {
     }
 
     private ModeloVeiculo resolveModelo(int empresaId, UUID marcaId, String modelo, Instant now) {
-        String normalized = normalizeOptionalText(modelo);
-        if (!StringUtils.hasText(normalized)) {
+        if (!StringUtils.hasText(modelo)) {
             throw new IllegalArgumentException("modelo: obrigatório.");
         }
-        return modeloVeiculoRepository.findModeloByMarcaIdAndNome(empresaId, marcaId, normalized)
+        return modeloVeiculoRepository.findModeloByMarcaIdAndNome(empresaId, marcaId, modelo)
                 .orElseGet(() -> modeloVeiculoRepository.saveModelo(empresaId, new ModeloVeiculo(
                         UuidGenerator.generate(),
                         empresaId,
                         marcaId,
-                        normalized,
+                        modelo,
                         now,
                         now
                 )));
     }
 
-    private void validatePlate(String plate) {
-        if (plate == null || !plate.matches(PLATE_REGEX)) {
-            throw new IllegalArgumentException("placa: formato inválido.");
-        }
-    }
 
-    private void validateRequiredMoney(BigDecimal value, String field) {
-        if (value == null) {
-            throw new IllegalArgumentException(field + ": obrigatório.");
-        }
-        if (value.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException(field + ": não pode ser negativo.");
-        }
-    }
-
-    private void validateOptionalMoney(BigDecimal value, String field) {
-        if (value == null) {
-            return;
-        }
-        if (value.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException(field + ": não pode ser negativo.");
-        }
-    }
 
     private void validateDocumentoLink(int empresaId, UUID veiculoId, UUID documentoId) {
         if (documentoId == null) {
@@ -526,19 +451,6 @@ public class VeiculoService implements IVeiculoService {
         documentoRepository.findDocumentoById(empresaId, documentoId)
                 .filter(documento -> documento.getVeiculoId().equals(veiculoId))
                 .orElseThrow(() -> new NotFoundException("Documento não encontrado para o veículo."));
-    }
-
-    private String normalizePlate(String plate) {
-        return plate == null ? null : plate.trim().toUpperCase();
-    }
-
-    private String normalizeOptionalText(String value) {
-        return value == null ? null : value.trim();
-    }
-
-    private String normalizeCor(String value) {
-        String normalized = normalizeOptionalText(value);
-        return normalized == null ? null : normalized.toUpperCase();
     }
 
     private String resolveNomeParceiro(int empresaId, UUID parceiroId) {

@@ -22,7 +22,7 @@ public interface VeiculoRepository {
 
     Optional<Veiculo> findVeiculoByChassi(int empresaId, String chassi);
 
-    List<Veiculo> findVeiculoByFilter(int empresaId, StatusVeiculo status, String query, Boolean emServico, int offset, int size);
+    List<Veiculo> findVeiculoByFilter(int empresaId, StatusVeiculo status, String query, Boolean emServico, int page, int size);
 
     long countVeiculoByFilter(int empresaId, StatusVeiculo status, String query, Boolean emServico);
 

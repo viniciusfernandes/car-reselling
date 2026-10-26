@@ -1,6 +1,8 @@
 package br.com.revendacarros.domain.model;
 
 import br.com.revendacarros.domain.exception.InvalidStateException;
+import lombok.Builder;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -11,10 +13,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class Veiculo {
-
+    private static final String PLATE_REGEX = "^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$";
     private final UUID id;
     private final int empresaId;
-    private final String placa;
+    private String placa;
     private String renavam;
     private String chassi;
     private int ano;
@@ -91,6 +93,30 @@ public class Veiculo {
         this.taxaComissaoVenda = taxaComissaoVenda;
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
+    }
+
+    public void normalizar() {
+        this.placa = normalizePlate(this.placa);
+        this.renavam = normalizeOptionalText(this.renavam);
+        this.chassi = normalizeOptionalText(this.chassi);
+        this.cor = normalizeCor(this.cor);
+        this.marca = normalizeOptionalText(this.marca);
+        this.modelo = normalizeOptionalText(this.modelo);
+        this.custoFrete = this.custoFrete == null ? BigDecimal.ZERO : this.custoFrete;
+        this.comissaoCompra = this.comissaoCompra == null ? BigDecimal.ZERO : this.comissaoCompra;
+    }
+
+    private String normalizePlate(String plate) {
+        return plate == null ? null : plate.trim().toUpperCase();
+    }
+
+    private String normalizeOptionalText(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private String normalizeCor(String value) {
+        String normalized = normalizeOptionalText(value);
+        return normalized == null ? null : normalized.toUpperCase();
     }
 
     public void updateDetails(int ano,
@@ -328,6 +354,29 @@ public class Veiculo {
         LocalDate dataFim = dataVenda != null ? dataVenda : now;
         return (int) ChronoUnit.DAYS.between(dataInicio, dataFim);
 
+    }
+
+    public void validar() {
+        validatePlate();
+        validar(precoCompra, "precoCompra", true);
+        validar(custoFrete, "custoFrete", false);
+        validar(comissaoCompra, "comissaoCompra", false);
+        validar(precoVenda, "precoVenda", false);
+    }
+
+    private void validatePlate() {
+        if (placa == null || !placa.matches(PLATE_REGEX)) {
+            throw new IllegalArgumentException("placa: formato inválido.");
+        }
+    }
+
+    private void validar(BigDecimal value, String field, boolean obrigatorio) {
+        if (value == null && obrigatorio) {
+            throw new IllegalArgumentException(field + ": obrigatório.");
+        }
+        if (value != null && value.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException(field + ": não pode ser negativo.");
+        }
     }
 
     @Override
