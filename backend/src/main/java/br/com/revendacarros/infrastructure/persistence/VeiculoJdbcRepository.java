@@ -16,237 +16,234 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class VeiculoJdbcRepository implements VeiculoRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public VeiculoJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public VeiculoJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public Veiculo saveVeiculo(int empresaId, Veiculo veiculo) {
-        jdbcTemplate.update("""
-                        INSERT INTO veiculos
+        namedJdbcTemplate.update("""
+                        INSERT INTO revenda.veiculos
                         (id, empresa_id, placa, renavam, chassi, ano, cor, modelo, marca, marca_id, modelo_id, origem_fornecedor,
                          preco_compra, custo_frete, comissao_compra, preco_venda, valor_fipe,
                          documento_comprovante_pagamento_compra_id,
                          documento_nota_fiscal_compra_id, status, parceiro_atribuido_id, distribuido_em, data_venda,
                          taxa_comissao_venda, criado_em, atualizado_em)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (:id, :empresaId, :placa, :renavam, :chassi, :ano, :cor, :modelo, :marca, :marcaId, :modeloId,
+                                :origemFornecedor, :precoCompra, :custoFrete, :comissaoCompra, :precoVenda, :valorFipe,
+                                :documentoComprovantePagamentoCompraId, :documentoNotaFiscalCompraId, :status,
+                                :parceiroAtribuidoId, :distribuidoEm, :dataVenda, :taxaComissaoVenda, :criadoEm, :atualizadoEm)
                         """,
-                veiculo.getId(),
-                empresaId,
-                veiculo.getPlaca(),
-                veiculo.getRenavam(),
-                veiculo.getChassi(),
-                veiculo.getAno(),
-                veiculo.getCor(),
-                veiculo.getModelo(),
-                veiculo.getMarca(),
-                veiculo.getMarcaId(),
-                veiculo.getModeloId(),
-                veiculo.getOrigemFornecedor().name(),
-                veiculo.getPrecoCompra(),
-                veiculo.getCustoFrete(),
-                veiculo.getComissaoCompra(),
-                veiculo.getPrecoVenda(),
-                veiculo.getValorFipe(),
-                veiculo.getDocumentoComprovantePagamentoCompraId(),
-                veiculo.getDocumentoNotaFiscalCompraId(),
-                veiculo.getStatus().name(),
-                veiculo.getParceiroAtribuidoId(),
-                veiculo.getDistribuidoEm() == null ? null : Timestamp.from(veiculo.getDistribuidoEm()),
-                veiculo.getDataVenda(),
-                veiculo.getTaxaComissaoVenda(),
-                Timestamp.from(veiculo.getCriadoEm()),
-                veiculo.getAtualizadoEm() == null ? null : Timestamp.from(veiculo.getAtualizadoEm())
+                new MapSqlParameterSource()
+                        .addValue("id", veiculo.getId())
+                        .addValue("empresaId", empresaId)
+                        .addValue("placa", veiculo.getPlaca())
+                        .addValue("renavam", veiculo.getRenavam())
+                        .addValue("chassi", veiculo.getChassi())
+                        .addValue("ano", veiculo.getAno())
+                        .addValue("cor", veiculo.getCor())
+                        .addValue("modelo", veiculo.getModelo())
+                        .addValue("marca", veiculo.getMarca())
+                        .addValue("marcaId", veiculo.getMarcaId())
+                        .addValue("modeloId", veiculo.getModeloId())
+                        .addValue("origemFornecedor", veiculo.getOrigemFornecedor().name())
+                        .addValue("precoCompra", veiculo.getPrecoCompra())
+                        .addValue("custoFrete", veiculo.getCustoFrete())
+                        .addValue("comissaoCompra", veiculo.getComissaoCompra())
+                        .addValue("precoVenda", veiculo.getPrecoVenda())
+                        .addValue("valorFipe", veiculo.getValorFipe())
+                        .addValue("documentoComprovantePagamentoCompraId", veiculo.getDocumentoComprovantePagamentoCompraId())
+                        .addValue("documentoNotaFiscalCompraId", veiculo.getDocumentoNotaFiscalCompraId())
+                        .addValue("status", veiculo.getStatus().name())
+                        .addValue("parceiroAtribuidoId", veiculo.getParceiroAtribuidoId())
+                        .addValue("distribuidoEm", veiculo.getDistribuidoEm() == null ? null : Timestamp.from(veiculo.getDistribuidoEm()))
+                        .addValue("dataVenda", veiculo.getDataVenda())
+                        .addValue("taxaComissaoVenda", veiculo.getTaxaComissaoVenda())
+                        .addValue("criadoEm", Timestamp.from(veiculo.getCriadoEm()))
+                        .addValue("atualizadoEm", veiculo.getAtualizadoEm() == null ? null : Timestamp.from(veiculo.getAtualizadoEm()))
         );
         return veiculo;
     }
 
     @Override
     public Optional<Veiculo> findVeiculoById(int empresaId, UUID id) {
-        List<Veiculo> result = jdbcTemplate.query("""
-                        SELECT * FROM veiculos WHERE id = ? AND empresa_id = ?
+        List<Veiculo> result = namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.veiculos WHERE id = :id AND empresa_id = :empresaId
                         """,
-                new VeiculoRowMapper(),
-                id,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId),
+                new VeiculoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<Veiculo> findVeiculoByPlaca(int empresaId, String placa) {
-        List<Veiculo> result = jdbcTemplate. query("""
-                        SELECT * FROM veiculos WHERE placa = ? AND empresa_id = ?
+        List<Veiculo> result = namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.veiculos WHERE placa = :placa AND empresa_id = :empresaId
                         """,
-                new VeiculoRowMapper(),
-                placa,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("placa", placa)
+                        .addValue("empresaId", empresaId),
+                new VeiculoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<Veiculo> findVeiculoByRenavam(int empresaId, String renavam) {
-        List<Veiculo> result = jdbcTemplate.query("""
-                        SELECT * FROM veiculos WHERE renavam = ? AND empresa_id = ?
+        List<Veiculo> result = namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.veiculos WHERE renavam = :renavam AND empresa_id = :empresaId
                         """,
-                new VeiculoRowMapper(),
-                renavam,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("renavam", renavam)
+                        .addValue("empresaId", empresaId),
+                new VeiculoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<Veiculo> findVeiculoByChassi(int empresaId, String chassi) {
-        List<Veiculo> result = jdbcTemplate.query("""
-                        SELECT * FROM veiculos WHERE chassi = ? AND empresa_id = ?
+        List<Veiculo> result = namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.veiculos WHERE chassi = :chassi AND empresa_id = :empresaId
                         """,
-                new VeiculoRowMapper(),
-                chassi,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("chassi", chassi)
+                        .addValue("empresaId", empresaId),
+                new VeiculoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public List<Veiculo> findVeiculoByFilter(int empresaId, StatusVeiculo status, String query, Boolean emServico, int page, int size) {
         int offset = Math.max(page, 0) * Math.max(size, 1);
-        StringBuilder sql = new StringBuilder("SELECT * FROM veiculos v WHERE v.empresa_id = ? ");
-        List<Object> params = new ArrayList<>();
-        params.add(empresaId);
-        if (status != null) {
-            sql.append("AND v.status = ? ");
-            params.add(status.name());
-        }
-        if (emServico != null) {
-            if (emServico) {
-                sql.append("AND EXISTS (SELECT 1 FROM servicos s WHERE s.veiculo_id = v.id AND s.empresa_id = ? AND s.data_fim IS NULL) ");
-                params.add(empresaId);
-            } else {
-                sql.append("AND NOT EXISTS (SELECT 1 FROM servicos s WHERE s.veiculo_id = v.id AND s.empresa_id = ? AND s.data_fim IS NULL) ");
-                params.add(empresaId);
-            }
-        }
-        if (query != null && !query.isBlank()) {
-            sql.append("AND (v.placa LIKE ? OR v.modelo LIKE ? OR v.marca LIKE ?) ");
-            String q = "%" + query + "%";
-            params.add(q);
-            params.add(q);
-            params.add(q);
-        }
-        sql.append("ORDER BY v.criado_em DESC LIMIT ? OFFSET ?");
-        params.add(size);
-        params.add(offset);
-        return jdbcTemplate.query(java.util.Objects.requireNonNull(sql.toString()),
-                new VeiculoRowMapper(),
-                params.toArray(new Object[0]));
+        MapSqlParameterSource params = new MapSqlParameterSource("empresaId", empresaId);
+        StringBuilder sql = new StringBuilder("SELECT * FROM revenda.veiculos v WHERE v.empresa_id = :empresaId ");
+        appendVeiculoFilters(sql, params, status, query, emServico);
+        sql.append("ORDER BY v.criado_em DESC LIMIT :limit OFFSET :offset");
+        params.addValue("limit", size);
+        params.addValue("offset", offset);
+        return namedJdbcTemplate.query(sql.toString(), params, new VeiculoRowMapper());
     }
 
     @Override
     public long countVeiculoByFilter(int empresaId, StatusVeiculo status, String query, Boolean emServico) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM veiculos v WHERE v.empresa_id = ? ");
-        List<Object> params = new ArrayList<>();
-        params.add(empresaId);
+        MapSqlParameterSource params = new MapSqlParameterSource("empresaId", empresaId);
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM revenda.veiculos v WHERE v.empresa_id = :empresaId ");
+        appendVeiculoFilters(sql, params, status, query, emServico);
+        Long count = namedJdbcTemplate.queryForObject(sql.toString(), params, Long.class);
+        return count == null ? 0L : count;
+    }
+
+    // Filters shared by the listing and the count queries (alias "v" = revenda.veiculos).
+    private void appendVeiculoFilters(StringBuilder sql, MapSqlParameterSource params,
+                                      StatusVeiculo status, String query, Boolean emServico) {
         if (status != null) {
-            sql.append("AND v.status = ? ");
-            params.add(status.name());
+            sql.append("AND v.status = :status ");
+            params.addValue("status", status.name());
         }
         if (emServico != null) {
-            if (Boolean.TRUE.equals(emServico)) {
-                sql.append("AND EXISTS (SELECT 1 FROM servicos s WHERE s.veiculo_id = v.id AND s.empresa_id = ? AND s.data_fim IS NULL) ");
-                params.add(empresaId);
-            } else {
-                sql.append("AND NOT EXISTS (SELECT 1 FROM servicos s WHERE s.veiculo_id = v.id AND s.empresa_id = ? AND s.data_fim IS NULL) ");
-                params.add(empresaId);
-            }
+            String exists = Boolean.TRUE.equals(emServico) ? "EXISTS" : "NOT EXISTS";
+            sql.append("AND ").append(exists)
+                    .append(" (SELECT 1 FROM revenda.servicos s WHERE s.veiculo_id = v.id AND s.empresa_id = :empresaId AND s.data_fim IS NULL) ");
         }
         if (query != null && !query.isBlank()) {
-            sql.append("AND (v.placa LIKE ? OR v.modelo LIKE ? OR v.marca LIKE ?) ");
-            String q = "%" + query + "%";
-            params.add(q);
-            params.add(q);
-            params.add(q);
+            sql.append("AND (v.placa LIKE :query OR v.modelo LIKE :query OR v.marca LIKE :query) ");
+            params.addValue("query", "%" + query + "%");
         }
-        Long count = jdbcTemplate.queryForObject(
-                java.util.Objects.requireNonNull(sql.toString()),
-                Long.class,
-                params.toArray(new Object[0])
-        );
-        return count == null ? 0L : count;
     }
 
     @Override
     public Veiculo updateVeiculo(int empresaId, Veiculo veiculo) {
-        jdbcTemplate.update("""
-                        UPDATE veiculos
-                        SET renavam = ?, chassi = ?, ano = ?, cor = ?, modelo = ?, marca = ?, marca_id = ?, modelo_id = ?, origem_fornecedor = ?,
-                            preco_compra = ?, custo_frete = ?, comissao_compra = ?, preco_venda = ?, valor_fipe = ?,
-                            documento_comprovante_pagamento_compra_id = ?, documento_nota_fiscal_compra_id = ?,
-                            status = ?, parceiro_atribuido_id = ?, distribuido_em = ?, data_venda = ?,
-                            taxa_comissao_venda = ?, atualizado_em = ?
-                        WHERE id = ? AND empresa_id = ?
+        namedJdbcTemplate.update("""
+                        UPDATE revenda.veiculos
+                        SET renavam = :renavam, chassi = :chassi, ano = :ano, cor = :cor, modelo = :modelo, marca = :marca,
+                            marca_id = :marcaId, modelo_id = :modeloId, origem_fornecedor = :origemFornecedor,
+                            preco_compra = :precoCompra, custo_frete = :custoFrete, comissao_compra = :comissaoCompra,
+                            preco_venda = :precoVenda, valor_fipe = :valorFipe,
+                            documento_comprovante_pagamento_compra_id = :documentoComprovantePagamentoCompraId,
+                            documento_nota_fiscal_compra_id = :documentoNotaFiscalCompraId,
+                            status = :status, parceiro_atribuido_id = :parceiroAtribuidoId, distribuido_em = :distribuidoEm,
+                            data_venda = :dataVenda, taxa_comissao_venda = :taxaComissaoVenda, atualizado_em = :atualizadoEm
+                        WHERE id = :id AND empresa_id = :empresaId
                         """,
-                veiculo.getRenavam(),
-                veiculo.getChassi(),
-                veiculo.getAno(),
-                veiculo.getCor(),
-                veiculo.getModelo(),
-                veiculo.getMarca(),
-                veiculo.getMarcaId(),
-                veiculo.getModeloId(),
-                veiculo.getOrigemFornecedor().name(),
-                veiculo.getPrecoCompra(),
-                veiculo.getCustoFrete(),
-                veiculo.getComissaoCompra(),
-                veiculo.getPrecoVenda(),
-                veiculo.getValorFipe(),
-                veiculo.getDocumentoComprovantePagamentoCompraId(),
-                veiculo.getDocumentoNotaFiscalCompraId(),
-                veiculo.getStatus().name(),
-                veiculo.getParceiroAtribuidoId(),
-                veiculo.getDistribuidoEm() == null ? null : Timestamp.from(veiculo.getDistribuidoEm()),
-                veiculo.getDataVenda(),
-                veiculo.getTaxaComissaoVenda(),
-                veiculo.getAtualizadoEm() == null ? Timestamp.from(Instant.now()) : Timestamp.from(veiculo.getAtualizadoEm()),
-                veiculo.getId(),
-                empresaId
+                new MapSqlParameterSource()
+                        .addValue("renavam", veiculo.getRenavam())
+                        .addValue("chassi", veiculo.getChassi())
+                        .addValue("ano", veiculo.getAno())
+                        .addValue("cor", veiculo.getCor())
+                        .addValue("modelo", veiculo.getModelo())
+                        .addValue("marca", veiculo.getMarca())
+                        .addValue("marcaId", veiculo.getMarcaId())
+                        .addValue("modeloId", veiculo.getModeloId())
+                        .addValue("origemFornecedor", veiculo.getOrigemFornecedor().name())
+                        .addValue("precoCompra", veiculo.getPrecoCompra())
+                        .addValue("custoFrete", veiculo.getCustoFrete())
+                        .addValue("comissaoCompra", veiculo.getComissaoCompra())
+                        .addValue("precoVenda", veiculo.getPrecoVenda())
+                        .addValue("valorFipe", veiculo.getValorFipe())
+                        .addValue("documentoComprovantePagamentoCompraId", veiculo.getDocumentoComprovantePagamentoCompraId())
+                        .addValue("documentoNotaFiscalCompraId", veiculo.getDocumentoNotaFiscalCompraId())
+                        .addValue("status", veiculo.getStatus().name())
+                        .addValue("parceiroAtribuidoId", veiculo.getParceiroAtribuidoId())
+                        .addValue("distribuidoEm", veiculo.getDistribuidoEm() == null ? null : Timestamp.from(veiculo.getDistribuidoEm()))
+                        .addValue("dataVenda", veiculo.getDataVenda())
+                        .addValue("taxaComissaoVenda", veiculo.getTaxaComissaoVenda())
+                        .addValue("atualizadoEm", veiculo.getAtualizadoEm() == null
+                                ? Timestamp.from(Instant.now())
+                                : Timestamp.from(veiculo.getAtualizadoEm()))
+                        .addValue("id", veiculo.getId())
+                        .addValue("empresaId", empresaId)
         );
         return veiculo;
     }
 
     @Override
     public void deleteVeiculo(int empresaId, UUID id) {
-        jdbcTemplate.update("DELETE FROM veiculos WHERE id = ? AND empresa_id = ?", id, empresaId);
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.veiculos WHERE id = :id AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId));
     }
 
     @Override
     public BigDecimal findVeiculoTotalServicosByVeiculoId(int empresaId, UUID veiculoId) {
-        BigDecimal total = jdbcTemplate.queryForObject("""
-                        SELECT COALESCE(SUM(valor_servico), 0) FROM servicos WHERE veiculo_id = ? AND empresa_id = ?
+        BigDecimal total = namedJdbcTemplate.queryForObject("""
+                        SELECT COALESCE(SUM(valor_servico), 0)
+                        FROM revenda.servicos
+                        WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId
                         """,
-                BigDecimal.class,
-                veiculoId,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId),
+                BigDecimal.class);
         return total == null ? BigDecimal.ZERO : total;
     }
 
     @Override
     public int countVeiculoDocumentosByVeiculoId(int empresaId, UUID veiculoId) {
-        Integer count = jdbcTemplate.queryForObject("""
-                        SELECT COUNT(*) FROM documentos WHERE veiculo_id = ? AND empresa_id = ?
+        Integer count = namedJdbcTemplate.queryForObject("""
+                        SELECT COUNT(*) FROM revenda.documentos WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId
                         """,
-                Integer.class,
-                veiculoId,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId),
+                Integer.class);
         return count == null ? 0 : count;
     }
 
@@ -265,20 +262,18 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
                        COALESCE(v.comissao_compra, 0) AS comissao_compra,
                        v.custo_frete,
                        COALESCE(s.total_servicos, 0) AS total_servicos
-                FROM veiculos v
-                INNER JOIN parceiros p ON p.id = v.parceiro_atribuido_id AND p.empresa_id = v.empresa_id
+                FROM revenda.veiculos v
+                INNER JOIN revenda.parceiros p ON p.id = v.parceiro_atribuido_id AND p.empresa_id = v.empresa_id
                 LEFT JOIN (
                     SELECT veiculo_id, SUM(valor_servico) AS total_servicos
-                    FROM servicos
-                    WHERE empresa_id = ?
+                    FROM revenda.servicos
+                    WHERE empresa_id = :empresaId
                     GROUP BY veiculo_id
                 ) s ON s.veiculo_id = v.id
-                WHERE v.status = 'DISTRIBUIDO' AND v.empresa_id = ?
+                WHERE v.status = 'DISTRIBUIDO' AND v.empresa_id = :empresaId
                 """);
 
-        List<Object> params = new ArrayList<>();
-        params.add(empresaId);
-        params.add(empresaId);
+        MapSqlParameterSource params = new MapSqlParameterSource("empresaId", empresaId);
 
         if (filter != null) {
             LocalDate dataInicio = filter.dataInicio();
@@ -286,34 +281,30 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
             String marca = normalizeText(filter.marca());
             String modelo = normalizeText(filter.modelo());
             if (dataInicio != null) {
-                sql.append(" AND DATE(v.atualizado_em) >= ?");
-                params.add(Date.valueOf(dataInicio));
+                sql.append(" AND DATE(v.atualizado_em) >= :dataInicio");
+                params.addValue("dataInicio", Date.valueOf(dataInicio));
             }
             if (dataFim != null) {
-                sql.append(" AND DATE(v.atualizado_em) <= ?");
-                params.add(Date.valueOf(dataFim));
+                sql.append(" AND DATE(v.atualizado_em) <= :dataFim");
+                params.addValue("dataFim", Date.valueOf(dataFim));
             }
             if (marca != null) {
-                sql.append(" AND UPPER(v.marca) LIKE ?");
-                params.add("%" + marca + "%");
+                sql.append(" AND UPPER(v.marca) LIKE :marca");
+                params.addValue("marca", "%" + marca + "%");
             }
             if (modelo != null) {
-                sql.append(" AND UPPER(v.modelo) LIKE ?");
-                params.add("%" + modelo + "%");
+                sql.append(" AND UPPER(v.modelo) LIKE :modelo");
+                params.addValue("modelo", "%" + modelo + "%");
             }
             if (filter.parceiroId() != null) {
-                sql.append(" AND v.parceiro_atribuido_id = ?");
-                params.add(filter.parceiroId());
+                sql.append(" AND v.parceiro_atribuido_id = :parceiroId");
+                params.addValue("parceiroId", filter.parceiroId());
             }
         }
 
         sql.append(" ORDER BY p.nome, v.placa");
 
-        return jdbcTemplate.query(
-                Objects.requireNonNull(sql.toString()),
-                new RelatorioRowMapper(),
-                params.toArray(new Object[0])
-        );
+        return namedJdbcTemplate.query(sql.toString(), params, new RelatorioRowMapper());
     }
 
     @Override
@@ -331,80 +322,73 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
                        v.preco_venda,
                        COALESCE(s.total_servicos, 0) AS total_servicos,
                        v.taxa_comissao_venda
-                FROM veiculos v
+                FROM revenda.veiculos v
                 LEFT JOIN (
                     SELECT veiculo_id, SUM(valor_servico) AS total_servicos
-                    FROM servicos
-                    WHERE empresa_id = ?
+                    FROM revenda.servicos
+                    WHERE empresa_id = :empresaId
                     GROUP BY veiculo_id
                 ) s ON s.veiculo_id = v.id
-                WHERE v.status = 'VENDIDO' AND v.preco_venda IS NOT NULL AND v.empresa_id = ?
+                WHERE v.status = 'VENDIDO' AND v.preco_venda IS NOT NULL AND v.empresa_id = :empresaId
                 """);
 
-        List<Object> params = new ArrayList<>();
-        params.add(empresaId);
-        params.add(empresaId);
+        MapSqlParameterSource params = new MapSqlParameterSource("empresaId", empresaId);
         if (filter != null) {
             LocalDate dataInicio = filter.dataInicio();
             LocalDate dataFim = filter.dataFim();
             String marca = normalizeText(filter.marca());
             String modelo = normalizeText(filter.modelo());
             if (dataInicio != null) {
-                sql.append(" AND v.data_venda >= ?");
-                params.add(Date.valueOf(dataInicio));
+                sql.append(" AND v.data_venda >= :dataInicio");
+                params.addValue("dataInicio", Date.valueOf(dataInicio));
             }
             if (dataFim != null) {
-                sql.append(" AND v.data_venda <= ?");
-                params.add(Date.valueOf(dataFim));
+                sql.append(" AND v.data_venda <= :dataFim");
+                params.addValue("dataFim", Date.valueOf(dataFim));
             }
             if (marca != null) {
-                sql.append(" AND UPPER(v.marca) LIKE ?");
-                params.add("%" + marca + "%");
+                sql.append(" AND UPPER(v.marca) LIKE :marca");
+                params.addValue("marca", "%" + marca + "%");
             }
             if (modelo != null) {
-                sql.append(" AND UPPER(v.modelo) LIKE ?");
-                params.add("%" + modelo + "%");
+                sql.append(" AND UPPER(v.modelo) LIKE :modelo");
+                params.addValue("modelo", "%" + modelo + "%");
             }
             if (filter.parceiroId() != null) {
-                sql.append(" AND v.parceiro_atribuido_id = ?");
-                params.add(filter.parceiroId());
+                sql.append(" AND v.parceiro_atribuido_id = :parceiroId");
+                params.addValue("parceiroId", filter.parceiroId());
             }
         }
         sql.append(" ORDER BY v.data_venda DESC, v.placa");
 
-        return jdbcTemplate.query(
-                java.util.Objects.requireNonNull(sql.toString()),
-                new VeiculoVendidoMapper(),
-                params.toArray(new Object[0])
-        );
+        return namedJdbcTemplate.query(sql.toString(), params, new VeiculoVendidoMapper());
     }
 
     @Override
     public CustoTotalVeiculos findVeiculoCustoTotal(int empresaId) {
-        return jdbcTemplate.queryForObject("""
+        return namedJdbcTemplate.queryForObject("""
                         SELECT
                             COUNT(*) AS total_veiculos,
                             COALESCE(SUM(v.preco_compra + v.custo_frete + v.comissao_compra
                                 + COALESCE(svc.total_servicos, 0)), 0) AS custo_total,
                             COALESCE(SUM(v.preco_compra), 0) AS total_preco_compra,
                             COALESCE(SUM(v.comissao_compra), 0) AS total_comissao_compra
-                        FROM veiculos v
+                        FROM revenda.veiculos v
                         LEFT JOIN (
                             SELECT veiculo_id, SUM(valor_servico) AS total_servicos
-                            FROM servicos
-                            WHERE empresa_id = ?
+                            FROM revenda.servicos
+                            WHERE empresa_id = :empresaId
                             GROUP BY veiculo_id
                         ) svc ON svc.veiculo_id = v.id
-                        WHERE v.status != 'VENDIDO' AND v.empresa_id = ?
+                        WHERE v.status != 'VENDIDO' AND v.empresa_id = :empresaId
                         """,
+                new MapSqlParameterSource("empresaId", empresaId),
                 (rs, rowNum) -> new CustoTotalVeiculos(
                         rs.getInt("total_veiculos"),
                         rs.getBigDecimal("custo_total"),
                         rs.getBigDecimal("total_preco_compra"),
                         rs.getBigDecimal("total_comissao_compra")
-                ),
-                empresaId,
-                empresaId
+                )
         );
     }
 
@@ -454,7 +438,7 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
     private static class VeiculoRowMapper implements RowMapper<Veiculo> {
 
         @Override
-        public Veiculo mapRow(@org.springframework.lang.NonNull ResultSet rs, int rowNum) throws SQLException {
+        public Veiculo mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
             UUID id = rs.getObject("id", UUID.class);
             int empresaId = rs.getInt("empresa_id");
             String placa = rs.getString("placa");
@@ -477,7 +461,7 @@ public class VeiculoJdbcRepository implements VeiculoRepository {
             StatusVeiculo status = StatusVeiculo.valueOf(rs.getString("status"));
             UUID parceiroAtribuidoId = rs.getObject("parceiro_atribuido_id", UUID.class);
             Timestamp distribuidoEm = rs.getTimestamp("distribuido_em");
-            java.sql.Date dataVendaDate = rs.getDate("data_venda");
+            Date dataVendaDate = rs.getDate("data_venda");
             BigDecimal taxaComissaoVenda = rs.getBigDecimal("taxa_comissao_venda");
             Instant criadoEm = rs.getTimestamp("criado_em").toInstant();
             Timestamp atualizadoEm = rs.getTimestamp("atualizado_em");

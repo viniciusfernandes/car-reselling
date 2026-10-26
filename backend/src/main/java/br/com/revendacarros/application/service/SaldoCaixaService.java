@@ -1,7 +1,7 @@
 package br.com.revendacarros.application.service;
 
-import br.com.revendacarros.domain.model.SaldoCaixa;
 import br.com.revendacarros.domain.model.HistoricoSaldoCaixa;
+import br.com.revendacarros.domain.model.SaldoCaixa;
 import br.com.revendacarros.domain.repository.SaldoCaixaRepository;
 import br.com.revendacarros.usecase.UseCaseException;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,12 @@ public class SaldoCaixaService implements ISaldoCaixaService {
         if (alteradoPor == null || alteradoPor.isBlank()) {
             throw new UseCaseException("Falha ao atualizar o saldo do caixa. O autor não pode ser nulo ou vazio.");
         }
-        saldoCaixaRepository.updateSaldoCaixa(empresaId, valor);
+
+        if (saldoCaixaRepository.existsSaldoCaixa(empresaId)) {
+            saldoCaixaRepository.updateSaldoCaixa(empresaId, valor);
+        } else {
+            saldoCaixaRepository.createSaldoCaixa(empresaId, valor);
+        }
         HistoricoSaldoCaixa historico = new HistoricoSaldoCaixa(empresaId, valor, alteradoPor);
         saldoCaixaRepository.saveHistoricoSaldoCaixa(empresaId, historico);
     }

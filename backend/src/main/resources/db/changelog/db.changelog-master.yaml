@@ -6,7 +6,10 @@ databaseChangeLog:
       changes:
         - sql:
             sql: |
-              CREATE TABLE empresas (
+              -- All tables of the car reselling bounded context live in the "revenda" schema
+              CREATE SCHEMA IF NOT EXISTS revenda;
+
+              CREATE TABLE revenda.empresas (
                 empresa_id SMALLINT PRIMARY KEY,
                 nome VARCHAR(50) NOT NULL,
                 ativo BOOLEAN NOT NULL DEFAULT TRUE,
@@ -14,7 +17,7 @@ databaseChangeLog:
                 atualizado_em TIMESTAMP NULL
               );
 
-              CREATE TABLE parceiros (
+              CREATE TABLE revenda.parceiros (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 nome VARCHAR(255) NOT NULL UNIQUE,
@@ -25,12 +28,12 @@ databaseChangeLog:
                 habilitado BOOLEAN NOT NULL DEFAULT TRUE,
                 criado_em TIMESTAMP NOT NULL,
                 atualizado_em TIMESTAMP NULL,
-                CONSTRAINT fk_parceiros_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_parceiros_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_parceiros_empresa ON parceiros (empresa_id);
+              CREATE INDEX idx_parceiros_empresa ON revenda.parceiros (empresa_id);
 
-              CREATE TABLE historico_parceiro (
+              CREATE TABLE revenda.historico_parceiro (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 parceiro_id UUID NOT NULL,
@@ -41,25 +44,25 @@ databaseChangeLog:
                 taxa_comissao DECIMAL(6,2) NULL,
                 alterado_em TIMESTAMP NOT NULL,
                 alterado_por VARCHAR(128) NULL,
-                CONSTRAINT fk_historico_parceiro_parceiro FOREIGN KEY (parceiro_id) REFERENCES parceiros(id),
-                CONSTRAINT fk_historico_parceiro_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_historico_parceiro_parceiro FOREIGN KEY (parceiro_id) REFERENCES revenda.parceiros(id),
+                CONSTRAINT fk_historico_parceiro_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_historico_parceiro_parceiro ON historico_parceiro (parceiro_id);
-              CREATE INDEX idx_historico_parceiro_empresa ON historico_parceiro (empresa_id);
+              CREATE INDEX idx_historico_parceiro_parceiro ON revenda.historico_parceiro (parceiro_id);
+              CREATE INDEX idx_historico_parceiro_empresa ON revenda.historico_parceiro (empresa_id);
 
-              CREATE TABLE marcas (
+              CREATE TABLE revenda.marcas (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 nome VARCHAR(128) NOT NULL UNIQUE,
                 criado_em TIMESTAMP NOT NULL,
                 atualizado_em TIMESTAMP NULL,
-                CONSTRAINT fk_marcas_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_marcas_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_marcas_empresa ON marcas (empresa_id);
+              CREATE INDEX idx_marcas_empresa ON revenda.marcas (empresa_id);
 
-              CREATE TABLE modelos (
+              CREATE TABLE revenda.modelos (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 marca_id UUID NOT NULL,
@@ -67,25 +70,25 @@ databaseChangeLog:
                 criado_em TIMESTAMP NOT NULL,
                 atualizado_em TIMESTAMP NULL,
                 CONSTRAINT uk_modelos_marca_nome UNIQUE (marca_id, nome),
-                CONSTRAINT fk_modelos_marca FOREIGN KEY (marca_id) REFERENCES marcas(id),
-                CONSTRAINT fk_modelos_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_modelos_marca FOREIGN KEY (marca_id) REFERENCES revenda.marcas(id),
+                CONSTRAINT fk_modelos_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_modelos_marca ON modelos (marca_id);
-              CREATE INDEX idx_modelos_empresa ON modelos (empresa_id);
+              CREATE INDEX idx_modelos_marca ON revenda.modelos (marca_id);
+              CREATE INDEX idx_modelos_empresa ON revenda.modelos (empresa_id);
 
-              CREATE TABLE cores (
+              CREATE TABLE revenda.cores (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 nome VARCHAR(64) NOT NULL UNIQUE,
                 criado_em TIMESTAMP NOT NULL,
                 atualizado_em TIMESTAMP NULL,
-                CONSTRAINT fk_cores_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_cores_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_cores_empresa ON cores (empresa_id);
+              CREATE INDEX idx_cores_empresa ON revenda.cores (empresa_id);
 
-              CREATE TABLE veiculos (
+              CREATE TABLE revenda.veiculos (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 placa VARCHAR(16) NOT NULL UNIQUE,
@@ -112,33 +115,33 @@ databaseChangeLog:
                 taxa_comissao_venda DECIMAL(6,2) NULL,
                 criado_em TIMESTAMP NOT NULL,
                 atualizado_em TIMESTAMP NULL,
-                CONSTRAINT fk_veiculos_parceiro FOREIGN KEY (parceiro_atribuido_id) REFERENCES parceiros(id),
-                CONSTRAINT fk_veiculos_marca FOREIGN KEY (marca_id) REFERENCES marcas(id),
-                CONSTRAINT fk_veiculos_modelo FOREIGN KEY (modelo_id) REFERENCES modelos(id),
-                CONSTRAINT fk_veiculos_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_veiculos_parceiro FOREIGN KEY (parceiro_atribuido_id) REFERENCES revenda.parceiros(id),
+                CONSTRAINT fk_veiculos_marca FOREIGN KEY (marca_id) REFERENCES revenda.marcas(id),
+                CONSTRAINT fk_veiculos_modelo FOREIGN KEY (modelo_id) REFERENCES revenda.modelos(id),
+                CONSTRAINT fk_veiculos_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_veiculos_status ON veiculos (status);
-              CREATE INDEX idx_veiculos_plate ON veiculos (placa);
-              CREATE INDEX idx_veiculos_parceiro ON veiculos (parceiro_atribuido_id);
-              CREATE INDEX idx_veiculos_marca ON veiculos (marca_id);
-              CREATE INDEX idx_veiculos_modelo ON veiculos (modelo_id);
-              CREATE INDEX idx_veiculos_empresa ON veiculos (empresa_id);
+              CREATE INDEX idx_veiculos_status ON revenda.veiculos (status);
+              CREATE INDEX idx_veiculos_plate ON revenda.veiculos (placa);
+              CREATE INDEX idx_veiculos_parceiro ON revenda.veiculos (parceiro_atribuido_id);
+              CREATE INDEX idx_veiculos_marca ON revenda.veiculos (marca_id);
+              CREATE INDEX idx_veiculos_modelo ON revenda.veiculos (modelo_id);
+              CREATE INDEX idx_veiculos_empresa ON revenda.veiculos (empresa_id);
 
-              CREATE TABLE historico_veiculo_em_servico (
+              CREATE TABLE revenda.historico_veiculo_em_servico (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 veiculo_id UUID NOT NULL,
                 em_servico BOOLEAN NOT NULL,
                 alterado_em TIMESTAMP NOT NULL,
-                CONSTRAINT fk_em_servico_historico_veiculo FOREIGN KEY (veiculo_id) REFERENCES veiculos(id),
-                CONSTRAINT fk_em_servico_historico_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_em_servico_historico_veiculo FOREIGN KEY (veiculo_id) REFERENCES revenda.veiculos(id),
+                CONSTRAINT fk_em_servico_historico_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_em_servico_historico_veiculo ON historico_veiculo_em_servico (veiculo_id);
-              CREATE INDEX idx_em_servico_historico_empresa ON historico_veiculo_em_servico (empresa_id);
+              CREATE INDEX idx_em_servico_historico_veiculo ON revenda.historico_veiculo_em_servico (veiculo_id);
+              CREATE INDEX idx_em_servico_historico_empresa ON revenda.historico_veiculo_em_servico (empresa_id);
 
-              CREATE TABLE servicos (
+              CREATE TABLE revenda.servicos (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 veiculo_id UUID NOT NULL,
@@ -149,14 +152,14 @@ databaseChangeLog:
                 data_fim DATE NULL,
                 criado_em TIMESTAMP NOT NULL,
                 atualizado_em TIMESTAMP NULL,
-                CONSTRAINT fk_servicos_veiculo FOREIGN KEY (veiculo_id) REFERENCES veiculos(id),
-                CONSTRAINT fk_servicos_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_servicos_veiculo FOREIGN KEY (veiculo_id) REFERENCES revenda.veiculos(id),
+                CONSTRAINT fk_servicos_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_servicos_veiculo ON servicos (veiculo_id);
-              CREATE INDEX idx_servicos_empresa ON servicos (empresa_id);
+              CREATE INDEX idx_servicos_veiculo ON revenda.servicos (veiculo_id);
+              CREATE INDEX idx_servicos_empresa ON revenda.servicos (empresa_id);
 
-              CREATE TABLE documentos (
+              CREATE TABLE revenda.documentos (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 veiculo_id UUID NOT NULL,
@@ -167,14 +170,14 @@ databaseChangeLog:
                 storage_key VARCHAR(1024) NOT NULL,
                 enviado_em TIMESTAMP NOT NULL,
                 enviado_por VARCHAR(128) NULL,
-                CONSTRAINT fk_documentos_veiculo FOREIGN KEY (veiculo_id) REFERENCES veiculos(id),
-                CONSTRAINT fk_documentos_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_documentos_veiculo FOREIGN KEY (veiculo_id) REFERENCES revenda.veiculos(id),
+                CONSTRAINT fk_documentos_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_documentos_veiculo ON documentos (veiculo_id);
-              CREATE INDEX idx_documentos_empresa ON documentos (empresa_id);
+              CREATE INDEX idx_documentos_veiculo ON revenda.documentos (veiculo_id);
+              CREATE INDEX idx_documentos_empresa ON revenda.documentos (empresa_id);
 
-              CREATE TABLE pagamentos (
+              CREATE TABLE revenda.pagamentos (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 tipo_pagamento VARCHAR(32) NOT NULL,
@@ -185,16 +188,16 @@ databaseChangeLog:
                 observacoes VARCHAR(1000) NULL,
                 criado_em TIMESTAMP NOT NULL,
                 atualizado_em TIMESTAMP NULL,
-                CONSTRAINT fk_pagamentos_veiculo FOREIGN KEY (veiculo_id) REFERENCES veiculos(id),
-                CONSTRAINT fk_pagamentos_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_pagamentos_veiculo FOREIGN KEY (veiculo_id) REFERENCES revenda.veiculos(id),
+                CONSTRAINT fk_pagamentos_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_pagamentos_type ON pagamentos (tipo_pagamento);
-              CREATE INDEX idx_pagamentos_date ON pagamentos (data_pagamento);
-              CREATE INDEX idx_pagamentos_veiculo ON pagamentos (veiculo_id);
-              CREATE INDEX idx_pagamentos_empresa ON pagamentos (empresa_id);
+              CREATE INDEX idx_pagamentos_type ON revenda.pagamentos (tipo_pagamento);
+              CREATE INDEX idx_pagamentos_date ON revenda.pagamentos (data_pagamento);
+              CREATE INDEX idx_pagamentos_veiculo ON revenda.pagamentos (veiculo_id);
+              CREATE INDEX idx_pagamentos_empresa ON revenda.pagamentos (empresa_id);
 
-              CREATE TABLE documentos_pagamento (
+              CREATE TABLE revenda.documentos_pagamento (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 pagamento_id UUID NOT NULL,
@@ -204,28 +207,28 @@ databaseChangeLog:
                 storage_key VARCHAR(1024) NOT NULL,
                 enviado_em TIMESTAMP NOT NULL,
                 enviado_por VARCHAR(128) NULL,
-                CONSTRAINT fk_documentos_pagamento_pagamento FOREIGN KEY (pagamento_id) REFERENCES pagamentos(id),
-                CONSTRAINT fk_documentos_pagamento_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_documentos_pagamento_pagamento FOREIGN KEY (pagamento_id) REFERENCES revenda.pagamentos(id),
+                CONSTRAINT fk_documentos_pagamento_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_documentos_pagamento_pagamento ON documentos_pagamento (pagamento_id);
-              CREATE INDEX idx_documentos_pagamento_empresa ON documentos_pagamento (empresa_id);
+              CREATE INDEX idx_documentos_pagamento_pagamento ON revenda.documentos_pagamento (pagamento_id);
+              CREATE INDEX idx_documentos_pagamento_empresa ON revenda.documentos_pagamento (empresa_id);
 
-              CREATE TABLE saldo_caixa (
+              CREATE TABLE revenda.saldo_caixa (
                 empresa_id SMALLINT PRIMARY KEY,
                 valor DECIMAL(13,2) NOT NULL DEFAULT 0,
                 atualizado_em TIMESTAMP NOT NULL,
-                CONSTRAINT fk_saldo_caixa_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_saldo_caixa_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE TABLE historico_saldo_caixa (
+              CREATE TABLE revenda.historico_saldo_caixa (
                 id UUID PRIMARY KEY,
                 empresa_id SMALLINT NOT NULL,
                 valor DECIMAL(13,2) NOT NULL,
                 alterado_em TIMESTAMP NOT NULL,
                 alterado_por VARCHAR(255) NULL,
-                CONSTRAINT fk_historico_saldo_caixa_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+                CONSTRAINT fk_historico_saldo_caixa_empresa FOREIGN KEY (empresa_id) REFERENCES revenda.empresas(empresa_id)
               );
 
-              CREATE INDEX idx_historico_saldo_caixa_alterado_em ON historico_saldo_caixa (alterado_em);
-              CREATE INDEX idx_historico_saldo_caixa_empresa ON historico_saldo_caixa (empresa_id);
+              CREATE INDEX idx_historico_saldo_caixa_alterado_em ON revenda.historico_saldo_caixa (alterado_em);
+              CREATE INDEX idx_historico_saldo_caixa_empresa ON revenda.historico_saldo_caixa (empresa_id);

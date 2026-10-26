@@ -9,65 +9,70 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ModeloVeiculoJdbcRepository implements ModeloVeiculoRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public ModeloVeiculoJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public ModeloVeiculoJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public ModeloVeiculo saveModelo(int empresaId, ModeloVeiculo modelo) {
-        jdbcTemplate.update("""
-                INSERT INTO modelos (id, empresa_id, marca_id, nome, criado_em, atualizado_em)
-                VALUES (?, ?, ?, ?, ?, ?)
+        namedJdbcTemplate.update("""
+                INSERT INTO revenda.modelos (id, empresa_id, marca_id, nome, criado_em, atualizado_em)
+                VALUES (:id, :empresaId, :marcaId, :nome, :criadoEm, :atualizadoEm)
                 """,
-            modelo.getId(),
-            empresaId,
-            modelo.getMarcaId(),
-            modelo.getNome(),
-            Timestamp.from(modelo.getCriadoEm()),
-            modelo.getAtualizadoEm() == null ? null : Timestamp.from(modelo.getAtualizadoEm())
+            new MapSqlParameterSource()
+                .addValue("id", modelo.getId())
+                .addValue("empresaId", empresaId)
+                .addValue("marcaId", modelo.getMarcaId())
+                .addValue("nome", modelo.getNome())
+                .addValue("criadoEm", Timestamp.from(modelo.getCriadoEm()))
+                .addValue("atualizadoEm", modelo.getAtualizadoEm() == null ? null : Timestamp.from(modelo.getAtualizadoEm()))
         );
         return modelo;
     }
 
     @Override
     public List<ModeloVeiculo> findModelosByMarcaId(int empresaId, UUID marcaId) {
-        return jdbcTemplate.query("""
-                SELECT * FROM modelos WHERE marca_id = ? AND empresa_id = ? ORDER BY nome ASC
+        return namedJdbcTemplate.query("""
+                SELECT * FROM revenda.modelos WHERE marca_id = :marcaId AND empresa_id = :empresaId ORDER BY nome ASC
                 """,
-            new ModeloVeiculoRowMapper(),
-            marcaId,
-            empresaId);
+            new MapSqlParameterSource()
+                .addValue("marcaId", marcaId)
+                .addValue("empresaId", empresaId),
+            new ModeloVeiculoRowMapper());
     }
 
     @Override
     public Optional<ModeloVeiculo> findModeloById(int empresaId, UUID id) {
-        List<ModeloVeiculo> result = jdbcTemplate.query("""
-                SELECT * FROM modelos WHERE id = ? AND empresa_id = ?
+        List<ModeloVeiculo> result = namedJdbcTemplate.query("""
+                SELECT * FROM revenda.modelos WHERE id = :id AND empresa_id = :empresaId
                 """,
-            new ModeloVeiculoRowMapper(),
-            id,
-            empresaId);
+            new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("empresaId", empresaId),
+            new ModeloVeiculoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<ModeloVeiculo> findModeloByMarcaIdAndNome(int empresaId, UUID marcaId, String nome) {
-        List<ModeloVeiculo> result = jdbcTemplate.query("""
-                SELECT * FROM modelos WHERE marca_id = ? AND nome = ? AND empresa_id = ?
+        List<ModeloVeiculo> result = namedJdbcTemplate.query("""
+                SELECT * FROM revenda.modelos WHERE marca_id = :marcaId AND nome = :nome AND empresa_id = :empresaId
                 """,
-            new ModeloVeiculoRowMapper(),
-            marcaId,
-            nome,
-            empresaId);
+            new MapSqlParameterSource()
+                .addValue("marcaId", marcaId)
+                .addValue("nome", nome)
+                .addValue("empresaId", empresaId),
+            new ModeloVeiculoRowMapper());
         return result.stream().findFirst();
     }
 

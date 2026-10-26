@@ -2,8 +2,9 @@ package br.com.revendacarros.infrastructure.persistence;
 
 import br.com.revendacarros.domain.model.DocumentoPagamento;
 import br.com.revendacarros.domain.repository.DocumentoPagamentoRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
@@ -17,62 +18,76 @@ import java.util.UUID;
 @Repository
 public class DocumentoPagamentoJdbcRepository implements DocumentoPagamentoRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public DocumentoPagamentoJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public DocumentoPagamentoJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public DocumentoPagamento saveDocumentoPagamento(int empresaId, DocumentoPagamento documento) {
-        jdbcTemplate.update("""
-                        INSERT INTO documentos_pagamento
+        namedJdbcTemplate.update("""
+                        INSERT INTO revenda.documentos_pagamento
                         (id, empresa_id, pagamento_id, nome_original_arquivo, content_type, tamanho_bytes,
                          storage_key, enviado_em, enviado_por)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (:id, :empresaId, :pagamentoId, :nomeOriginalArquivo, :contentType, :tamanhoBytes,
+                                :storageKey, :enviadoEm, :enviadoPor)
                         """,
-                documento.id,
-                empresaId,
-                documento.pagamentoId,
-                documento.nomeOriginalArquivo,
-                documento.contentType,
-                documento.tamanhoBytes,
-                documento.storageKey,
-                Timestamp.from(documento.enviadoEm),
-                documento.enviadoPor
+                new MapSqlParameterSource()
+                        .addValue("id", documento.id)
+                        .addValue("empresaId", empresaId)
+                        .addValue("pagamentoId", documento.pagamentoId)
+                        .addValue("nomeOriginalArquivo", documento.nomeOriginalArquivo)
+                        .addValue("contentType", documento.contentType)
+                        .addValue("tamanhoBytes", documento.tamanhoBytes)
+                        .addValue("storageKey", documento.storageKey)
+                        .addValue("enviadoEm", Timestamp.from(documento.enviadoEm))
+                        .addValue("enviadoPor", documento.enviadoPor)
         );
         return documento;
     }
 
     @Override
     public Optional<DocumentoPagamento> findDocumentoPagamentoById(int empresaId, UUID id) {
-        List<DocumentoPagamento> result = jdbcTemplate.query("""
-                        SELECT * FROM documentos_pagamento WHERE id = ? AND empresa_id = ?
+        List<DocumentoPagamento> result = namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.documentos_pagamento WHERE id = :id AND empresa_id = :empresaId
                         """,
-                new DocumentoPagamentoRowMapper(),
-                id,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId),
+                new DocumentoPagamentoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public List<DocumentoPagamento> findDocumentosPagamentoByPagamentoId(int empresaId, UUID pagamentoId) {
-        return jdbcTemplate.query("""
-                        SELECT * FROM documentos_pagamento WHERE pagamento_id = ? AND empresa_id = ? ORDER BY enviado_em DESC
+        return namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.documentos_pagamento
+                        WHERE pagamento_id = :pagamentoId AND empresa_id = :empresaId
+                        ORDER BY enviado_em DESC
                         """,
-                new DocumentoPagamentoRowMapper(),
-                pagamentoId,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("pagamentoId", pagamentoId)
+                        .addValue("empresaId", empresaId),
+                new DocumentoPagamentoRowMapper());
     }
 
     @Override
     public void deleteDocumentoPagamento(int empresaId, UUID id) {
-        jdbcTemplate.update("DELETE FROM documentos_pagamento WHERE id = ? AND empresa_id = ?", id, empresaId);
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.documentos_pagamento WHERE id = :id AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId));
     }
 
     @Override
     public void deleteDocumentosPagamentoByPagamentoId(int empresaId, UUID pagamentoId) {
-        jdbcTemplate.update("DELETE FROM documentos_pagamento WHERE pagamento_id = ? AND empresa_id = ?", pagamentoId, empresaId);
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.documentos_pagamento WHERE pagamento_id = :pagamentoId AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("pagamentoId", pagamentoId)
+                        .addValue("empresaId", empresaId));
     }
 
     private static class DocumentoPagamentoRowMapper implements RowMapper<DocumentoPagamento> {

@@ -11,51 +11,54 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class CorJdbcRepository implements CorRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public CorJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public CorJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public Cor saveCor(int empresaId, Cor cor) {
-        jdbcTemplate.update("""
-                        INSERT INTO cores (id, empresa_id, nome, criado_em, atualizado_em)
-                        VALUES (?, ?, ?, ?, ?)
+        namedJdbcTemplate.update("""
+                        INSERT INTO revenda.cores (id, empresa_id, nome, criado_em, atualizado_em)
+                        VALUES (:id, :empresaId, :nome, :criadoEm, :atualizadoEm)
                         """,
-                cor.getId(),
-                empresaId,
-                cor.getNome(),
-                Timestamp.from(cor.getCriadoEm()),
-                cor.getAtualizadoEm() == null ? null : Timestamp.from(cor.getAtualizadoEm())
+                new MapSqlParameterSource()
+                        .addValue("id", cor.getId())
+                        .addValue("empresaId", empresaId)
+                        .addValue("nome", cor.getNome())
+                        .addValue("criadoEm", Timestamp.from(cor.getCriadoEm()))
+                        .addValue("atualizadoEm", cor.getAtualizadoEm() == null ? null : Timestamp.from(cor.getAtualizadoEm()))
         );
         return cor;
     }
 
     @Override
     public List<Cor> findCores(int empresaId) {
-        return jdbcTemplate.query("""
-                        SELECT * FROM cores WHERE empresa_id = ? ORDER BY nome ASC
+        return namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.cores WHERE empresa_id = :empresaId ORDER BY nome ASC
                         """,
-                new CorRowMapper(),
-                empresaId);
+                new MapSqlParameterSource("empresaId", empresaId),
+                new CorRowMapper());
     }
 
     @Override
     public Optional<Cor> findCorByNome(int empresaId, String nome) {
-        List<Cor> result = jdbcTemplate.query("""
-                        SELECT * FROM cores WHERE nome = ? AND empresa_id = ?
+        List<Cor> result = namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.cores WHERE nome = :nome AND empresa_id = :empresaId
                         """,
-                new CorRowMapper(),
-                nome,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("nome", nome)
+                        .addValue("empresaId", empresaId),
+                new CorRowMapper());
         return result.stream().findFirst();
     }
 

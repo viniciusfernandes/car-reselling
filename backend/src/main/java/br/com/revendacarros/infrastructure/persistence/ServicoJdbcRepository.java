@@ -3,8 +3,9 @@ package br.com.revendacarros.infrastructure.persistence;
 import br.com.revendacarros.domain.model.ServicoNoVeiculo;
 import br.com.revendacarros.domain.model.TipoServico;
 import br.com.revendacarros.domain.repository.ServicoRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -20,101 +21,128 @@ import java.util.UUID;
 @Repository
 public class ServicoJdbcRepository implements ServicoRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public ServicoJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public ServicoJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public ServicoNoVeiculo saveService(int empresaId, ServicoNoVeiculo servicoNoVeiculo) {
-        jdbcTemplate.update("""
-                        INSERT INTO servicos
+        namedJdbcTemplate.update("""
+                        INSERT INTO revenda.servicos
                         (id, empresa_id, veiculo_id, tipo_servico, descricao, valor_servico, data_inicio, data_fim, criado_em, atualizado_em)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (:id, :empresaId, :veiculoId, :tipoServico, :descricao, :valorServico, :dataInicio, :dataFim,
+                                :criadoEm, :atualizadoEm)
                         """,
-                servicoNoVeiculo.getId(),
-                empresaId,
-                servicoNoVeiculo.getVeiculoId(),
-                servicoNoVeiculo.getTipoServico().name(),
-                servicoNoVeiculo.getDescricao(),
-                servicoNoVeiculo.getValorServico(),
-                servicoNoVeiculo.getDataInicio(),
-                servicoNoVeiculo.getDataFim(),
-                Timestamp.from(servicoNoVeiculo.getCriadoEm()),
-                servicoNoVeiculo.getAtualizadoEm() == null ? null : Timestamp.from(servicoNoVeiculo.getAtualizadoEm())
+                new MapSqlParameterSource()
+                        .addValue("id", servicoNoVeiculo.getId())
+                        .addValue("empresaId", empresaId)
+                        .addValue("veiculoId", servicoNoVeiculo.getVeiculoId())
+                        .addValue("tipoServico", servicoNoVeiculo.getTipoServico().name())
+                        .addValue("descricao", servicoNoVeiculo.getDescricao())
+                        .addValue("valorServico", servicoNoVeiculo.getValorServico())
+                        .addValue("dataInicio", servicoNoVeiculo.getDataInicio())
+                        .addValue("dataFim", servicoNoVeiculo.getDataFim())
+                        .addValue("criadoEm", Timestamp.from(servicoNoVeiculo.getCriadoEm()))
+                        .addValue("atualizadoEm", servicoNoVeiculo.getAtualizadoEm() == null ? null : Timestamp.from(servicoNoVeiculo.getAtualizadoEm()))
         );
         return servicoNoVeiculo;
     }
 
     @Override
     public Optional<ServicoNoVeiculo> findServicoById(int empresaId, UUID id) {
-        List<ServicoNoVeiculo> result = jdbcTemplate.query("""
-                        SELECT * FROM servicos WHERE id = ? AND empresa_id = ?
+        List<ServicoNoVeiculo> result = namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.servicos WHERE id = :id AND empresa_id = :empresaId
                         """,
-                new ServicoRowMapper(),
-                id,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId),
+                new ServicoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public List<ServicoNoVeiculo> findServicoByVeiculoId(int empresaId, UUID veiculoId) {
-        return jdbcTemplate.query("""
-                        SELECT * FROM servicos WHERE veiculo_id = ? AND empresa_id = ? ORDER BY criado_em DESC
+        return namedJdbcTemplate.query("""
+                        SELECT * FROM revenda.servicos
+                        WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId
+                        ORDER BY criado_em DESC
                         """,
-                new ServicoRowMapper(),
-                veiculoId,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId),
+                new ServicoRowMapper());
     }
 
     @Override
     public ServicoNoVeiculo updateService(int empresaId, ServicoNoVeiculo servicoNoVeiculo) {
-        jdbcTemplate.update("""
-                        UPDATE servicos
-                        SET tipo_servico = ?, descricao = ?, valor_servico = ?,
-                            data_inicio = ?, data_fim = ?, atualizado_em = ?
-                        WHERE id = ? AND empresa_id = ?
+        namedJdbcTemplate.update("""
+                        UPDATE revenda.servicos
+                        SET tipo_servico = :tipoServico, descricao = :descricao, valor_servico = :valorServico,
+                            data_inicio = :dataInicio, data_fim = :dataFim, atualizado_em = :atualizadoEm
+                        WHERE id = :id AND empresa_id = :empresaId
                         """,
-                servicoNoVeiculo.getTipoServico().name(),
-                servicoNoVeiculo.getDescricao(),
-                servicoNoVeiculo.getValorServico(),
-                servicoNoVeiculo.getDataInicio(),
-                servicoNoVeiculo.getDataFim(),
-                servicoNoVeiculo.getAtualizadoEm() == null ? Timestamp.from(Instant.now()) : Timestamp.from(servicoNoVeiculo.getAtualizadoEm()),
-                servicoNoVeiculo.getId(),
-                empresaId
+                new MapSqlParameterSource()
+                        .addValue("tipoServico", servicoNoVeiculo.getTipoServico().name())
+                        .addValue("descricao", servicoNoVeiculo.getDescricao())
+                        .addValue("valorServico", servicoNoVeiculo.getValorServico())
+                        .addValue("dataInicio", servicoNoVeiculo.getDataInicio())
+                        .addValue("dataFim", servicoNoVeiculo.getDataFim())
+                        .addValue("atualizadoEm", servicoNoVeiculo.getAtualizadoEm() == null
+                                ? Timestamp.from(Instant.now())
+                                : Timestamp.from(servicoNoVeiculo.getAtualizadoEm()))
+                        .addValue("id", servicoNoVeiculo.getId())
+                        .addValue("empresaId", empresaId)
         );
         return servicoNoVeiculo;
     }
 
     @Override
     public void deleteService(int empresaId, UUID id) {
-        jdbcTemplate.update("DELETE FROM servicos WHERE id = ? AND empresa_id = ?", id, empresaId);
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.servicos WHERE id = :id AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId));
     }
 
     @Override
     public BigDecimal findServicoTotalByVeiculoId(int empresaId, UUID veiculoId) {
-        BigDecimal total = jdbcTemplate.queryForObject("""
-                        SELECT COALESCE(SUM(valor_servico), 0) FROM servicos WHERE veiculo_id = ? AND empresa_id = ?
+        BigDecimal total = namedJdbcTemplate.queryForObject("""
+                        SELECT COALESCE(SUM(valor_servico), 0)
+                        FROM revenda.servicos
+                        WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId
                         """,
-                new Object[]{veiculoId, empresaId},
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId),
                 BigDecimal.class);
         return total == null ? BigDecimal.ZERO : total;
     }
 
     @Override
     public void deleteServicosByVeiculoId(int empresaId, UUID veiculoId) {
-        jdbcTemplate.update("DELETE FROM servicos WHERE veiculo_id = ? AND empresa_id = ?", veiculoId, empresaId);
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.servicos WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId));
     }
 
     @Override
     public boolean existsOpenServicoByVeiculoId(int empresaId, UUID veiculoId) {
-        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM servicos WHERE veiculo_id = ? AND empresa_id = ? AND (data_fim IS NULL OR data_fim > CURRENT_DATE))",
-                Boolean.class,
-                veiculoId,
-                empresaId
+        return Boolean.TRUE.equals(namedJdbcTemplate.queryForObject("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM revenda.servicos
+                            WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId
+                              AND (data_fim IS NULL OR data_fim > CURRENT_DATE)
+                        )
+                        """,
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId),
+                Boolean.class
         ));
     }
 

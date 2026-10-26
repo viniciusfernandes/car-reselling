@@ -4,8 +4,9 @@ import br.com.revendacarros.application.service.model.TotalPagamentoMensal;
 import br.com.revendacarros.domain.model.Pagamento;
 import br.com.revendacarros.domain.model.TipoPagamento;
 import br.com.revendacarros.domain.repository.PagamentoRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -15,7 +16,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,186 +23,199 @@ import java.util.UUID;
 @Repository
 public class PagamentoJdbcRepository implements PagamentoRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public PagamentoJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public PagamentoJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public Pagamento savePagamento(int empresaId, Pagamento pagamento) {
-        jdbcTemplate.update("""
-                        INSERT INTO pagamentos
+        namedJdbcTemplate.update("""
+                        INSERT INTO revenda.pagamentos
                         (id, empresa_id, tipo_pagamento, descricao, valor, data_pagamento, veiculo_id,
                          observacoes, criado_em, atualizado_em)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (:id, :empresaId, :tipoPagamento, :descricao, :valor, :dataPagamento, :veiculoId,
+                                :observacoes, :criadoEm, :atualizadoEm)
                         """,
-                pagamento.id,
-                empresaId,
-                pagamento.tipoPagamento.name(),
-                pagamento.descricao,
-                pagamento.valor,
-                pagamento.dataPagamento,
-                pagamento.veiculoId,
-                pagamento.observacoes,
-                Timestamp.from(pagamento.criadoEm),
-                pagamento.atualizadoEm == null ? null : Timestamp.from(pagamento.atualizadoEm)
+                new MapSqlParameterSource()
+                        .addValue("id", pagamento.id)
+                        .addValue("empresaId", empresaId)
+                        .addValue("tipoPagamento", pagamento.tipoPagamento.name())
+                        .addValue("descricao", pagamento.descricao)
+                        .addValue("valor", pagamento.valor)
+                        .addValue("dataPagamento", pagamento.dataPagamento)
+                        .addValue("veiculoId", pagamento.veiculoId)
+                        .addValue("observacoes", pagamento.observacoes)
+                        .addValue("criadoEm", Timestamp.from(pagamento.criadoEm))
+                        .addValue("atualizadoEm", pagamento.atualizadoEm == null ? null : Timestamp.from(pagamento.atualizadoEm))
         );
         return pagamento;
     }
 
     @Override
     public Optional<Pagamento> findPagamentoById(int empresaId, UUID id) {
-        List<Pagamento> result = jdbcTemplate.query("""
+        List<Pagamento> result = namedJdbcTemplate.query("""
                         SELECT p.*, v.placa
-                        FROM pagamentos p
-                        LEFT JOIN veiculos v ON v.id = p.veiculo_id AND v.empresa_id = p.empresa_id
-                        WHERE p.id = ? AND p.empresa_id = ?
+                        FROM revenda.pagamentos p
+                        LEFT JOIN revenda.veiculos v ON v.id = p.veiculo_id AND v.empresa_id = p.empresa_id
+                        WHERE p.id = :id AND p.empresa_id = :empresaId
                         """,
-                new PagamentoRowMapper(),
-                id,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId),
+                new PagamentoRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public List<Pagamento> findPagamentos(int empresaId, TipoPagamento tipoPagamento, Integer anoPagamento, Integer mesPagamento, String placa) {
-        List<Object> params = new ArrayList<>();
-        params.add(empresaId);
+        MapSqlParameterSource params = new MapSqlParameterSource("empresaId", empresaId);
         StringBuilder sql = new StringBuilder("""
                 SELECT p.*, v.placa
-                FROM pagamentos p
-                LEFT JOIN veiculos v ON v.id = p.veiculo_id AND v.empresa_id = p.empresa_id
-                WHERE p.empresa_id = ?
+                FROM revenda.pagamentos p
+                LEFT JOIN revenda.veiculos v ON v.id = p.veiculo_id AND v.empresa_id = p.empresa_id
+                WHERE p.empresa_id = :empresaId
                 """);
 
         if (tipoPagamento != null) {
-            sql.append(" AND p.tipo_pagamento = ?");
-            params.add(tipoPagamento.name());
+            sql.append(" AND p.tipo_pagamento = :tipoPagamento");
+            params.addValue("tipoPagamento", tipoPagamento.name());
         }
         if (anoPagamento != null) {
-            sql.append(" AND EXTRACT(YEAR FROM p.data_pagamento) = ?");
-            params.add(anoPagamento);
+            sql.append(" AND EXTRACT(YEAR FROM p.data_pagamento) = :anoPagamento");
+            params.addValue("anoPagamento", anoPagamento);
         }
         if (mesPagamento != null) {
-            sql.append(" AND EXTRACT(MONTH FROM p.data_pagamento) = ?");
-            params.add(mesPagamento);
+            sql.append(" AND EXTRACT(MONTH FROM p.data_pagamento) = :mesPagamento");
+            params.addValue("mesPagamento", mesPagamento);
         }
         if (placa != null && !placa.isBlank()) {
-            sql.append(" AND v.placa LIKE ?");
-            params.add("%" + placa + "%");
+            sql.append(" AND v.placa LIKE :placa");
+            params.addValue("placa", "%" + placa + "%");
         }
         sql.append(" ORDER BY p.data_pagamento DESC, p.criado_em DESC");
 
-        return jdbcTemplate.query(sql.toString(), new PagamentoRowMapper(), params.toArray());
+        return namedJdbcTemplate.query(sql.toString(), params, new PagamentoRowMapper());
     }
 
     @Override
     public List<String> findDescricoesDistintas(int empresaId, TipoPagamento tipoPagamento) {
-        return jdbcTemplate.queryForList("""
+        return namedJdbcTemplate.queryForList("""
                         SELECT DISTINCT descricao
-                        FROM pagamentos
-                        WHERE empresa_id = ?
-                          AND tipo_pagamento = ?
+                        FROM revenda.pagamentos
+                        WHERE empresa_id = :empresaId
+                          AND tipo_pagamento = :tipoPagamento
                           AND descricao IS NOT NULL
                           AND TRIM(descricao) <> ''
                         ORDER BY descricao
                         """,
-                String.class,
-                empresaId,
-                tipoPagamento.name());
+                new MapSqlParameterSource()
+                        .addValue("empresaId", empresaId)
+                        .addValue("tipoPagamento", tipoPagamento.name()),
+                String.class);
     }
 
     @Override
     public Pagamento updatePagamento(int empresaId, Pagamento pagamento) {
-        jdbcTemplate.update("""
-                        UPDATE pagamentos
-                        SET tipo_pagamento = ?, descricao = ?, valor = ?, data_pagamento = ?,
-                            veiculo_id = ?, observacoes = ?, atualizado_em = ?
-                        WHERE id = ? AND empresa_id = ?
+        namedJdbcTemplate.update("""
+                        UPDATE revenda.pagamentos
+                        SET tipo_pagamento = :tipoPagamento, descricao = :descricao, valor = :valor,
+                            data_pagamento = :dataPagamento, veiculo_id = :veiculoId, observacoes = :observacoes,
+                            atualizado_em = :atualizadoEm
+                        WHERE id = :id AND empresa_id = :empresaId
                         """,
-                pagamento.tipoPagamento.name(),
-                pagamento.descricao,
-                pagamento.valor,
-                pagamento.dataPagamento,
-                pagamento.veiculoId,
-                pagamento.observacoes,
-                Timestamp.from(Instant.now()),
-                pagamento.id,
-                empresaId
+                new MapSqlParameterSource()
+                        .addValue("tipoPagamento", pagamento.tipoPagamento.name())
+                        .addValue("descricao", pagamento.descricao)
+                        .addValue("valor", pagamento.valor)
+                        .addValue("dataPagamento", pagamento.dataPagamento)
+                        .addValue("veiculoId", pagamento.veiculoId)
+                        .addValue("observacoes", pagamento.observacoes)
+                        .addValue("atualizadoEm", Timestamp.from(Instant.now()))
+                        .addValue("id", pagamento.id)
+                        .addValue("empresaId", empresaId)
         );
         return pagamento;
     }
 
     @Override
     public void deletePagamento(int empresaId, UUID id) {
-        jdbcTemplate.update("DELETE FROM pagamentos WHERE id = ? AND empresa_id = ?", id, empresaId);
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.pagamentos WHERE id = :id AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("empresaId", empresaId));
     }
 
     @Override
     public List<Pagamento> findPagamentosByVeiculoId(int empresaId, UUID veiculoId) {
-        return jdbcTemplate.query("""
+        return namedJdbcTemplate.query("""
                         SELECT p.*, v.placa
-                        FROM pagamentos p
-                        LEFT JOIN veiculos v ON v.id = p.veiculo_id AND v.empresa_id = p.empresa_id
-                        WHERE p.veiculo_id = ? AND p.empresa_id = ?
+                        FROM revenda.pagamentos p
+                        LEFT JOIN revenda.veiculos v ON v.id = p.veiculo_id AND v.empresa_id = p.empresa_id
+                        WHERE p.veiculo_id = :veiculoId AND p.empresa_id = :empresaId
                         ORDER BY p.data_pagamento DESC, p.criado_em DESC
                         """,
-                new PagamentoRowMapper(),
-                veiculoId,
-                empresaId);
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId),
+                new PagamentoRowMapper());
     }
 
     @Override
     public void deletePagamentosByVeiculoId(int empresaId, UUID veiculoId) {
-        jdbcTemplate.update("DELETE FROM pagamentos WHERE veiculo_id = ? AND empresa_id = ?", veiculoId, empresaId);
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.pagamentos WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId));
     }
 
     @Override
     public BigDecimal findValorTotalPagamentos(int empresaId, LocalDate dataInicio, LocalDate dataFim) {
-        StringBuilder sql = new StringBuilder("SELECT COALESCE(SUM(valor), 0) FROM pagamentos WHERE empresa_id = ?");
-        List<Object> params = new ArrayList<>();
-        params.add(empresaId);
+        MapSqlParameterSource params = new MapSqlParameterSource("empresaId", empresaId);
+        StringBuilder sql = new StringBuilder(
+                "SELECT COALESCE(SUM(valor), 0) FROM revenda.pagamentos WHERE empresa_id = :empresaId");
         if (dataInicio != null) {
-            sql.append(" AND data_pagamento >= ?");
-            params.add(Date.valueOf(dataInicio));
+            sql.append(" AND data_pagamento >= :dataInicio");
+            params.addValue("dataInicio", Date.valueOf(dataInicio));
         }
         if (dataFim != null) {
-            sql.append(" AND data_pagamento <= ?");
-            params.add(Date.valueOf(dataFim));
+            sql.append(" AND data_pagamento <= :dataFim");
+            params.addValue("dataFim", Date.valueOf(dataFim));
         }
-        BigDecimal result = jdbcTemplate.queryForObject(sql.toString(), BigDecimal.class, params.toArray());
+        BigDecimal result = namedJdbcTemplate.queryForObject(sql.toString(), params, BigDecimal.class);
         return result == null ? BigDecimal.ZERO : result;
     }
 
     @Override
     public List<TotalPagamentoMensal> findTotaisPagamentoMensal(int empresaId, LocalDate dataInicio, LocalDate dataFim) {
+        MapSqlParameterSource params = new MapSqlParameterSource("empresaId", empresaId);
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     CAST(EXTRACT(YEAR FROM data_pagamento) AS INTEGER)  AS ano_pagamento,
                     CAST(EXTRACT(MONTH FROM data_pagamento) AS INTEGER) AS mes_pagamento,
                     SUM(valor)         AS total
-                FROM pagamentos
-                WHERE empresa_id = ?
+                FROM revenda.pagamentos
+                WHERE empresa_id = :empresaId
                 """);
-        List<Object> params = new ArrayList<>();
-        params.add(empresaId);
         if (dataInicio != null) {
-            sql.append(" AND data_pagamento >= ?");
-            params.add(Date.valueOf(dataInicio));
+            sql.append(" AND data_pagamento >= :dataInicio");
+            params.addValue("dataInicio", Date.valueOf(dataInicio));
         }
         if (dataFim != null) {
-            sql.append(" AND data_pagamento <= ?");
-            params.add(Date.valueOf(dataFim));
+            sql.append(" AND data_pagamento <= :dataFim");
+            params.addValue("dataFim", Date.valueOf(dataFim));
         }
         sql.append(" GROUP BY EXTRACT(YEAR FROM data_pagamento), EXTRACT(MONTH FROM data_pagamento) ORDER BY ano_pagamento, mes_pagamento");
-        return jdbcTemplate.query(sql.toString(),
+        return namedJdbcTemplate.query(sql.toString(),
+                params,
                 (rs, rowNum) -> new TotalPagamentoMensal(
                         rs.getInt("ano_pagamento"),
                         rs.getInt("mes_pagamento"),
                         rs.getBigDecimal("total")
-                ),
-                params.toArray()
+                )
         );
     }
 

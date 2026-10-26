@@ -9,62 +9,66 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class MarcaJdbcRepository implements MarcaRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public MarcaJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public MarcaJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public Marca saveMarca(int empresaId, Marca marca) {
-        jdbcTemplate.update("""
-                INSERT INTO marcas (id, empresa_id, nome, criado_em, atualizado_em)
-                VALUES (?, ?, ?, ?, ?)
+        namedJdbcTemplate.update("""
+                INSERT INTO revenda.marcas (id, empresa_id, nome, criado_em, atualizado_em)
+                VALUES (:id, :empresaId, :nome, :criadoEm, :atualizadoEm)
                 """,
-            marca.getId(),
-            empresaId,
-            marca.getNome(),
-            Timestamp.from(marca.getCriadoEm()),
-            marca.getAtualizadoEm() == null ? null : Timestamp.from(marca.getAtualizadoEm())
+            new MapSqlParameterSource()
+                .addValue("id", marca.getId())
+                .addValue("empresaId", empresaId)
+                .addValue("nome", marca.getNome())
+                .addValue("criadoEm", Timestamp.from(marca.getCriadoEm()))
+                .addValue("atualizadoEm", marca.getAtualizadoEm() == null ? null : Timestamp.from(marca.getAtualizadoEm()))
         );
         return marca;
     }
 
     @Override
     public List<Marca> findMarcas(int empresaId) {
-        return jdbcTemplate.query("""
-                SELECT * FROM marcas WHERE empresa_id = ? ORDER BY nome ASC
+        return namedJdbcTemplate.query("""
+                SELECT * FROM revenda.marcas WHERE empresa_id = :empresaId ORDER BY nome ASC
                 """,
-            new MarcaRowMapper(),
-            empresaId);
+            new MapSqlParameterSource("empresaId", empresaId),
+            new MarcaRowMapper());
     }
 
     @Override
     public Optional<Marca> findMarcaById(int empresaId, UUID id) {
-        List<Marca> result = jdbcTemplate.query("""
-                SELECT * FROM marcas WHERE id = ? AND empresa_id = ?
+        List<Marca> result = namedJdbcTemplate.query("""
+                SELECT * FROM revenda.marcas WHERE id = :id AND empresa_id = :empresaId
                 """,
-            new MarcaRowMapper(),
-            id,
-            empresaId);
+            new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("empresaId", empresaId),
+            new MarcaRowMapper());
         return result.stream().findFirst();
     }
 
     @Override
     public Optional<Marca> findMarcaByNome(int empresaId, String nome) {
-        List<Marca> result = jdbcTemplate.query("""
-                SELECT * FROM marcas WHERE nome = ? AND empresa_id = ?
+        List<Marca> result = namedJdbcTemplate.query("""
+                SELECT * FROM revenda.marcas WHERE nome = :nome AND empresa_id = :empresaId
                 """,
-            new MarcaRowMapper(),
-            nome,
-            empresaId);
+            new MapSqlParameterSource()
+                .addValue("nome", nome)
+                .addValue("empresaId", empresaId),
+            new MarcaRowMapper());
         return result.stream().findFirst();
     }
 

@@ -9,5 +9,9 @@ public interface SaldoCaixaRepository {
 
     void updateSaldoCaixa(int empresaId, double valor);
 
+    boolean  existsSaldoCaixa(int empresaId);
+
+    void createSaldoCaixa(int empresaId, double valor);
+
     void saveHistoricoSaldoCaixa(int empresaId, HistoricoSaldoCaixa historico);
 }

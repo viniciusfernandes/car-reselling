@@ -9,49 +9,52 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class HistoricoParceiroJdbcRepository implements HistoricoParceiroRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public HistoricoParceiroJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public HistoricoParceiroJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public void saveHistorico(int empresaId, HistoricoParceiro historico) {
-        jdbcTemplate.update("""
-                INSERT INTO historico_parceiro
+        namedJdbcTemplate.update("""
+                INSERT INTO revenda.historico_parceiro
                 (id, empresa_id, parceiro_id, nome, cidade, telefone, email, taxa_comissao, alterado_em, alterado_por)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (:id, :empresaId, :parceiroId, :nome, :cidade, :telefone, :email, :taxaComissao, :alteradoEm, :alteradoPor)
                 """,
-            historico.getId(),
-            empresaId,
-            historico.getParceiroId(),
-            historico.getNome(),
-            historico.getCidade(),
-            historico.getTelefone(),
-            historico.getEmail(),
-            historico.getTaxaComissao(),
-            Timestamp.from(historico.getAlteradoEm()),
-            historico.getAlteradoPor()
+            new MapSqlParameterSource()
+                .addValue("id", historico.getId())
+                .addValue("empresaId", empresaId)
+                .addValue("parceiroId", historico.getParceiroId())
+                .addValue("nome", historico.getNome())
+                .addValue("cidade", historico.getCidade())
+                .addValue("telefone", historico.getTelefone())
+                .addValue("email", historico.getEmail())
+                .addValue("taxaComissao", historico.getTaxaComissao())
+                .addValue("alteradoEm", Timestamp.from(historico.getAlteradoEm()))
+                .addValue("alteradoPor", historico.getAlteradoPor())
         );
     }
 
     @Override
     public List<HistoricoParceiro> findHistoricoByParceiroId(int empresaId, UUID parceiroId) {
-        return jdbcTemplate.query("""
-                SELECT * FROM historico_parceiro
-                WHERE parceiro_id = ? AND empresa_id = ?
+        return namedJdbcTemplate.query("""
+                SELECT * FROM revenda.historico_parceiro
+                WHERE parceiro_id = :parceiroId AND empresa_id = :empresaId
                 ORDER BY alterado_em DESC
                 """,
-            new HistoricoParceiroRowMapper(),
-            parceiroId,
-            empresaId
+            new MapSqlParameterSource()
+                .addValue("parceiroId", parceiroId)
+                .addValue("empresaId", empresaId),
+            new HistoricoParceiroRowMapper()
         );
     }
 

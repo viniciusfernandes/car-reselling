@@ -9,54 +9,58 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class HistoricoVeiculoEmServicoJdbcRepository implements HistoricoVeiculoEmServicoRepository {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public HistoricoVeiculoEmServicoJdbcRepository(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public HistoricoVeiculoEmServicoJdbcRepository(NamedParameterJdbcTemplate namedJdbcTemplate) {
+        this.namedJdbcTemplate = namedJdbcTemplate;
     }
 
     @Override
     public void save(int empresaId, HistoricoVeiculoEmServico historico) {
-        jdbcTemplate.update("""
-                        INSERT INTO historico_veiculo_em_servico (id, empresa_id, veiculo_id, em_servico, alterado_em)
-                        VALUES (?, ?, ?, ?, ?)
+        namedJdbcTemplate.update("""
+                        INSERT INTO revenda.historico_veiculo_em_servico (id, empresa_id, veiculo_id, em_servico, alterado_em)
+                        VALUES (:id, :empresaId, :veiculoId, :emServico, :alteradoEm)
                         """,
-                historico.id(),
-                empresaId,
-                historico.veiculoId(),
-                historico.emServico(),
-                Timestamp.from(historico.alteradoEm())
+                new MapSqlParameterSource()
+                        .addValue("id", historico.id())
+                        .addValue("empresaId", empresaId)
+                        .addValue("veiculoId", historico.veiculoId())
+                        .addValue("emServico", historico.emServico())
+                        .addValue("alteradoEm", Timestamp.from(historico.alteradoEm()))
         );
     }
 
     @Override
     public List<HistoricoVeiculoEmServico> findByVeiculoId(int empresaId, UUID veiculoId) {
-        return jdbcTemplate.query("""
+        return namedJdbcTemplate.query("""
                         SELECT id, empresa_id, veiculo_id, em_servico, alterado_em
-                        FROM historico_veiculo_em_servico
-                        WHERE veiculo_id = ? AND empresa_id = ?
+                        FROM revenda.historico_veiculo_em_servico
+                        WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId
                         ORDER BY alterado_em ASC
                         """,
-                new HistoricoRowMapper(),
-                veiculoId,
-                empresaId
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId),
+                new HistoricoRowMapper()
         );
     }
 
     @Override
     public void deleteByVeiculoId(int empresaId, UUID veiculoId) {
-        jdbcTemplate.update(
-                "DELETE FROM historico_veiculo_em_servico WHERE veiculo_id = ? AND empresa_id = ?",
-                veiculoId,
-                empresaId
+        namedJdbcTemplate.update(
+                "DELETE FROM revenda.historico_veiculo_em_servico WHERE veiculo_id = :veiculoId AND empresa_id = :empresaId",
+                new MapSqlParameterSource()
+                        .addValue("veiculoId", veiculoId)
+                        .addValue("empresaId", empresaId)
         );
     }
 
